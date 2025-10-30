@@ -2,7 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp") version "2.2.10-2.0.2"
+    id("com.google.devtools.ksp")
+    alias(libs.plugins.kotlin.serialization)
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -29,11 +31,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -49,10 +51,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("com.couchbase.lite:couchbase-lite-android-ktx:3.3.0")
-    implementation("com.google.dagger:hilt-android:2.57.1")
-    ksp("com.google.dagger:hilt-android-compiler:2.57.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -60,4 +58,29 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    // Couchbase
+    implementation("com.couchbase.lite:couchbase-lite-android-ktx:3.3.0")
+    // Hilt dependencies
+    implementation("com.google.dagger:hilt-android:2.57.2")
+    ksp("com.google.dagger:hilt-android-compiler:2.57.2")
+
+    // Serialization
+
+    // Navigation
+    implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.navigation.compose)
+
+    implementation(libs.kotlinx.serialization.json)
+
+    // Coroutine
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
+
+    implementation(libs.places)
+    implementation(libs.coil.compose)
+    implementation(libs.maps.compose)
+    implementation(libs.converter.gson)
+    implementation(libs.mpandroidchart)
+    implementation(libs.jbcrypt)
+    implementation(libs.play.services.maps)
 }

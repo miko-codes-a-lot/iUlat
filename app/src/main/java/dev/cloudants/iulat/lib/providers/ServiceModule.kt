@@ -5,7 +5,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.cloudants.iulat.lib.services.UserService
-import dev.cloudants.iulat.lib.services.UserServiceImpl
+import dev.cloudants.iulat.lib.services_impl.UserServiceImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
