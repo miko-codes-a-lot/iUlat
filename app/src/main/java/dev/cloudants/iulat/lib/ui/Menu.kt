@@ -35,6 +35,7 @@ import dev.cloudants.iulat.lib.ui.message.Message
 import dev.cloudants.iulat.lib.ui.message.MessageList
 import dev.cloudants.iulat.lib.ui.report.ReportList
 import dev.cloudants.iulat.lib.ui.user.Account
+import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
 
 
@@ -44,14 +45,14 @@ fun MenuPreview() {
     Menu(navController = rememberNavController())
 }
 
-data class SampleUserDto(val username: String, val isAdmin: Boolean = false, val isResidence: Boolean = true)
+data class SampleUserDto(val username: String, val isAdmin: Boolean = true, val isResidence: Boolean = false)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Menu(
     navController: NavController,
     viewModel: MenuViewModel = viewModel()
 ) {
-    val userDto = SampleUserDto(username = "residence", isAdmin = false, isResidence = true)
+    val userDto = SampleUserDto(username = "residence", isAdmin = true, isResidence = false)
 
     LaunchedEffect(Unit) {
         viewModel.setUserDefaultRoute(userDto.isAdmin, userDto.isResidence)
@@ -124,6 +125,7 @@ fun Menu(
                 MODULE.MESSAGELIST -> MessageList(navController)
                 MODULE.MESSAGE -> Message(navController)
                 MODULE.ACCOUNT -> Account(navController)
+                MODULE.USERLIST -> UsersList(navController)
                 MODULE.REPORTLIST -> ReportList()
                 MODULE.RESIDENCEDASHBOARD -> ResidenceDashboard(navController)
             }
@@ -137,6 +139,7 @@ fun getNavItems(navController: NavController, userDto: SampleUserDto): List<NavI
         userDto.isAdmin -> listOf(
             NavItem(painterResource(R.drawable.home), MODULE.DASHBOARD, navController),
             NavItem(painterResource(R.drawable.report_icon), MODULE.REPORTLIST, navController),
+            NavItem(painterResource(R.drawable.users), MODULE.USERLIST, navController),
             NavItem(painterResource(R.drawable.message), MODULE.MESSAGELIST, navController),
             NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
         )

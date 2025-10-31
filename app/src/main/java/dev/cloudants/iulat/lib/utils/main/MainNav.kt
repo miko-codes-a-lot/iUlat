@@ -33,6 +33,12 @@ object MainNav {
     object ResidenceDashboard
 
     @Serializable
+    object UserList
+
+    @Serializable
+    object CreateUser
+
+    @Serializable
     data class CreateReport (var title: String = "")
 
 }

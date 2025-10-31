@@ -16,6 +16,8 @@ import dev.cloudants.iulat.lib.ui.report.ReportList
 import dev.cloudants.iulat.lib.ui.SplashScreen
 import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
 import dev.cloudants.iulat.lib.ui.report.CreateReport
+import dev.cloudants.iulat.lib.ui.user.CreateAccount
+import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 
 fun NavGraphBuilder.mainGraph(navController: NavController) {
@@ -48,6 +50,12 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
         composable<MainNav.ResidenceDashboard> {
             ResidenceDashboard(navController)
+        }
+        composable<MainNav.UserList> {
+            UsersList(navController)
+        }
+        composable<MainNav.CreateUser> {
+            CreateAccount()
         }
 
         composable<MainNav.CreateReport> {
