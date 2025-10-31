@@ -5,14 +5,17 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import androidx.navigation.toRoute
 import dev.cloudants.iulat.lib.ui.user.Account
-import dev.cloudants.iulat.lib.ui.Dashboard
+import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
 import dev.cloudants.iulat.lib.ui.Login
 import dev.cloudants.iulat.lib.ui.Menu
 import dev.cloudants.iulat.lib.ui.message.Message
 import dev.cloudants.iulat.lib.ui.message.MessageList
-import dev.cloudants.iulat.lib.ui.report.Report
+import dev.cloudants.iulat.lib.ui.report.ReportList
 import dev.cloudants.iulat.lib.ui.SplashScreen
+import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
+import dev.cloudants.iulat.lib.ui.report.CreateReport
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 
 fun NavGraphBuilder.mainGraph(navController: NavController) {
@@ -38,10 +41,19 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
             Account(navController)
         }
         composable<MainNav.Report> {
-            Report()
+            ReportList()
         }
         composable<MainNav.MessageList> {
             MessageList(navController)
+        }
+        composable<MainNav.ResidenceDashboard> {
+            ResidenceDashboard(navController)
+        }
+
+        composable<MainNav.CreateReport> {
+            val args = it.toRoute<MainNav.CreateReport>()
+            val title = args.title
+            CreateReport(navController, reportTitle = title)
         }
 
     }

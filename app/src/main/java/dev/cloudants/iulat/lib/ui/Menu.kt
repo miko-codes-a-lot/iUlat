@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import dev.cloudants.iulat.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -28,9 +29,11 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.NavItem
+import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
+import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
 import dev.cloudants.iulat.lib.ui.message.Message
 import dev.cloudants.iulat.lib.ui.message.MessageList
-import dev.cloudants.iulat.lib.ui.report.Report
+import dev.cloudants.iulat.lib.ui.report.ReportList
 import dev.cloudants.iulat.lib.ui.user.Account
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
 
@@ -40,17 +43,22 @@ import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
 fun MenuPreview() {
     Menu(navController = rememberNavController())
 }
-data class SampleUserDto(val username: String, val isAdmin: Boolean = true, val isResidence: Boolean = false)
+
+data class SampleUserDto(val username: String, val isAdmin: Boolean = false, val isResidence: Boolean = true)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Menu(
     navController: NavController,
     viewModel: MenuViewModel = viewModel()
 ) {
+    val userDto = SampleUserDto(username = "residence", isAdmin = false, isResidence = true)
+
+    LaunchedEffect(Unit) {
+        viewModel.setUserDefaultRoute(userDto.isAdmin, userDto.isResidence)
+    }
     val routeName by remember { viewModel.routeName }
     val topBarTitle by remember { viewModel.topBarTitle }
-    val userDtoAdmin = SampleUserDto(username = "residence", isResidence = true)
-    val navItems = getNavItems(navController, userDtoAdmin)
+    val navItems = getNavItems(navController, userDto)
     Scaffold(
         topBar = {
             TopAppBar(
@@ -98,7 +106,7 @@ fun Menu(
                         },
                         selected = routeName == item.routeName,
                         onClick = {
-                            viewModel.updateRoute(item.routeName) // Update route and title
+                            viewModel.updateRoute(item.routeName)
                         }
                     )
                 }
@@ -113,10 +121,11 @@ fun Menu(
         ) {
             when (routeName) {
                 MODULE.DASHBOARD -> Dashboard()
-                MODULE.MESSAGE -> MessageList(navController)
-                MODULE.MESSAGELIST -> Message(navController)
+                MODULE.MESSAGELIST -> MessageList(navController)
+                MODULE.MESSAGE -> Message(navController)
                 MODULE.ACCOUNT -> Account(navController)
-                MODULE.REPORT -> Report()
+                MODULE.REPORTLIST -> ReportList()
+                MODULE.RESIDENCEDASHBOARD -> ResidenceDashboard(navController)
             }
         }
     }
@@ -127,12 +136,12 @@ fun getNavItems(navController: NavController, userDto: SampleUserDto): List<NavI
     return when {
         userDto.isAdmin -> listOf(
             NavItem(painterResource(R.drawable.home), MODULE.DASHBOARD, navController),
-            NavItem(painterResource(R.drawable.report_icon), MODULE.REPORT, navController),
-            NavItem(painterResource(R.drawable.message), MODULE.MESSAGE, navController),
+            NavItem(painterResource(R.drawable.report_icon), MODULE.REPORTLIST, navController),
+            NavItem(painterResource(R.drawable.message), MODULE.MESSAGELIST, navController),
             NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
         )
         userDto.isResidence -> listOf(
-            NavItem(painterResource(R.drawable.home), MODULE.DASHBOARD, navController),
+            NavItem(painterResource(R.drawable.home), MODULE.RESIDENCEDASHBOARD, navController),
             NavItem(painterResource(R.drawable.message), MODULE.MESSAGE, navController),
             NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
         )

@@ -4,28 +4,11 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -34,59 +17,86 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import dev.cloudants.iulat.R
+import dev.cloudants.iulat.lib.ui.message.model.MessageModel
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun MessagePrev() {
+    Message(navController = rememberNavController())
+}
 
 @Composable
 fun Message(navController: NavController) {
+    val messages = remember {
+        mutableStateListOf(
+            MessageModel(senderId = "User", content = "Hello!"),
+            MessageModel(senderId = "Admin", content = "Hi, how can I help?"),
+            MessageModel(senderId = "User", content = "I need assistance with the app.")
+        )
+    }
+
+    fun onSend(newMessage: String) {
+        if (newMessage.isNotBlank()) {
+            messages.add(MessageModel(senderId = "User", content = newMessage))
+        }
+    }
+
     Column(
         modifier = Modifier
-            .padding(16.dp)
+            .fillMaxSize()
             .background(Color.White)
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp)
     ) {
-        val coroutineScope = rememberCoroutineScope()
-
-        val messages = remember {
-            mutableStateListOf(
-                MessageItem(sender = "User", content = "Hello!"),
-                MessageItem(sender = "Admin", content = "Hi, how can I help?"),
-                MessageItem(sender = "User", content = "I need assistance with the app.")
-            )
-        }
-        LazyColumn(
-            modifier = Modifier
-                .background(Color.White)
-                .padding(bottom = 50.dp)
-                .fillMaxSize(),
-            reverseLayout = true,
-            verticalArrangement = Arrangement.Bottom
-        ) {
-            items(messages.size) { index ->
-                MessageView(message = messages[index])
-            }
-        }
-
-        MessageInputField { newMessage ->
-            messages.add(0, MessageItem(sender = "User", content = newMessage))
-        }
+        MessageContainer(
+            messageList = messages,
+            onSend = ::onSend
+        )
     }
 }
 
 @Composable
-fun MessageView(message: MessageItem) {
+fun MessageContainer(
+    messageList: List<MessageModel>,
+    onSend: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(bottom = 40.dp)
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .background(Color.White)
+                .weight(1f)
+                .fillMaxSize(),
+            reverseLayout = true,
+            verticalArrangement = Arrangement.Bottom
+        ) {
+            items(messageList.size) { index ->
+                val message = messageList[messageList.size - 1 - index]
+                MessageView(message = message)
+            }
+        }
+        MessageInputField(onSend = onSend)
+    }
+}
+
+@Composable
+fun MessageView(message: MessageModel) {
     val (containerColor, contentColor) =
-        if (message.sender == "User") {
+        if (message.senderId == "User") {
             Color(0xFF0049AD) to Color(0xFFFFFFFF)
         } else {
             Color(0xFFcccccf) to Color.Black
         }
 
     val horizontalArrangement =
-        if (message.sender == "User") Arrangement.End else Arrangement.Start
+        if (message.senderId == "User") Arrangement.End else Arrangement.Start
 
     Row(
         modifier = Modifier
@@ -102,18 +112,16 @@ fun MessageView(message: MessageItem) {
             color = containerColor,
             contentColor = contentColor
         ) {
-            Column(modifier = Modifier
-                .padding(12.dp)
-            ) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = "",
+                    text = message.content,
                     maxLines = Int.MAX_VALUE,
                     overflow = TextOverflow.Visible,
                     fontFamily = FontFamily.SansSerif,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "",
+                    text = message.senderId,
                     fontSize = MaterialTheme.typography.bodySmall.fontSize,
                     textAlign = TextAlign.End,
                     fontFamily = FontFamily.SansSerif,

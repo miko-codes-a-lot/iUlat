@@ -1,4 +1,4 @@
-package dev.cloudants.iulat.lib.ui
+package dev.cloudants.iulat.lib.ui.dashboard
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween

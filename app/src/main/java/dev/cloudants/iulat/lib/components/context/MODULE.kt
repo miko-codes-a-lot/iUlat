@@ -2,8 +2,9 @@ package dev.cloudants.iulat.lib.components.context
 
 object MODULE {
     var DASHBOARD = "DASHBOARD"
-    val REPORT  = "REPORT"
+    val REPORTLIST  = "REPORTLIST"
     var MESSAGE = "MESSAGE"
     var MESSAGELIST = "MESSAGELIST"
+    var RESIDENCEDASHBOARD = "RESIDENCEDASHBOARD"
     var ACCOUNT = "ACCOUNT"
 }

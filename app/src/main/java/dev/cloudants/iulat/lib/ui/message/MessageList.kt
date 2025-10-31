@@ -91,12 +91,6 @@ fun MessageList(navController: NavController) {
                     onClick = {
                         navController.navigate(MainNav.Message)
                     },
-                    onDeleteClick = {
-
-                    },
-                    onCheckClick = {
-
-                    }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -133,8 +127,6 @@ fun SingleItemMessageCard(
     userName: String,
     imageUrl: String,
     onClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    onCheckClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -145,6 +137,7 @@ fun SingleItemMessageCard(
                 ambientColor = Color.Gray,
                 spotColor = Color.Black
             )
+            .clickable { onClick() }
             .padding(vertical = 4.dp)
     ) {
         ElevatedCard(

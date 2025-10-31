@@ -29,4 +29,10 @@ object MainNav {
     @Serializable
     object MessageList
 
+    @Serializable
+    object ResidenceDashboard
+
+    @Serializable
+    data class CreateReport (var title: String = "")
+
 }
