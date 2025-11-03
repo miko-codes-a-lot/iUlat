@@ -44,7 +44,6 @@ import dev.cloudants.iulat.lib.components.button.CustomButton
 import dev.cloudants.iulat.lib.components.dialog.LoginDialog
 import dev.cloudants.iulat.lib.intent.LoginIntent
 import dev.cloudants.iulat.lib.utils.main.MainNav
-
 @Composable
 fun Login(navController: NavController, loginViewModel: LoginViewModel = viewModel()) {
     val state by loginViewModel.uiState.collectAsState()
@@ -88,7 +87,7 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel = viewMod
         CustomButton(
             text = "Login",
             onClick = {
-                loginViewModel.login(state.email, state.password)
+                loginViewModel.login(state.email, state.password, context = navController.context)
             }
         )
 
@@ -131,13 +130,11 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel = viewMod
                     delay(500)
                     val currentUser = state.user
                     if (state.isLoginSuccessful && currentUser != null) {
-                        val menuUser = when (currentUser.role) {
-                            "Admin" -> SampleUserDto(username = currentUser.username, isAdmin = true)
-                            "Residence" -> SampleUserDto(username = currentUser.username, isResidence = true)
-                            else -> SampleUserDto(username = currentUser.username)
-                        }
+                        val destinationRoute = state.route
 
-                        navController.navigate(MainNav.Menu)
+                        navController.navigate(MainNav.Menu) {
+                            popUpTo(MainNav.Login) { inclusive = true }
+                        }
                     }
                 }
             },
@@ -214,3 +211,4 @@ fun InputField(
 
     Spacer(modifier = Modifier.height(16.dp))
 }
+

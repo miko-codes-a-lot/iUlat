@@ -1,9 +1,12 @@
 package dev.cloudants.iulat.lib.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.context.UserSession
 import dev.cloudants.iulat.lib.intent.LoginIntent
 import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
@@ -40,11 +43,10 @@ class LoginViewModel @Inject constructor(
 //            _uiState.value = _uiState.value.copy(isLoading = false)
 //        }
 //    }
-    fun login(email: String, password: String) {
+    fun login(email: String, password: String, context: Context) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            // Simulate real login — replace this with API call later
             val user = when {
                 email == "admin@gmail.com" && password == "password" -> {
                     UserDto(
@@ -62,6 +64,7 @@ class LoginViewModel @Inject constructor(
                         role = "Admin"
                     )
                 }
+
                 email == "residence@gmail.com" && password == "password" -> {
                     UserDto(
                         id = "2",
@@ -78,16 +81,29 @@ class LoginViewModel @Inject constructor(
                         role = "Residence"
                     )
                 }
+
                 else -> null
             }
 
             if (user != null) {
+                UserSession.saveUserRole(context, user.role)
+
+                val isAdmin = user.role == "Admin"
+                val isResidence = user.role == "Residence"
+
+                val defaultRoute = when {
+                    isAdmin -> MODULE.DASHBOARD
+                    isResidence -> MODULE.RESIDENCEDASHBOARD
+                    else -> MODULE.DASHBOARD
+                }
+
                 _uiState.value = _uiState.value.copy(
                     user = user,
                     isDialogShow = true,
                     isLoginSuccessful = true,
                     isLoading = false,
-                    errorMessage = ""
+                    errorMessage = "",
+                    route = defaultRoute
                 )
             } else {
                 _uiState.value = _uiState.value.copy(

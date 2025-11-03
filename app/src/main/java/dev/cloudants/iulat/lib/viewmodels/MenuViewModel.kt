@@ -16,10 +16,12 @@ class MenuViewModel @Inject constructor() : ViewModel() {
         topBarTitle.value = when (newRoute) {
             MODULE.DASHBOARD -> "Dashboard"
             MODULE.RESIDENCEDASHBOARD -> "Dashboard"
-            MODULE.MESSAGE -> "Messages"
-            MODULE.MESSAGELIST -> "Message List"
+            MODULE.CHATDIRECT -> "Messages"
+            MODULE.CHATLOBBY -> "Message List"
             MODULE.ACCOUNT -> "Account"
-            MODULE.REPORTLIST -> "Report"
+            MODULE.ADMINREPORTLIST -> "Report"
+            MODULE.USERLIST -> "USERS LIST"
+//            MODULE.NOTIFICATIONLIST -> "Notification LIST"
             else -> "SUMMARY"
         }
     }

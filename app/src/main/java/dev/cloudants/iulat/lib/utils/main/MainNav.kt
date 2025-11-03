@@ -18,16 +18,16 @@ object MainNav {
     object Dashboard
 
     @Serializable
-    object Message
+    data class ChatDirect(val userId: String)
 
     @Serializable
     object Account
 
     @Serializable
-    object Report
+    object AdminReportList
 
     @Serializable
-    object MessageList
+    object ChatLobby
 
     @Serializable
     object ResidenceDashboard
@@ -39,6 +39,33 @@ object MainNav {
     object CreateUser
 
     @Serializable
+    object NotificationList
+
+    @Serializable
     data class CreateReport (var title: String = "")
+
+    @Serializable
+    object GarbageDisposalList
+
+    @Serializable
+    object PublicDisturbanceList
+
+    @Serializable
+    object RobberiesList
+
+    @Serializable
+    object BrokenLightList
+
+    @Serializable
+    object VehicleCrashesList
+
+    @Serializable
+    object RoadRepairList
+
+    @Serializable
+    object NoWaterSupplyList
+
+    @Serializable
+    object OthersList
 
 }

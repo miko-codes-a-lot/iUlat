@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import dev.cloudants.iulat.R
+import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.context.ResidenceReportItems
 import dev.cloudants.iulat.lib.utils.main.MainNav
 
 data class ResidenceReportItem(
@@ -72,14 +74,14 @@ fun ResidenceDashboard(navController: NavController) {
 @Composable
 fun CropsCategory(navController: NavController) {
     val reportItems = listOf(
-        ResidenceReportItem(R.drawable.ic_vehicle_crashes, "healthReport", "Garbage Disposal"),
-        ResidenceReportItem(R.drawable.ic_robberies, "crimeReport", "Public Disturbance"),
-        ResidenceReportItem(R.drawable.ic_public_disturbance, "disturbanceReport", "Robberies"),
-        ResidenceReportItem(R.drawable.ic_vehicle_crashes, "fireReport", "Broken Streetlights"),
-        ResidenceReportItem(R.drawable.ic_vehicle_crashes, "educationReport", "Vehicle Crashes"),
-        ResidenceReportItem(R.drawable.ic_vehicle_crashes, "environmentReport", "Road Repair"),
-        ResidenceReportItem(R.drawable.ic_vehicle_crashes, "educationReport", "No Water Supply"),
-        ResidenceReportItem(R.drawable.ic_vehicle_crashes, "educationReport", "Others"),
+        ResidenceReportItems(R.drawable.trash_can,navController,"Garbage Disposal",MODULE.GARBAGE_DISPOSAL),
+        ResidenceReportItems(R.drawable.ic_public_disturbance, navController, "Public Disturbance",MODULE.PUBLIC_DISTURBANCE),
+        ResidenceReportItems(R.drawable.ic_robberies, navController, "Robberies",MODULE.ROBBERIES),
+        ResidenceReportItems(R.drawable.streetlight, navController, "Broken Streetlights",MODULE.BROKEN_STREETLIGHTS),
+        ResidenceReportItems(R.drawable.ic_vehicle_crashes, navController, "Vehicle Crashes", MODULE.VEHICLE_CRASHES),
+        ResidenceReportItems(R.drawable.road_work, navController, "Road Repair", MODULE.ROAD_REPAIR),
+        ResidenceReportItems(R.drawable.no_water, navController, "No Water Supply", MODULE.NO_WATER_SUPPLY),
+        ResidenceReportItems(R.drawable.ic_others, navController, "Others",MODULE.OTHERS),
     )
 
     Column {
@@ -93,7 +95,17 @@ fun CropsCategory(navController: NavController) {
                         iconRes = item.iconRes,
                         title = item.title,
                         onClick = {
-                            navController.navigate(MainNav.CreateReport(title = item.title));
+                            when (item.routeName) {
+                                MODULE.GARBAGE_DISPOSAL -> navController.navigate(MainNav.GarbageDisposalList)
+                                MODULE.PUBLIC_DISTURBANCE -> navController.navigate(MainNav.PublicDisturbanceList)
+                                MODULE.ROBBERIES -> navController.navigate(MainNav.RobberiesList)
+                                MODULE.BROKEN_STREETLIGHTS -> navController.navigate(MainNav.BrokenLightList)
+                                MODULE.VEHICLE_CRASHES -> navController.navigate(MainNav.VehicleCrashesList)
+                                MODULE.ROAD_REPAIR -> navController.navigate(MainNav.RoadRepairList)
+                                MODULE.NO_WATER_SUPPLY -> navController.navigate(MainNav.NoWaterSupplyList)
+                                MODULE.OTHERS -> navController.navigate(MainNav.OthersList)
+                                else -> navController.navigate(MainNav.CreateReport(title = item.title))
+                            }
                         }
                     )
                 }

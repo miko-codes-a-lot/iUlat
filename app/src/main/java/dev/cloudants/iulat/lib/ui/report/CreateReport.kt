@@ -24,20 +24,35 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.button.CustomButton
+import dev.cloudants.iulat.lib.components.dialog.NotificationReportDialog
+import dev.cloudants.iulat.lib.ui.report.intent.ReportIntent
+import dev.cloudants.iulat.lib.ui.report.viewmodel.ReportViewModel
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun CreateReportPrev() {
-    CreateReport(navController = rememberNavController(), reportTitle = "SAMPLE ")
+    CreateReport(
+        navController = rememberNavController(),
+        reportTitle = "SAMPLE ",
+        viewModel = viewModel()
+    )
 }
 
 @Composable
-fun CreateReport(navController: NavController, reportTitle: String) {
+fun CreateReport(
+    navController: NavController,
+    reportTitle: String,
+    viewModel: ReportViewModel
+) {
+    val state by viewModel.state.collectAsState()
+    var textValue by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -45,8 +60,6 @@ fun CreateReport(navController: NavController, reportTitle: String) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        var textValue by remember { mutableStateOf("") }
-        var imageUri by remember { mutableStateOf<Uri?>(null) }
 
         Spacer(Modifier.weight(1f))
 
@@ -147,14 +160,22 @@ fun CreateReport(navController: NavController, reportTitle: String) {
             }
         }
 
+        if (state.isDialogVisible) {
+            NotificationReportDialog(
+                onDismiss = {
+                    viewModel.onIntent(ReportIntent.DismissDialog)
+                }
+            )
+            LaunchedEffect(Unit) {
+                kotlinx.coroutines.delay(1000)
+                 navController.popBackStack()
+            }
+        }
         Spacer(Modifier.weight(1f))
         CustomButton(
-            text = "SUBMIT REPORT",
-            onClick = {
-//                loginViewModel.login(state.email, state.password)
-            }
+            text = "Submit",
+            onClick = {}
         )
-
         Spacer(Modifier.weight(1f))
     }
 }

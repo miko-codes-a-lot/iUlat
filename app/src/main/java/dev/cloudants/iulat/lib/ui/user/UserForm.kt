@@ -98,7 +98,7 @@ fun UserForm(
         item {
             UploadIdUI()
         }
-
+        item { Spacer(modifier = Modifier.height(50.dp)) }
         item {
             CustomButton(
                 text = "Submit",
