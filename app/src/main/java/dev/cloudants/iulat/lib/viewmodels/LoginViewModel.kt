@@ -1,25 +1,41 @@
 package dev.cloudants.iulat.lib.viewmodels
 
+import android.R.attr.delay
+import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.couchbase.lite.Authenticator
+import com.couchbase.lite.DataSource
+import com.couchbase.lite.DataSource.collection
+import com.couchbase.lite.Expression
+import com.couchbase.lite.QueryBuilder
+import com.couchbase.lite.SelectResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.cloudants.iulat.lib.components.context.MODULE
-import dev.cloudants.iulat.lib.components.context.UserSession
 import dev.cloudants.iulat.lib.intent.LoginIntent
-import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.services_impl.UserServiceImpl
 import dev.cloudants.iulat.lib.state.LoginState
+import dev.cloudants.iulat.lib.utils.main.MainNav
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
+    private val userService: UserServiceImpl,
+    application: Application
+
 ) : ViewModel() {
+    private val sharedPreferences: SharedPreferences =
+        application.getSharedPreferences("Preferences", Context.MODE_PRIVATE)
 
     private val _uiState = MutableStateFlow(LoginState())
     val uiState: StateFlow<LoginState> = _uiState.asStateFlow()
@@ -32,89 +48,43 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-//    fun login(email: String, password: String) {
-//        viewModelScope.launch {
-//            _uiState.value = _uiState.value.copy(isLoading = true)
-//            if (email == "sample@gmail.com" && password == "password") {
-//                onIntent(LoginIntent.DisplayDialog(true))
-//            } else {
-//                onIntent(LoginIntent.DisplayDialog(true))
-//            }
-//            _uiState.value = _uiState.value.copy(isLoading = false)
-//        }
-//    }
-    fun login(email: String, password: String, context: Context) {
+    fun login(email: String, password: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = "")
+            try {
+                val user = userService.login(email, password)
+                if (user != null) {
+                    with(sharedPreferences.edit()) {
+                        putString("logged_in_user_id", user.id)
+                        putBoolean("is_admin", user.isAdmin)
+                        putBoolean("is_residence", user.isResidence)
+                        apply()
+                    }
+                    delay(500)
 
-            val user = when {
-                email == "admin@gmail.com" && password == "password" -> {
-                    UserDto(
-                        id = "1",
-                        username = "admin",
-                        password = null,
-                        firstName = "Admin",
-                        middleName = null,
-                        lastName = "User",
-                        email = "admin@gmail.com",
-                        mobileNumber = "09123456789",
-                        gender = "Male",
-                        address = AddressDto("Street 1", "City", "Province"),
-                        type = "Admin",
-                        role = "Admin"
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isLoginSuccessful = true,
+                        isDialogShow = true,
+                        user = user
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isLoginSuccessful = false,
+                        isDialogShow = true,
+                        errorMessage = "Invalid username or password"
                     )
                 }
-
-                email == "residence@gmail.com" && password == "password" -> {
-                    UserDto(
-                        id = "2",
-                        username = "normal",
-                        password = null,
-                        firstName = "Normal",
-                        middleName = null,
-                        lastName = "User",
-                        email = "residence@gmail.com",
-                        mobileNumber = "09999999999",
-                        gender = "Female",
-                        address = AddressDto("Street 2", "City", "Province"),
-                        type = "Residence",
-                        role = "Residence"
-                    )
-                }
-
-                else -> null
-            }
-
-            if (user != null) {
-                UserSession.saveUserRole(context, user.role)
-
-                val isAdmin = user.role == "Admin"
-                val isResidence = user.role == "Residence"
-
-                val defaultRoute = when {
-                    isAdmin -> MODULE.DASHBOARD
-                    isResidence -> MODULE.RESIDENCEDASHBOARD
-                    else -> MODULE.DASHBOARD
-                }
-
+            } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    user = user,
-                    isDialogShow = true,
-                    isLoginSuccessful = true,
                     isLoading = false,
-                    errorMessage = "",
-                    route = defaultRoute
-                )
-            } else {
-                _uiState.value = _uiState.value.copy(
-                    isDialogShow = true,
-                    isLoginSuccessful = false,
-                    isLoading = false,
-                    errorMessage = "Invalid email or password"
+                    errorMessage = e.message ?: "Something went wrong"
                 )
             }
         }
     }
+
 
 
 
@@ -130,5 +100,30 @@ class LoginViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isPasswordVisible = !_uiState.value.isPasswordVisible)
     }
 
+    fun getLoggedInUserId(): String? {
+        return sharedPreferences.getString("logged_in_user_id", null)
+    }
+
+    fun getUserLocal(): UserDto? {
+        val userId = getLoggedInUserId()
+
+        if (userId != null){
+            return userService.fetchOne(userId)
+        }
+
+        return null
+    }
+
+    private fun clearUserSession() {
+        sharedPreferences.edit().clear().apply()
+    }
+
+    fun logout(navController: NavController) {
+        clearUserSession()
+        navController.navigate(MainNav) {
+            popUpTo<MainNav.Login> { inclusive = true }
+            launchSingleTop = true
+        }
+    }
 
 }

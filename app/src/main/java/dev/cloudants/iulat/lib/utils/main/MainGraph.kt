@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.utils.main
 
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
@@ -30,6 +31,8 @@ import dev.cloudants.iulat.lib.ui.report.viewmodel.ReportViewModel
 import dev.cloudants.iulat.lib.ui.user.CreateAccount
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
+import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
+import dev.cloudants.iulat.shared.Guard
 
 fun NavGraphBuilder.mainGraph(navController: NavController) {
     navigation<MainNav>(startDestination = MainNav.Splash) {
@@ -38,91 +41,130 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
 
         composable<MainNav.Login> {
-            val loginViewModel: LoginViewModel = viewModel()
+            val loginViewModel: LoginViewModel = hiltViewModel()
             Login(navController, loginViewModel)
         }
         composable<MainNav.Menu> {
-            Menu(navController)
+            Guard(navController = navController) { currentUser ->
+                val viewModel: MenuViewModel = hiltViewModel()
+                Menu(navController, viewModel, currentUser)
+            }
         }
         composable<MainNav.Dashboard> {
-            Dashboard()
+            Guard(navController = navController) { currentUser ->
+                Dashboard()
+            }
         }
         composable<MainNav.ChatDirect> {
-            val args = it.toRoute<MainNav.ChatDirect>()
-            val userId = args.userId
+            Guard(navController = navController) { currentUser ->
+                val args = it.toRoute<MainNav.ChatDirect>()
+                val userId = args.userId
 
-            val sampleMessages = listOf(
-                MessageDto("1", userId,  "2025-10-30T10:00:00.000Z"),
-                MessageDto("2", "me",  "2025-10-30T10:05:00.000Z")
-            )
+                val sampleMessages = listOf(
+                    MessageDto("1", userId, "2025-10-30T10:00:00.000Z"),
+                    MessageDto("2", "me", "2025-10-30T10:05:00.000Z")
+                )
 
-            ChatDirect(
-                messages = sampleMessages,
-                currentUserId = "me",
-                onSendMessage = { content ->
-                    println("Send message to $userId: $content")
-                }
-            )
+                ChatDirect(
+                    messages = sampleMessages,
+                    currentUserId = "me",
+                    onSendMessage = { content ->
+                        println("Send message to $userId: $content")
+                    }
+                )
+            }
         }
         composable<MainNav.Account> {
-            Account(navController)
+            Guard(navController = navController) { currentUser ->
+                Account(navController)
+            }
         }
         composable<MainNav.AdminReportList> {
-            AdminReportList()
+            Guard(navController = navController) { currentUser ->
+                AdminReportList()
+            }
         }
         composable<MainNav.ChatLobby> {
-            ChatLobby(navController)
+            Guard(navController = navController) { currentUser ->
+                ChatLobby(navController)
+            }
         }
         composable<MainNav.ResidenceDashboard> {
-            ResidenceDashboard(navController)
+            Guard(navController = navController) { currentUser ->
+                ResidenceDashboard(navController)
+            }
         }
         composable<MainNav.UserList> {
-            UsersList(navController)
+            Guard(navController = navController) { currentUser ->
+                UsersList(navController)
+            }
         }
         composable<MainNav.CreateUser> {
-            CreateAccount()
+            Guard(navController = navController) { currentUser ->
+                CreateAccount()
+            }
         }
 
         composable<MainNav.CreateReport> {
-            val args = it.toRoute<MainNav.CreateReport>()
-            val title = args.title
-            val viewModel : ReportViewModel = viewModel()
-            CreateReport(navController, reportTitle = title, viewModel = viewModel)
+            Guard(navController = navController) { currentUser ->
+                val args = it.toRoute<MainNav.CreateReport>()
+                val title = args.title
+                val viewModel : ReportViewModel = hiltViewModel()
+                CreateReport(navController, reportTitle = title, viewModel = viewModel)
+            }
         }
         composable<MainNav.NotificationList> {
-            NotificationList(navController)
+            Guard(navController = navController) { currentUser ->
+                NotificationList(navController)
+            }
         }
 
         composable<MainNav.GarbageDisposalList> {
-            GarbageDisposalList(navController)
+            Guard(navController = navController) { currentUser ->
+                GarbageDisposalList(navController)
+            }
         }
 
         composable<MainNav.PublicDisturbanceList> {
-            PublicDisturbanceList(navController)
+            Guard(navController = navController) { currentUser ->
+                PublicDisturbanceList(navController)
+            }
         }
 
         composable<MainNav.RobberiesList> {
-            RobberiesList(navController)
+            Guard(navController = navController) { currentUser ->
+                RobberiesList(navController)
+            }
         }
 
         composable<MainNav.BrokenLightList> {
-            BrokenLightList(navController)
+            Guard(navController = navController) { currentUser ->
+                BrokenLightList(navController)
+            }
         }
 
         composable<MainNav.VehicleCrashesList> {
-            VehicleCrashesList(navController)
+            Guard(navController = navController) { currentUser ->
+                VehicleCrashesList(navController)
+            }
         }
 
         composable<MainNav.RoadRepairList> {
-            RoadRepairList(navController)
+            Guard(navController = navController) { currentUser ->
+                RoadRepairList(navController)
+            }
         }
 
         composable<MainNav.NoWaterSupplyList> {
-            NoWaterSupplyList(navController)
+            Guard(navController = navController) { currentUser ->
+                NoWaterSupplyList(navController)
+            }
         }
 
         composable<MainNav.OthersList> {
-            OthersList(navController)
+            Guard(navController = navController) { currentUser ->
+                OthersList(navController)
+            }
         }
 
     }

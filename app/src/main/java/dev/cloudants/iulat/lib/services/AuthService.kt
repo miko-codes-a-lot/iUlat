@@ -1,5 +1,7 @@
 package dev.cloudants.iulat.lib.services
 
-interface AuthService {
+import dev.cloudants.iulat.lib.models.entities.UserDto
 
+interface AuthService {
+    suspend fun login(email: String, password: String): UserDto?
 }

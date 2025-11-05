@@ -345,14 +345,14 @@ fun DetailsPieChartItem(
 @Composable
 fun DashboardMenu() {
     val reportItems = listOf(
-        Triple(R.drawable.ic_public_disturbance, "Garbage Disposal", 15f),
+        Triple(R.drawable.trash_can, "Garbage Disposal", 15f),
         Triple(R.drawable.ic_public_disturbance, "Public Disturbance", 20f),
         Triple(R.drawable.ic_robberies, "Robberies", 10f),
-        Triple(R.drawable.ic_robberies, "Broken Streetlights", 25f),
+        Triple(R.drawable.streetlight, "Broken Streetlights", 25f),
         Triple(R.drawable.ic_vehicle_crashes, "Vehicle Crashes", 5f),
-        Triple(R.drawable.ic_vehicle_crashes, "Road Repair", 18f),
-        Triple(R.drawable.ic_robberies, "No Water Supply", 12f),
-        Triple(R.drawable.ic_robberies, "Others", 30f)
+        Triple(R.drawable.road_work, "Road Repair", 18f),
+        Triple(R.drawable.no_water, "No Water Supply", 12f),
+        Triple(R.drawable.ic_others, "Others", 30f)
     )
 
     LazyColumn(

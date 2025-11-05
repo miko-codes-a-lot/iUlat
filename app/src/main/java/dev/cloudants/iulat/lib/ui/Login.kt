@@ -3,12 +3,14 @@ package dev.cloudants.iulat.lib.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -18,6 +20,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -33,7 +36,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 import kotlinx.coroutines.Dispatchers
@@ -41,14 +44,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.button.CustomButton
+import dev.cloudants.iulat.lib.components.context.UserSession
 import dev.cloudants.iulat.lib.components.dialog.LoginDialog
 import dev.cloudants.iulat.lib.intent.LoginIntent
 import dev.cloudants.iulat.lib.utils.main.MainNav
+
 @Composable
-fun Login(navController: NavController, loginViewModel: LoginViewModel = viewModel()) {
+fun Login(navController: NavController, loginViewModel: LoginViewModel) {
     val state by loginViewModel.uiState.collectAsState()
-    val isLoading = state.isLoading
-    val isLoginSuccessful = state.isLoginSuccessful
     val coroutineScope = rememberCoroutineScope()
     Column(
         modifier = Modifier
@@ -84,15 +87,20 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel = viewMod
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        CustomButton(
-            text = "Login",
-            onClick = {
-                loginViewModel.login(state.email, state.password, context = navController.context)
-            }
-        )
-
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
+        if (!state.isLoading) {
+            CustomButton(
+                text = "Login",
+                onClick = {
+                    loginViewModel.login(state.email, state.password)
+                }
+            )
+        } else {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .padding(top = 15.dp)
+                    .size(40.dp),
+                color = Color(0xFF136204),
+            )
         }
 
         if (state.errorMessage.isNotEmpty()) {
@@ -130,8 +138,6 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel = viewMod
                     delay(500)
                     val currentUser = state.user
                     if (state.isLoginSuccessful && currentUser != null) {
-                        val destinationRoute = state.route
-
                         navController.navigate(MainNav.Menu) {
                             popUpTo(MainNav.Login) { inclusive = true }
                         }

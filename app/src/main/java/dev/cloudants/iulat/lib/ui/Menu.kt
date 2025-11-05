@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import dev.cloudants.iulat.R
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.NavItem
 import dev.cloudants.iulat.lib.components.context.UserSession
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
 import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
 import dev.cloudants.iulat.lib.ui.message.ChatDirect
@@ -38,36 +41,40 @@ import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.AdminReportList
 import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
 import dev.cloudants.iulat.lib.ui.user.Account
+import dev.cloudants.iulat.lib.ui.user.UserDetails
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
 
 
-@Composable
-@Preview(showBackground = true, showSystemUi = true)
-fun MenuPreview() {
-    Menu(navController = rememberNavController())
-}
-
-data class SampleUserDto(val username: String, val isAdmin: Boolean = true, val isResidence: Boolean = false)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Menu(
     navController: NavController,
-    viewModel: MenuViewModel = viewModel()
+    viewModel: MenuViewModel,
+    currentUser: UserDto
 ) {
     val context = LocalContext.current
-    val role = UserSession.getUserRole(context)
-    val isAdmin = role == "Admin"
-    val isResidence = role == "Residence"
-
-    LaunchedEffect(role) {
-        viewModel.setUserDefaultRoute(isAdmin, isResidence)
-    }
+    val currentUserState = remember { mutableStateOf<UserDto?>(currentUser) }
 
     val routeName by viewModel.routeName
     val topBarTitle by viewModel.topBarTitle
-    val navItems = getNavItems(navController, isAdmin, isResidence)
+    val navItems = currentUserState.value?.let { getNavItems(navController, it) } ?: emptyList()
+
+    LaunchedEffect(currentUserState.value) {
+        val user = currentUserState.value
+        if (user == null) {
+            navController.navigate(MainNav.Login) {
+                popUpTo(0)
+            }
+        } else {
+            if (user.isResidence) {
+                viewModel.updateRoute(MODULE.RESIDENCEDASHBOARD)
+            } else {
+                viewModel.updateRoute(MODULE.DASHBOARD)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -94,6 +101,7 @@ fun Menu(
                         onClick = {
                             if (routeName == MODULE.ACCOUNT) {
                                 UserSession.clearSession(context)
+                                currentUserState.value = null
                                 navController.navigate(MainNav.Login) {
                                     popUpTo(0)
                                 }
@@ -160,37 +168,17 @@ fun Menu(
     }
 }
 
-//@Composable
-//fun getNavItems(navController: NavController, userDto: SampleUserDto): List<NavItem> {
-//    return when {
-//        userDto.isAdmin -> listOf(
-//            NavItem(painterResource(R.drawable.home), MODULE.DASHBOARD, navController),
-//            NavItem(painterResource(R.drawable.report_icon), MODULE.REPORTLIST, navController),
-//            NavItem(painterResource(R.drawable.users), MODULE.USERLIST, navController),
-//            NavItem(painterResource(R.drawable.message), MODULE.MESSAGELIST, navController),
-//            NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
-//        )
-//        userDto.isResidence -> listOf(
-//            NavItem(painterResource(R.drawable.home), MODULE.RESIDENCEDASHBOARD, navController),
-//            NavItem(painterResource(R.drawable.message), MODULE.MESSAGE, navController),
-//            NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
-//        )
-//        else -> listOf()
-//    }
-//}
-
-
 @Composable
-fun getNavItems(navController: NavController, isAdmin: Boolean, isResidence: Boolean): List<NavItem> {
+fun getNavItems(navController: NavController, userDto: UserDto): List<NavItem> {
     return when {
-        isAdmin -> listOf(
+        userDto.isAdmin -> listOf(
             NavItem(painterResource(R.drawable.home), MODULE.DASHBOARD, navController),
             NavItem(painterResource(R.drawable.report_icon), MODULE.ADMINREPORTLIST, navController),
             NavItem(painterResource(R.drawable.users), MODULE.USERLIST, navController),
             NavItem(painterResource(R.drawable.message), MODULE.CHATLOBBY, navController),
             NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
         )
-        isResidence -> listOf(
+        userDto.isResidence -> listOf(
             NavItem(painterResource(R.drawable.home), MODULE.RESIDENCEDASHBOARD, navController),
             NavItem(painterResource(R.drawable.message), MODULE.CHATDIRECT, navController),
             NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
