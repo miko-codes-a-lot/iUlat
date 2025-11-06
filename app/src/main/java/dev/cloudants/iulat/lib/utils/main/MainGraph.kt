@@ -27,7 +27,7 @@ import dev.cloudants.iulat.lib.ui.report.residence_report.PublicDisturbanceList
 import dev.cloudants.iulat.lib.ui.report.residence_report.RoadRepairList
 import dev.cloudants.iulat.lib.ui.report.residence_report.RobberiesList
 import dev.cloudants.iulat.lib.ui.report.residence_report.VehicleCrashesList
-import dev.cloudants.iulat.lib.ui.report.viewmodel.ReportViewModel
+import dev.cloudants.iulat.lib.viewmodels.ReportViewModel
 import dev.cloudants.iulat.lib.ui.user.CreateAccount
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
@@ -101,7 +101,10 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
         composable<MainNav.CreateUser> {
             Guard(navController = navController) { currentUser ->
-                CreateAccount()
+                CreateAccount(
+                    navController = navController,
+                    currentUser
+                )
             }
         }
 

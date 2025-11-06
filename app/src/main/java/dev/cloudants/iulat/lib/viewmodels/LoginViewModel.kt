@@ -1,19 +1,11 @@
 package dev.cloudants.iulat.lib.viewmodels
 
-import android.R.attr.delay
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.couchbase.lite.Authenticator
-import com.couchbase.lite.DataSource
-import com.couchbase.lite.DataSource.collection
-import com.couchbase.lite.Expression
-import com.couchbase.lite.QueryBuilder
-import com.couchbase.lite.SelectResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.cloudants.iulat.lib.intent.LoginIntent
 import dev.cloudants.iulat.lib.models.entities.UserDto
@@ -40,10 +32,13 @@ class LoginViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LoginState())
     val uiState: StateFlow<LoginState> = _uiState.asStateFlow()
 
-    fun onIntent(intent: LoginIntent.DisplayDialog) {
+    fun onIntent(intent: LoginIntent) {
         when (intent) {
             is LoginIntent.DisplayDialog -> {
                 _uiState.value = _uiState.value.copy(isDialogShow = intent.isShow)
+            }
+            is LoginIntent.ClearErrorMessage -> {
+                _uiState.value = _uiState.value.copy(errorMessage = "")
             }
         }
     }

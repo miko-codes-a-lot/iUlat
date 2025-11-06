@@ -9,7 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn 
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,17 +28,40 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.button.CustomButton
+import dev.cloudants.iulat.lib.intent.UserIntent
+import dev.cloudants.iulat.lib.models.entities.AddressDto
+import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun UserForm(
     title: String,
-    onSubmit: (UserSample) -> Unit
+    targetUserDto: UserDto? = null,
+    currentUser: UserDto,
+    onSubmit: (UserDto) -> Unit,
+    navController: NavController,
+    viewModel: UserViewModel = hiltViewModel()
 ) {
+    val state by viewModel.uiState.collectAsState()
+    val (chosenRole, setChosenRole) = remember {
+        mutableStateOf(
+            when {
+                targetUserDto?.isAdmin == true -> "Admin"
+                targetUserDto?.isResidence == true -> "Residence"
+                else -> "Residence"
+            }
+        )
+    }
+    var selectedIdUri by remember { mutableStateOf<Uri?>(null) }
+
     val listOfLabel = listOf(
         "First Name", "Middle Name", "Last Name", "Date Of Birth",
         "Address", "Mobile Number", "Email", "Password"
@@ -94,30 +117,112 @@ fun UserForm(
                 }
             }
         }
+        if (currentUser.isAdmin) {
+            item {
+                Text(
+                    text = "Select Role:",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    listOf("Admin", "Residence").forEach { role ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = chosenRole == role,
+                                onClick = { setChosenRole(role) },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = Color.Blue
+                                )
+                            )
+                            Text(role)
+                        }
+                    }
+                }
+            }
+        }
 
         item {
-            UploadIdUI()
+            UploadIdUI { uri ->
+                selectedIdUri = uri
+            }
         }
         item { Spacer(modifier = Modifier.height(50.dp)) }
         item {
-            CustomButton(
-                text = "Submit",
-                onClick = {
+                Spacer(modifier = Modifier.height(24.dp))
+            when {
+                state.isLoading -> CircularProgressIndicator()
+                else -> CustomButton(
+                    text = "Submit",
+                    onClick = {
+                        val user = UserDto(
+                            username = statesValue["Email"]?.value ?: "",
+                            password = statesValue["Password"]?.value ?: "",
+                            firstName = statesValue["First Name"]?.value ?: "",
+                            middleName = statesValue["Middle Name"]?.value,
+                            lastName = statesValue["Last Name"]?.value ?: "",
+                            email = statesValue["Email"]?.value ?: "",
+                            mobileNumber = statesValue["Mobile Number"]?.value,
+                            dateOfBirth = statesValue["Date Of Birth"]?.value ?: "",
+                            gender = "Unspecified",
+                            address = AddressDto(
+                                province = statesValue["Address"]?.value ?: "",
+                                municipality = "",
+                                barangay = ""
+                            ),
+                            type = "user",
+                            isAdmin = chosenRole == "Admin",
+                            isResidence = chosenRole == "Residence",
+                            validId = selectedIdUri?.toString()
+                        )
+
+                        onSubmit(user)
+                    }
+                )
+            }
+
+            state.errorMessage?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            if (state.isSuccess) {
+                Text(
+                    text = "User created successfully!",
+                    color = Color(0xFF007A00),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                LaunchedEffect(Unit) {
+                    delay(1500)
+                    viewModel.onIntent(UserIntent.ClearState)
+                    navController.popBackStack()
                 }
-            )
+            }
         }
         item { Spacer(modifier = Modifier.height(50.dp)) }
     }
 }
 
 @Composable
-fun UploadIdUI() {
-    val context = LocalContext.current
+fun UploadIdUI(onImageSelected: (Uri?) -> Unit) {
     var selectedImgUri by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> selectedImgUri = uri }
+        onResult = { uri ->
+            selectedImgUri = uri
+            onImageSelected(uri)
+        }
     )
 
     Box(

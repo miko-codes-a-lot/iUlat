@@ -52,12 +52,20 @@ class UserServiceImpl @Inject constructor (
     }
 
     override fun create(user: UserDto): UserDto {
-        val freshId = UUID.randomUUID().toString()
-        val doc = MutableDocument(freshId)
-        doc.setJSON(Json.Default.encodeToString(user))
-        collection.save(doc)
-        return user.copy(id = freshId)
+        try {
+            val freshId = UUID.randomUUID().toString()
+            val userWithId = user.copy(id = freshId)
+            val json = Json.Default.encodeToString(userWithId)
+            val doc = MutableDocument(freshId)
+            doc.setJSON(json)
+            collection.save(doc)
+            return userWithId
+        } catch (e: Exception) {
+            Log.e("UserServiceImpl", "Failed to create user: ${e.message}", e)
+            throw e
+        }
     }
+
 
     override fun update(id: String, user: UserDto): UserDto {
         val doc = this.getDocument(id)

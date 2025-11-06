@@ -1,4 +1,4 @@
-package dev.cloudants.iulat.lib.ui.report.state
+package dev.cloudants.iulat.lib.state
 
 data class ReportState(
     val isDialogVisible: Boolean = false,

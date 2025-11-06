@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.ui.user
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -31,8 +33,8 @@ data class UserSample(
 @Composable
 fun UserPreview(
     title: String,
-    user: UserSample,
-    onSave: suspend (UserSample) -> Unit,
+    user: UserDto,
+    onSave: suspend (UserDto) -> Unit,
     onCancel: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -43,7 +45,7 @@ fun UserPreview(
         "First Name" to user.firstName,
         "Middle Name" to (user.middleName ?: ""),
         "Last Name" to user.lastName,
-        "Address" to (user.address ?: ""),
+        "Address" to (user.address?.province ?: ""),
         "Mobile Number" to (user.mobileNumber ?: ""),
         "Date of Birth" to formatDate(user.dateOfBirth),
         "Email" to user.email
@@ -73,14 +75,20 @@ fun UserPreview(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Save button
         Button(
             onClick = {
                 if (!isSaving.value) {
                     isSaving.value = true
+                    Log.d("UserPreview", "Saving user: $user")
                     coroutineScope.launch {
-                        onSave(user)
-                        isSaving.value = false
+                        try {
+                            onSave(user)
+                            Log.d("UserPreview", "✅ User save request completed")
+                        } catch (e: Exception) {
+                            Log.e("UserPreview", "❌ Error saving user: ${e.message}", e)
+                        } finally {
+                            isSaving.value = false
+                        }
                     }
                 }
             },
@@ -102,7 +110,6 @@ fun UserPreview(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Cancel button
         TextButton(onClick = onCancel) {
             Text(
                 text = "Cancel",

@@ -99,7 +99,7 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
                 modifier = Modifier
                     .padding(top = 15.dp)
                     .size(40.dp),
-                color = Color(0xFF136204),
+                color = Color(0xFF0049AD),
             )
         }
 
@@ -131,9 +131,13 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
             title = "Login Status",
             label = if (state.isLoginSuccessful) "Login Successful!" else "Invalid credentials",
             message = if (state.isLoginSuccessful) "Welcome back!" else "Please try again.",
-            onDismiss = { loginViewModel.onIntent(LoginIntent.DisplayDialog(false)) },
+            onDismiss = {
+                loginViewModel.onIntent(LoginIntent.DisplayDialog(false))
+                loginViewModel.onIntent(LoginIntent.ClearErrorMessage)
+            },
             onConfirm = {
                 loginViewModel.onIntent(LoginIntent.DisplayDialog(false))
+                loginViewModel.onIntent(LoginIntent.ClearErrorMessage)
                 coroutineScope.launch {
                     delay(500)
                     val currentUser = state.user

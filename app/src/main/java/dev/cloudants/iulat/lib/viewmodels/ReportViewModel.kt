@@ -1,10 +1,10 @@
-package dev.cloudants.iulat.lib.ui.report.viewmodel
+package dev.cloudants.iulat.lib.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.cloudants.iulat.lib.ui.report.intent.ReportIntent
-import dev.cloudants.iulat.lib.ui.report.state.ReportState
+import dev.cloudants.iulat.lib.state.ReportState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch

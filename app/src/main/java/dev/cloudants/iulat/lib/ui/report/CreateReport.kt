@@ -32,7 +32,7 @@ import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.button.CustomButton
 import dev.cloudants.iulat.lib.components.dialog.NotificationReportDialog
 import dev.cloudants.iulat.lib.ui.report.intent.ReportIntent
-import dev.cloudants.iulat.lib.ui.report.viewmodel.ReportViewModel
+import dev.cloudants.iulat.lib.viewmodels.ReportViewModel
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
