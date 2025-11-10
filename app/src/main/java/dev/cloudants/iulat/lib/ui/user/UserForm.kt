@@ -1,6 +1,7 @@
 package dev.cloudants.iulat.lib.ui.user
 
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -47,7 +48,9 @@ fun UserForm(
     targetUserDto: UserDto? = null,
     currentUser: UserDto,
     onSubmit: (UserDto) -> Unit,
+    includePassword: Boolean = true,
     navController: NavController,
+    addressDto: AddressDto?,
     viewModel: UserViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -62,13 +65,44 @@ fun UserForm(
     }
     var selectedIdUri by remember { mutableStateOf<Uri?>(null) }
 
-    val listOfLabel = listOf(
+    val listOfLabel = mutableListOf(
         "First Name", "Middle Name", "Last Name", "Date Of Birth",
-        "Address", "Mobile Number", "Email", "Password"
+        "Address", "Mobile Number", "Email"
     )
 
-    val statesValue = remember {
-        listOfLabel.associateWith { mutableStateOf("") }
+    if (includePassword || targetUserDto != null) {
+        listOfLabel.add("Password")
+    }
+
+    val statesValue = remember(targetUserDto) {
+        listOfLabel.associateWith { label ->
+            mutableStateOf(
+                when (label) {
+                    "First Name" -> targetUserDto?.firstName ?: ""
+                    "Middle Name" -> targetUserDto?.middleName ?: ""
+                    "Last Name" -> targetUserDto?.lastName ?: ""
+                    "Date Of Birth" -> targetUserDto?.dateOfBirth ?: ""
+                    "Address" -> targetUserDto?.address?.province ?: ""
+                    "Mobile Number" -> targetUserDto?.mobileNumber ?: ""
+                    "Email" -> targetUserDto?.email ?: ""
+                    "Password" -> targetUserDto?.password ?: ""
+                    else -> ""
+                }
+            )
+        }
+    }
+
+    LaunchedEffect(targetUserDto) {
+        targetUserDto?.let {
+            statesValue["First Name"]?.value = it.firstName
+            statesValue["Middle Name"]?.value = it.middleName ?: ""
+            statesValue["Last Name"]?.value = it.lastName
+            statesValue["Date Of Birth"]?.value = it.dateOfBirth
+            statesValue["Address"]?.value = it.address?.province ?: ""
+            statesValue["Mobile Number"]?.value = it.mobileNumber ?: ""
+            statesValue["Email"]?.value = it.email
+            statesValue["Password"]?.value = it.password
+        }
     }
 
     LazyColumn(
@@ -150,9 +184,12 @@ fun UserForm(
         }
 
         item {
-            UploadIdUI { uri ->
-                selectedIdUri = uri
-            }
+            UploadIdUI(
+                existingImageUrl = targetUserDto?.validId,
+                onImageSelected = { uri ->
+                    selectedIdUri = uri
+                }
+            )
         }
         item { Spacer(modifier = Modifier.height(50.dp)) }
         item {
@@ -163,6 +200,7 @@ fun UserForm(
                     text = "Submit",
                     onClick = {
                         val user = UserDto(
+                            id =  targetUserDto?.id,
                             username = statesValue["Email"]?.value ?: "",
                             password = statesValue["Password"]?.value ?: "",
                             firstName = statesValue["First Name"]?.value ?: "",
@@ -180,7 +218,7 @@ fun UserForm(
                             type = "user",
                             isAdmin = chosenRole == "Admin",
                             isResidence = chosenRole == "Residence",
-                            validId = selectedIdUri?.toString()
+                            validId = selectedIdUri?.toString() ?: targetUserDto?.validId
                         )
 
                         onSubmit(user)
@@ -199,7 +237,7 @@ fun UserForm(
             if (state.isSuccess) {
                 Text(
                     text = "User created successfully!",
-                    color = Color(0xFF007A00),
+                    color = Color(0xFF0049AD),
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 LaunchedEffect(Unit) {
@@ -214,7 +252,10 @@ fun UserForm(
 }
 
 @Composable
-fun UploadIdUI(onImageSelected: (Uri?) -> Unit) {
+fun UploadIdUI(
+    existingImageUrl: String? = null,
+    onImageSelected: (Uri?) -> Unit
+) {
     var selectedImgUri by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -224,6 +265,7 @@ fun UploadIdUI(onImageSelected: (Uri?) -> Unit) {
             onImageSelected(uri)
         }
     )
+    val displayImage: Any? = selectedImgUri ?: existingImageUrl
 
     Box(
         Modifier
@@ -240,19 +282,23 @@ fun UploadIdUI(onImageSelected: (Uri?) -> Unit) {
     ) {
         Box(
             modifier = Modifier
-                .height(250.dp)
                 .fillMaxWidth()
+                .heightIn(min = 180.dp, max = 220.dp)
                 .clip(RectangleShape)
-                .background(if (selectedImgUri != null) Color.White else Color.Gray),
+                .background(if (displayImage != null) Color.White else Color.Gray),
             contentAlignment = Alignment.Center
         ) {
-            if (selectedImgUri != null) {
+            if (displayImage != null) {
                 AsyncImage(
-                    model = selectedImgUri,
+                    model = displayImage,
                     contentDescription = "Valid ID",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(4f / 3f)
+                        .padding(8.dp),
+                    contentScale = ContentScale.Crop
                 )
+
             } else {
                 Text(
                     "Tap to Upload ID",
@@ -330,6 +376,18 @@ fun DatePickerField(
 ) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
+    LaunchedEffect(dateValue) {
+        try {
+            val parsedDate = SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                Locale.getDefault()
+            ).parse(dateValue)
+            parsedDate?.let {
+                calendar.time = it
+            }
+        } catch (_: Exception) {
+        }
+    }
     val datePickerDialog = remember {
         android.app.DatePickerDialog(
             context,
@@ -347,12 +405,25 @@ fun DatePickerField(
         )
     }
     val displayFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
-    val displayDate = try {
-        val date =
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(dateValue)
-        date?.let { displayFormat.format(it) } ?: "Select Date"
-    } catch (e: Exception) {
-        "Select Date"
+    val displayDate = remember(dateValue) {
+        if (dateValue.isBlank()) {
+            "Select Date"
+        } else {
+            val possibleFormats = listOf(
+                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                "yyyy-MM-dd"
+            )
+
+            var parsedDate: Date? = null
+            for (pattern in possibleFormats) {
+                try {
+                    parsedDate = SimpleDateFormat(pattern, Locale.getDefault()).parse(dateValue)
+                    if (parsedDate != null) break
+                } catch (_: Exception) {}
+            }
+            parsedDate?.let { displayFormat.format(it) } ?: "Select Date"
+        }
     }
 
     Row(
@@ -362,7 +433,22 @@ fun DatePickerField(
             .padding(horizontal = 4.dp)
             .padding(top = 8.dp)
             .clickable {
-                datePickerDialog.show()
+                DatePickerDialog(
+                    context,
+                    { _, year, month, dayOfMonth ->
+                        calendar.set(year, month, dayOfMonth)
+                        val isoFormat = SimpleDateFormat(
+                            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                            Locale.getDefault()
+                        )
+                        isoFormat.timeZone = TimeZone.getTimeZone("UTC")
+                        val dateISO = isoFormat.format(calendar.time)
+                        onDateChange(dateISO)
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+                ).show()
             }
     ) {
         Row(

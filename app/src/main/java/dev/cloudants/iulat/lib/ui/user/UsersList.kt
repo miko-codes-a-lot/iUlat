@@ -23,10 +23,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.ui.report.PlaceholderImage
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
@@ -36,16 +39,12 @@ fun PreviewUsersUI() {
 
 @Composable
 fun UsersList(navController: NavController) {
+    var userViewModel: UserViewModel = hiltViewModel()
     var searchQuery by remember { mutableStateOf("") }
-
-    val mockUsers = listOf(
-        SimpleUser("John", "Doe", "john@example.com"),
-        SimpleUser("Jane", "Smith", "jane@example.com"),
-        SimpleUser("Carlos", "Reyes", "carlosr@example.com"),
-        SimpleUser("Maria", "Dela Cruz", "mariadc@example.com")
-    )
-
-    val filteredUsers = mockUsers.filter {
+    val users by produceState<List<UserDto>>(emptyList(), userViewModel) {
+        value = userViewModel.fetchAllUsers()
+    }
+    val filteredUsers = users.filter {
         it.firstName.contains(searchQuery, ignoreCase = true) ||
                 it.lastName.contains(searchQuery, ignoreCase = true) ||
                 it.email.contains(searchQuery, ignoreCase = true)
@@ -77,7 +76,7 @@ fun UsersList(navController: NavController) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 50.dp)
+                    .padding(bottom = 10.dp)
                     .background(Color.White),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -85,6 +84,7 @@ fun UsersList(navController: NavController) {
                     UsersSingleLine(
                         user = user,
                         onClick = {
+                            navController.navigate(MainNav.EditUser(userId = user.id!!))
                         }
                     )
                 }
@@ -134,7 +134,7 @@ fun UsersSearchIcon(
 }
 
 @Composable
-fun UsersSingleLine(user: SimpleUser, onClick: () -> Unit) {
+fun UsersSingleLine(user: UserDto, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -196,9 +196,3 @@ fun FloatParentFloatingIcon(navController: NavController) {
         )
     }
 }
-
-data class SimpleUser(
-    val firstName: String,
-    val lastName: String,
-    val email: String
-)

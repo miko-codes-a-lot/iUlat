@@ -48,7 +48,17 @@ class UserServiceImpl @Inject constructor (
             )
             .execute()
             .allResults()
-            .map { d -> Json.Default.decodeFromString<UserDto>(d.toJSON()) }
+            .mapNotNull { result ->
+                val userDict = result.getDictionary(collection.name)
+                userDict?.let { dict ->
+                    try {
+                        Json.Default.decodeFromString<UserDto>(dict.toJSON())
+                    } catch (e: Exception) {
+                        Log.e("UserServiceImpl", "Error decoding UserDto from query result: ${e.message}")
+                        null
+                    }
+                }
+            }
     }
 
     override fun create(user: UserDto): UserDto {
@@ -68,13 +78,18 @@ class UserServiceImpl @Inject constructor (
 
 
     override fun update(id: String, user: UserDto): UserDto {
-        val doc = this.getDocument(id)
-
-        val mutableDoc = doc.toMutable()
-        mutableDoc.setJSON(Json.Default.encodeToString(user))
-        collection.save(mutableDoc)
-
-        return user
+        try {
+            val doc = this.getDocument(id)
+            val userToSave = user.copy(id = id)
+            val json = Json.Default.encodeToString(userToSave)
+            val mutableDoc = doc.toMutable()
+            mutableDoc.setJSON(json)
+            collection.save(mutableDoc)
+            return userToSave
+        } catch (e: Exception) {
+            Log.e("UserServiceImpl", "Failed to update user: ${e.message}", e)
+            throw e
+        }
     }
 
     override fun delete(id: String): Boolean {
@@ -103,7 +118,7 @@ class UserServiceImpl @Inject constructor (
         if (result != null) {
             val userDict = result.getDictionary(collection.name)
             if (userDict == null) {
-                Log.e("UserServiceImpl", "⚠ No dictionary found in result.")
+                Log.e("UserServiceImpl", " No dictionary found in result.")
                 return null
             }
 

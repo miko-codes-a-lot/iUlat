@@ -24,6 +24,9 @@ object MainNav {
     object Account
 
     @Serializable
+    object EditAccount
+
+    @Serializable
     object AdminReportList
 
     @Serializable
@@ -34,6 +37,9 @@ object MainNav {
 
     @Serializable
     object UserList
+
+    @Serializable
+    object ForgotPassword
 
     @Serializable
     object CreateUser
@@ -67,5 +73,8 @@ object MainNav {
 
     @Serializable
     object OthersList
+
+    @Serializable
+    data class EditUser(val userId: String)
 
 }

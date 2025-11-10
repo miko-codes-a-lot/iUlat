@@ -6,12 +6,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.intent.UserIntent
+import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 @Composable
 fun CreateAccount(
     navController: NavController,
     currentUser: UserDto,
+    addressDto: AddressDto? = null,
     viewModel: UserViewModel = hiltViewModel()
 ) {
     var showForm by remember { mutableStateOf(true) }
@@ -35,7 +37,8 @@ fun CreateAccount(
                 showForm = false
                 Log.d("CreateAccount", "User form submitted: $user")
             },
-            navController = navController
+            navController = navController,
+            addressDto = addressDto,
         )
     } else {
         userDetails?.let { user ->

@@ -14,6 +14,7 @@ import dev.cloudants.iulat.lib.ui.Menu
 import dev.cloudants.iulat.lib.ui.report.AdminReportList
 import dev.cloudants.iulat.lib.ui.SplashScreen
 import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
+import dev.cloudants.iulat.lib.ui.email.ForgotPassword
 import dev.cloudants.iulat.lib.ui.message.ChatDirect
 import dev.cloudants.iulat.lib.ui.message.ChatLobby
 import dev.cloudants.iulat.lib.ui.message.MessageDto
@@ -29,9 +30,12 @@ import dev.cloudants.iulat.lib.ui.report.residence_report.RobberiesList
 import dev.cloudants.iulat.lib.ui.report.residence_report.VehicleCrashesList
 import dev.cloudants.iulat.lib.viewmodels.ReportViewModel
 import dev.cloudants.iulat.lib.ui.user.CreateAccount
+import dev.cloudants.iulat.lib.ui.user.EditAccount
+import dev.cloudants.iulat.lib.ui.user.UserEdit
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 import dev.cloudants.iulat.shared.Guard
 
 fun NavGraphBuilder.mainGraph(navController: NavController) {
@@ -79,6 +83,12 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 Account(navController)
             }
         }
+        composable("${MainNav.EditAccount}/{settingType}"){ backStackEntry ->
+            val settingType = backStackEntry.arguments?.getString("settingType") ?: ""
+            Guard(navController = navController) { currentUser ->
+                EditAccount(navController, settingType, currentUser)
+            }
+        }
         composable<MainNav.AdminReportList> {
             Guard(navController = navController) { currentUser ->
                 AdminReportList()
@@ -92,6 +102,11 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         composable<MainNav.ResidenceDashboard> {
             Guard(navController = navController) { currentUser ->
                 ResidenceDashboard(navController)
+            }
+        }
+        composable<MainNav.ForgotPassword> {
+            Guard(navController = navController) { currentUser ->
+                ForgotPassword(navController)
             }
         }
         composable<MainNav.UserList> {
@@ -170,5 +185,18 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
             }
         }
 
+        composable<MainNav.EditUser> {
+            val args = it.toRoute<MainNav.EditUser>()
+            val userViewModel : UserViewModel = hiltViewModel()
+            val userDto = userViewModel.fetchUser(args.userId)
+            Guard(navController = navController) { currentUser ->
+                UserEdit(
+                    navController = navController,
+                    currentUser = currentUser,
+                    userDto = userDto,
+                )
+
+            }
+        }
     }
 }

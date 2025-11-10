@@ -3,12 +3,14 @@ package dev.cloudants.iulat.lib.viewmodels
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.cloudants.iulat.lib.intent.LoginIntent
 import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.services_impl.AuthServiceImpl
 import dev.cloudants.iulat.lib.services_impl.UserServiceImpl
 import dev.cloudants.iulat.lib.state.LoginState
 import dev.cloudants.iulat.lib.utils.main.MainNav
@@ -17,14 +19,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
+    private val authServiceImpl: AuthServiceImpl,
     private val userService: UserServiceImpl,
     application: Application
-
 ) : ViewModel() {
     private val sharedPreferences: SharedPreferences =
         application.getSharedPreferences("Preferences", Context.MODE_PRIVATE)
@@ -47,7 +48,14 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = "")
             try {
-                val user = userService.login(email, password)
+                // FIX THIS LATER ( I'll PUT HARDCODED EMAIL TO LOGIN )
+                val user = if (email.equals("admin@gmail.com", ignoreCase = true)) {
+                     userService.login(email, password)
+                } else {
+                     authServiceImpl.login(email, password)
+                }
+
+                Log.e("USER PASS::", password)
                 if (user != null) {
                     with(sharedPreferences.edit()) {
                         putString("logged_in_user_id", user.id)
@@ -118,6 +126,54 @@ class LoginViewModel @Inject constructor(
         navController.navigate(MainNav) {
             popUpTo<MainNav.Login> { inclusive = true }
             launchSingleTop = true
+        }
+    }
+
+    fun request(email: String, callback: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+//                val success = authService.requestOTP(email)
+//                if (success) {
+//                    callback(true, "OTP successfully generated and saved to the database.")
+//                } else {
+//                    callback(false, "Failed to generate OTP.")
+//                }
+            } catch (e: Exception) {
+                callback(false, e.message)
+            }
+        }
+    }
+
+    fun verifyToken(email: String, token: String, callback: (Boolean, String?) -> Unit) {
+        if (email.isBlank() || token.isBlank()) {
+            callback(false, "Email and token cannot be blank.")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+//                val isTokenValid = authService.verifyResetToken(email, token)
+//                if (isTokenValid) {
+//                    callback(true, null)
+//                }
+            } catch (e: Exception) {
+                callback(false, "Invalid token. Please try again.")
+            }
+        }
+    }
+
+    fun resetPassword(email: String, token: String, newPassword: String, callback: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+//                val success = userService.saveNewPassword(email, token, newPassword)
+//                if (success) {
+//                    callback(true, null)
+//                } else {
+//                    callback(false, "Failed to reset password. Invalid token or email.")
+//                }
+            } catch (e: Exception) {
+                callback(false, "Error resetting password: ${e.localizedMessage}")
+            }
         }
     }
 

@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val userService: UserService
+    val userService: UserService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UserState())
@@ -50,4 +50,26 @@ class UserViewModel @Inject constructor(
     private fun clearState() {
         _uiState.value = UserState()
     }
+
+    fun fetchAllUsers(): List<UserDto> {
+        return  this.userService.findAll();
+    }
+
+    fun fetchUser(userId: String): UserDto {
+        return this.userService.findOne(userId)
+    }
+
+    fun updateUser(userDto: UserDto): Result<UserDto> {
+        return try {
+            if (userDto.id?.isBlank()!!) {
+                Result.failure(IllegalArgumentException("User DTO must have an ID for update."))
+            } else {
+                val updatedUser = userService.update(userDto.id, userDto)
+                Result.success(updatedUser)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 }

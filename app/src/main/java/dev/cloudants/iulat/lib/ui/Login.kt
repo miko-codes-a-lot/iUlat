@@ -1,9 +1,9 @@
 package dev.cloudants.iulat.lib.ui
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,15 +36,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.button.CustomButton
-import dev.cloudants.iulat.lib.components.context.UserSession
 import dev.cloudants.iulat.lib.components.dialog.LoginDialog
 import dev.cloudants.iulat.lib.intent.LoginIntent
 import dev.cloudants.iulat.lib.utils.main.MainNav
@@ -91,6 +88,7 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
             CustomButton(
                 text = "Login",
                 onClick = {
+                    Log.d("Password ", "Stored password: ${state.password}")
                     loginViewModel.login(state.email, state.password)
                 }
             )
@@ -116,6 +114,7 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
         Spacer(modifier = Modifier.height(15.dp))
 
         TextButton(onClick = {
+            navController.navigate(MainNav.ForgotPassword)
         }) {
             Text(
                 text = "Forgot password?",

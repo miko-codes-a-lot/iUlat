@@ -11,6 +11,7 @@ import dev.cloudants.iulat.lib.services.AuthService
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.mindrot.jbcrypt.BCrypt
 
 @Singleton
 class AuthServiceImpl @Inject constructor(
@@ -29,8 +30,7 @@ class AuthServiceImpl @Inject constructor(
             if (result != null) {
                 val userJson = result.getDictionary(userCollection.name)?.toJSON()
                 val user = Json.decodeFromString<UserDto>(userJson!!)
-                if (user.password == password) {
-                    Log.i("AuthServiceImpl", " Login successful for ${user.email}")
+                if (BCrypt.checkpw(password, user.password)) {
                     user
                 } else {
                     Log.w("AuthServiceImpl", "  Incorrect password for ${user.email}")

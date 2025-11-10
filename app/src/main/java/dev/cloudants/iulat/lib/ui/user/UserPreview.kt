@@ -15,20 +15,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
-
-data class UserSample(
-    val firstName: String,
-    val middleName: String?,
-    val lastName: String,
-    val address: String?,
-    val mobileNumber: String?,
-    val dateOfBirth: String,
-    val email: String
-)
+import java.util.TimeZone
 
 @Composable
 fun UserPreview(
@@ -83,9 +75,9 @@ fun UserPreview(
                     coroutineScope.launch {
                         try {
                             onSave(user)
-                            Log.d("UserPreview", "✅ User save request completed")
+                            Log.d("UserPreview", "User save request completed")
                         } catch (e: Exception) {
-                            Log.e("UserPreview", "❌ Error saving user: ${e.message}", e)
+                            Log.e("UserPreview", "Error saving user: ${e.message}", e)
                         } finally {
                             isSaving.value = false
                         }
@@ -97,7 +89,7 @@ fun UserPreview(
                 .width(320.dp)
                 .height(50.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF136204),
+                containerColor = Color(0xFF0049AD),
                 contentColor = Color.White
             )
         ) {
@@ -152,12 +144,25 @@ fun InfoRow(label: String, value: String) {
 
 fun formatDate(dateString: String?): String {
     if (dateString.isNullOrEmpty()) return "Select Date"
-    return try {
-        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-        val displayFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
-        val date = isoFormat.parse(dateString)
-        displayFormat.format(date ?: return "Select Date")
-    } catch (e: Exception) {
-        "Select Date"
+    val displayFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+
+    val possibleFormats = listOf(
+        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd"
+    )
+
+    for (pattern in possibleFormats) {
+        try {
+            val parser = SimpleDateFormat(pattern, Locale.getDefault())
+            parser.timeZone = TimeZone.getTimeZone("UTC")
+            val parsed = parser.parse(dateString)
+            if (parsed != null) {
+                return displayFormat.format(parsed)
+            }
+        } catch (_: Exception) {}
     }
+
+    return "Select Date"
 }
+
