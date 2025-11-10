@@ -8,4 +8,7 @@ interface UserService {
     fun create(user: UserDto): UserDto
     fun update(id: String, user: UserDto): UserDto
     fun delete(id: String): Boolean
+    fun fetchOne(id: String): UserDto?
+    fun findByEmail(email: String): UserDto?
+    fun login(email: String, password: String): UserDto?
 }

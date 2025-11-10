@@ -1,0 +1,48 @@
+package dev.cloudants.iulat.lib.services_impl
+
+import android.util.Log
+import com.couchbase.lite.Collection
+import com.couchbase.lite.DataSource
+import com.couchbase.lite.Expression
+import com.couchbase.lite.QueryBuilder
+import com.couchbase.lite.SelectResult
+import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.services.AuthService
+import kotlinx.serialization.json.Json
+import javax.inject.Inject
+import javax.inject.Singleton
+import org.mindrot.jbcrypt.BCrypt
+
+@Singleton
+class AuthServiceImpl @Inject constructor(
+    private val userCollection: Collection
+) : AuthService {
+
+    override suspend fun login(email: String, password: String): UserDto? {
+        return try {
+            val query = QueryBuilder
+                .select(SelectResult.all())
+                .from(DataSource.collection(userCollection))
+                .where(Expression.property("email").equalTo(Expression.string(email)))
+
+            val result = query.execute().firstOrNull()
+
+            if (result != null) {
+                val userJson = result.getDictionary(userCollection.name)?.toJSON()
+                val user = Json.decodeFromString<UserDto>(userJson!!)
+                if (BCrypt.checkpw(password, user.password)) {
+                    user
+                } else {
+                    Log.w("AuthServiceImpl", "  Incorrect password for ${user.email}")
+                    null
+                }
+            } else {
+                Log.w("AuthServiceImpl", "  No user found for email: $email")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("AuthServiceImpl", "  Login error: ${e.message}")
+            null
+        }
+    }
+}

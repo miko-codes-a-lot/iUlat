@@ -8,6 +8,7 @@ data class LoginState(
     var isPasswordVisible: Boolean = false,
     var isLoading: Boolean = false,
     var errorMessage: String = "",
+    val route: String? = null ,
     var isDialogShow: Boolean = false,
     val isLoginSuccessful: Boolean = false,
     val user: UserDto? = null

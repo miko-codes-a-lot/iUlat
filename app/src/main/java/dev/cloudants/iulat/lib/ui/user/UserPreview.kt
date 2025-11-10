@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.ui.user
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,25 +15,18 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
-
-data class UserSample(
-    val firstName: String,
-    val middleName: String?,
-    val lastName: String,
-    val address: String?,
-    val mobileNumber: String?,
-    val dateOfBirth: String,
-    val email: String
-)
+import java.util.TimeZone
 
 @Composable
 fun UserPreview(
     title: String,
-    user: UserSample,
-    onSave: suspend (UserSample) -> Unit,
+    user: UserDto,
+    onSave: suspend (UserDto) -> Unit,
     onCancel: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -43,7 +37,7 @@ fun UserPreview(
         "First Name" to user.firstName,
         "Middle Name" to (user.middleName ?: ""),
         "Last Name" to user.lastName,
-        "Address" to (user.address ?: ""),
+        "Address" to (user.address?.province ?: ""),
         "Mobile Number" to (user.mobileNumber ?: ""),
         "Date of Birth" to formatDate(user.dateOfBirth),
         "Email" to user.email
@@ -73,14 +67,20 @@ fun UserPreview(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Save button
         Button(
             onClick = {
                 if (!isSaving.value) {
                     isSaving.value = true
+                    Log.d("UserPreview", "Saving user: $user")
                     coroutineScope.launch {
-                        onSave(user)
-                        isSaving.value = false
+                        try {
+                            onSave(user)
+                            Log.d("UserPreview", "User save request completed")
+                        } catch (e: Exception) {
+                            Log.e("UserPreview", "Error saving user: ${e.message}", e)
+                        } finally {
+                            isSaving.value = false
+                        }
                     }
                 }
             },
@@ -89,7 +89,7 @@ fun UserPreview(
                 .width(320.dp)
                 .height(50.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF136204),
+                containerColor = Color(0xFF0049AD),
                 contentColor = Color.White
             )
         ) {
@@ -102,7 +102,6 @@ fun UserPreview(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Cancel button
         TextButton(onClick = onCancel) {
             Text(
                 text = "Cancel",
@@ -145,12 +144,25 @@ fun InfoRow(label: String, value: String) {
 
 fun formatDate(dateString: String?): String {
     if (dateString.isNullOrEmpty()) return "Select Date"
-    return try {
-        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-        val displayFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
-        val date = isoFormat.parse(dateString)
-        displayFormat.format(date ?: return "Select Date")
-    } catch (e: Exception) {
-        "Select Date"
+    val displayFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+
+    val possibleFormats = listOf(
+        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd"
+    )
+
+    for (pattern in possibleFormats) {
+        try {
+            val parser = SimpleDateFormat(pattern, Locale.getDefault())
+            parser.timeZone = TimeZone.getTimeZone("UTC")
+            val parsed = parser.parse(dateString)
+            if (parsed != null) {
+                return displayFormat.format(parsed)
+            }
+        } catch (_: Exception) {}
     }
+
+    return "Select Date"
 }
+

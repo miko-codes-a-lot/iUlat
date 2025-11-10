@@ -1,11 +1,13 @@
 package dev.cloudants.iulat.lib.ui.user
 
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -14,33 +16,35 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.cloudants.iulat.R
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.ui.report.PlaceholderImage
+import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
 fun PreviewUsersUI() {
-    UsersList()
+    UsersList(navController = rememberNavController())
 }
 
 @Composable
-fun UsersList() {
+fun UsersList(navController: NavController) {
+    var userViewModel: UserViewModel = hiltViewModel()
     var searchQuery by remember { mutableStateOf("") }
-
-    // Mock sample users
-    val mockUsers = listOf(
-        SimpleUser("John", "Doe", "john@example.com"),
-        SimpleUser("Jane", "Smith", "jane@example.com"),
-        SimpleUser("Carlos", "Reyes", "carlosr@example.com"),
-        SimpleUser("Maria", "Dela Cruz", "mariadc@example.com")
-    )
-
-    val filteredUsers = mockUsers.filter {
+    val users by produceState<List<UserDto>>(emptyList(), userViewModel) {
+        value = userViewModel.fetchAllUsers()
+    }
+    val filteredUsers = users.filter {
         it.firstName.contains(searchQuery, ignoreCase = true) ||
                 it.lastName.contains(searchQuery, ignoreCase = true) ||
                 it.email.contains(searchQuery, ignoreCase = true)
@@ -51,16 +55,15 @@ fun UsersList() {
             .fillMaxSize()
             .background(Color.White),
         floatingActionButton = {
-            FloatParentFloatingIcon()
+            FloatParentFloatingIcon(navController = navController)
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Top,
+                .padding(horizontal = 16.dp)
+                .padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             UsersSearchIcon(
@@ -68,16 +71,22 @@ fun UsersList() {
                 onSearchQueryChanged = { searchQuery = it },
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
+                    .padding(bottom = 10.dp)
                     .background(Color.White),
-                horizontalAlignment = Alignment.CenterHorizontally
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(filteredUsers) { user ->
-                    UsersSingleLine(user)
+                    UsersSingleLine(
+                        user = user,
+                        onClick = {
+                            navController.navigate(MainNav.EditUser(userId = user.id!!))
+                        }
+                    )
                 }
             }
         }
@@ -125,74 +134,65 @@ fun UsersSearchIcon(
 }
 
 @Composable
-fun UsersSingleLine(user: SimpleUser) {
-    Column(
+fun UsersSingleLine(user: UserDto, onClick: () -> Unit) {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .background(Color.White)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp)
-                .clickable { /* TODO: Add navigation or user details later */ },
+            modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.users),
-                contentDescription = "User Icon",
-                tint = Color(0xFF0049AD),
-                modifier = Modifier.size(26.dp)
-            )
-            Text(
-                text = "${user.firstName} ${user.lastName}",
-                fontSize = 18.sp,
-                fontFamily = FontFamily.SansSerif,
-                color = Color.Black,
+            Box(
                 modifier = Modifier
-                    .padding(start = 8.dp)
-                    .weight(1f)
-            )
-            Text(
-                text = user.email,
-                fontSize = 15.sp,
-                fontFamily = FontFamily.SansSerif,
-                color = Color.Gray
-            )
+                    .size(51.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF0049AD))
+                    .border(1.dp, Color(0xFF0049AD), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                PlaceholderImage()
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "${user.firstName} ${user.lastName}",
+                    fontSize = 17.sp,
+                    color = Color.Black,
+                    fontFamily = FontFamily.SansSerif
+                )
+                Text(
+                    text = user.email,
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    fontFamily = FontFamily.SansSerif
+                )
+            }
         }
-        HorizontalDivider(
-            modifier = Modifier.fillMaxWidth(),
-            thickness = 1.dp,
-            color = Color(0xFF0049AD)
-        )
     }
 }
 
 @Composable
-fun FloatParentFloatingIcon() {
-    Column(
-        modifier = Modifier
-            .background(Color.Transparent),
-        horizontalAlignment = Alignment.End
+fun FloatParentFloatingIcon(navController: NavController) {
+    FloatingActionButton(
+        onClick = { navController.navigate(MainNav.CreateUser) },
+        containerColor = Color(0xFF0049AD),
+        contentColor = Color.White,
+        shape = CircleShape,
+        modifier = Modifier.size(65.dp)
     ) {
-        FloatingActionButton(
-            onClick = { /* TODO: Navigate to CreateAccount screen */ },
-            containerColor = Color(0xFF0049AD),
-            contentColor = Color.White,
-            shape = RectangleShape,
-            modifier = Modifier.size(65.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = "Add",
-                modifier = Modifier.size(28.dp)
-            )
-        }
+        Icon(
+            imageVector = Icons.Filled.Add,
+            contentDescription = "Add",
+            modifier = Modifier.size(28.dp)
+        )
     }
 }
-
-data class SimpleUser(
-    val firstName: String,
-    val lastName: String,
-    val email: String
-)

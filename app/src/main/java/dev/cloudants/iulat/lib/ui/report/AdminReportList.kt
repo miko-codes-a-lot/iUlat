@@ -55,11 +55,11 @@ import dev.cloudants.iulat.R
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ReportPreview() {
-    Report()
+    AdminReportList()
 }
 
 @Composable
-fun Report() {
+fun AdminReportList() {
     Column(
         modifier = Modifier
             .fillMaxSize()

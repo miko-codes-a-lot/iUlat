@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import dev.cloudants.iulat.R
 import coil.compose.rememberAsyncImagePainter
+import dev.cloudants.iulat.lib.utils.main.MainNav
 
 @Composable
 fun Account(navController: NavController) {
@@ -215,13 +216,13 @@ fun UserDetails(
 fun Setting(navController: NavController){
     val settingsMenu = listOf(
         SettingItem(text = "Email"){
-//            navController.navigate("${MainNav.EditSettings}/email")
+            navController.navigate("${MainNav.EditAccount}/email")
         },
         SettingItem(text = "Mobile Number"){
-//            navController.navigate("${MainNav.EditSettings}/mobileNumber")
+            navController.navigate("${MainNav.EditAccount}/mobileNumber")
         },
         SettingItem(text = "Password"){
-//            navController.navigate("${MainNav.EditSettings}/password")
+            navController.navigate("${MainNav.EditAccount}/password")
         }
     )
     Column {
