@@ -5,6 +5,16 @@ plugins {
     id("com.google.devtools.ksp")
     alias(libs.plugins.kotlin.serialization)
     id("com.google.dagger.hilt.android")
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+}
+
+secrets {
+    propertiesFileName = "local.properties"
+    defaultPropertiesFileName = "local.defaults.properties"
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 android {
@@ -34,11 +44,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
