@@ -32,9 +32,12 @@ object CouchbaseLiteModule {
         CouchbaseLite.init(context)
         val db = Database("iulat")
         val userCollection = db.createCollection("users")
-
+        val addressCollection = db.createCollection("address")
+        val garbageDisposalCollection = db.createCollection("garbage_disposal")
         val collections = mutableListOf(
             userCollection,
+            addressCollection,
+            garbageDisposalCollection
         )
 
         val repl = Replicator(

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 import kotlinx.coroutines.delay
@@ -44,12 +46,15 @@ import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.button.CustomButton
 import dev.cloudants.iulat.lib.components.dialog.LoginDialog
 import dev.cloudants.iulat.lib.intent.LoginIntent
+import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 
 @Composable
 fun Login(navController: NavController, loginViewModel: LoginViewModel) {
     val state by loginViewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
+    val userViewModel: UserViewModel = hiltViewModel()
     Column(
         modifier = Modifier
             .background(color = Color.White)
@@ -113,18 +118,28 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
 
         Spacer(modifier = Modifier.height(15.dp))
 
-        TextButton(onClick = {
-            navController.navigate(MainNav.ForgotPassword)
-        }) {
-            Text(
-                text = "Forgot password?",
-                fontSize = 15.sp,
-                fontFamily = FontFamily.Serif,
-                color = Color.Red
-            )
-        }
+//        TextButton(onClick = {
+//            navController.navigate(MainNav.ForgotPassword)
+//        }) {
+//            Text(
+//                text = "Forgot password?",
+//                fontSize = 15.sp,
+//                fontFamily = FontFamily.Serif,
+//                color = Color.Red
+//            )
+//        }
     }
-
+//    val zones = mutableListOf( AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 8, Kanyugan",12.450110,120.966370), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 8, Pusitan",12.453346,120.963728), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Core House",12.456814,120.962144), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Teacher’s Village",12.458888,120.966969), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 6",12.443984,120.970468), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 4",12.441195,120.971919), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 2",12.439049,120.973060), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 1",12.440009,120.973934), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","GK Village",12.443132,120.981437), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Kambarwang",12.445094,120.989426), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 3",12.440788,120.973530), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 5",12.443685,120.971931), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 7",12.445267,120.971088), AddressDto("","Occidental Mindoro","Rizal","Barangay Adela","Purok 8, Talipapa",12.444779,120.969871) )
+//    Button(
+//        modifier = Modifier.fillMaxWidth()
+//            .height(50.dp),
+//        onClick = {
+//            userViewModel.saveZonesToDatabase(zones)
+//            userViewModel.createAdmin()
+//        }
+//    ) {
+//        Text("CLICK")
+//    }
     if (state.isDialogShow) {
         LoginDialog(
             title = "Login Status",

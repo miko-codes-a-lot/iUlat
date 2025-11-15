@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 data class UserDto(
     val id: String? = null,
     val username: String = "",
-    val password: String = "",
+    var password: String = "",
     var firstName: String = "",
     var middleName: String? = null,
     var lastName: String = "",
@@ -20,4 +20,10 @@ data class UserDto(
     val type: String? = null,
     var isAdmin: Boolean = false,
     var isResidence: Boolean = false,
+    var createdById: String? = null,
+    var createdAt: String? = null,
+    var imageBase64: String? = null,
+    var resetPasswordToken: String? = null,
+    var resetTokenExpiration: String? = null,
+    var isVerified: Boolean = false,
 )

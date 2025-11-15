@@ -1,0 +1,11 @@
+package dev.cloudants.iulat.lib.services
+
+import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
+
+interface GarbageDisposalService {
+    suspend fun create(garbage: GarbageDisposalDto): GarbageDisposalDto
+    suspend fun getAll(): List<GarbageDisposalDto>
+    suspend fun getById(id: String): GarbageDisposalDto?
+    suspend fun update(id: String, garbage: GarbageDisposalDto): GarbageDisposalDto
+    suspend fun delete(id: String)
+}

@@ -33,6 +33,7 @@ import dev.cloudants.iulat.lib.ui.user.CreateAccount
 import dev.cloudants.iulat.lib.ui.user.EditAccount
 import dev.cloudants.iulat.lib.ui.user.UserEdit
 import dev.cloudants.iulat.lib.ui.user.UsersList
+import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
@@ -128,7 +129,14 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 val args = it.toRoute<MainNav.CreateReport>()
                 val title = args.title
                 val viewModel : ReportViewModel = hiltViewModel()
-                CreateReport(navController, reportTitle = title, viewModel = viewModel)
+                val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                CreateReport(
+                    navController = navController,
+                    reportTitle = title,
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    garbageDisposalViewModel = garbageDisposalViewModel
+                )
             }
         }
         composable<MainNav.NotificationList> {

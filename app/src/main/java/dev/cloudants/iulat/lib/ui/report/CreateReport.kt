@@ -1,6 +1,7 @@
 package dev.cloudants.iulat.lib.ui.report
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -30,8 +31,13 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.button.CustomButton
+import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.dialog.LoginDialog
 import dev.cloudants.iulat.lib.components.dialog.NotificationReportDialog
+import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.ui.report.intent.ReportIntent
+import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.lib.viewmodels.ReportViewModel
 
 @Preview(showBackground = true, showSystemUi = true)
@@ -40,7 +46,9 @@ fun CreateReportPrev() {
     CreateReport(
         navController = rememberNavController(),
         reportTitle = "SAMPLE ",
-        viewModel = viewModel()
+        viewModel = viewModel(),
+        currentUser = UserDto(),
+        garbageDisposalViewModel = viewModel()
     )
 }
 
@@ -48,7 +56,9 @@ fun CreateReportPrev() {
 fun CreateReport(
     navController: NavController,
     reportTitle: String,
-    viewModel: ReportViewModel
+    viewModel: ReportViewModel,
+    currentUser: UserDto,
+    garbageDisposalViewModel : GarbageDisposalViewModel
 ) {
     val state by viewModel.state.collectAsState()
     var textValue by remember { mutableStateOf("") }
@@ -161,20 +171,40 @@ fun CreateReport(
         }
 
         if (state.isDialogVisible) {
-            NotificationReportDialog(
+            LoginDialog(
+                title = "Report Submitted",
+                label = "Success",
+                message = "Your report has been successfully submitted.",
+                isLoginSuccessful = true,
+                onConfirm = {
+                    viewModel.onIntent(ReportIntent.DismissDialog)
+                    navController.popBackStack()
+                },
                 onDismiss = {
                     viewModel.onIntent(ReportIntent.DismissDialog)
                 }
             )
-            LaunchedEffect(Unit) {
-                kotlinx.coroutines.delay(1000)
-                 navController.popBackStack()
-            }
         }
+
         Spacer(Modifier.weight(1f))
+        Log.e("CURRENT USER ", currentUser.email)
+        Log.e("REPORT TITLE ", reportTitle)
         CustomButton(
             text = "Submit",
-            onClick = {}
+            onClick = {
+                if(reportTitle == MODULE.GARBAGE_DISPOSAL || reportTitle.equals("Garbage Disposal")) {
+                    val garbage = GarbageDisposalDto(
+                        userId = currentUser.id!!,
+                        reportDetails = textValue,
+                        reportImage = imageUri?.toString(),
+                        createdById = currentUser.id
+                    )
+                    garbageDisposalViewModel.createGarbageReport(garbage)
+
+                    viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
+
+                }
+            }
         )
         Spacer(Modifier.weight(1f))
     }

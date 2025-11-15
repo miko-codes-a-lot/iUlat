@@ -13,16 +13,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,13 +37,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.components.context.formatterDate
 import dev.cloudants.iulat.lib.components.header.CustomHeader
+import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 
 
 @Composable
 fun GarbageDisposalList(navController: NavController) {
+    val garbageDisposalViewModel: GarbageDisposalViewModel = hiltViewModel()
+    val state by garbageDisposalViewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        garbageDisposalViewModel.fetchAll()
+    }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -56,7 +72,14 @@ fun GarbageDisposalList(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             CustomHeader("Garbage Disposal")
-            GarbageListContainer(navController = navController)
+            if (state.isLoading) {
+                CircularProgressIndicator(color = Color(0xFF0049AD))
+            }
+
+            GarbageListContainer(
+                navController = navController,
+                items = state.items
+            )
         }
     }
 }
@@ -64,6 +87,7 @@ fun GarbageDisposalList(navController: NavController) {
 @Composable
 fun GarbageListContainer(
     navController: NavController,
+    items: List<GarbageDisposalDto>
 ) {
     LazyColumn(
         modifier = Modifier
@@ -71,15 +95,27 @@ fun GarbageListContainer(
             .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item{
-            GarbageDisposalButton()
+
+        if (items.isEmpty()) {
+            item {
+                Text(
+                    text = "No garbage disposal reports found.",
+                    color = Color.Gray,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+        }
+
+        items(items) { report ->
+            GarbageDisposalItem(report)
         }
     }
 }
 
+
 @Composable
-private fun GarbageDisposalButton(
-) {
+fun GarbageDisposalItem(report: GarbageDisposalDto) {
     ElevatedButton(
         onClick = {  },
         colors = ButtonDefaults.elevatedButtonColors(
@@ -104,9 +140,17 @@ private fun GarbageDisposalButton(
         ) {
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "Garbage Disposal",
+                text = formatterDate(report.createdAt),
                 fontSize = 15.sp,
                 textAlign = TextAlign.Start,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.SansSerif
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "${report.status}",
+                fontSize = 15.sp,
+                textAlign = TextAlign.End,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.SansSerif
             )

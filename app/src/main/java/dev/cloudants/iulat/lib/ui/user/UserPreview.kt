@@ -10,17 +10,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import android.graphics.BitmapFactory
+import android.util.Base64
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.content.MediaType.Companion.Image
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.asImageBitmap
 
 @Composable
 fun UserPreview(
@@ -33,11 +42,23 @@ fun UserPreview(
     val coroutineScope = rememberCoroutineScope()
     val isSaving = remember { mutableStateOf(false) }
 
+    val fullAddress = listOfNotNull(
+        user.address?.zone.takeIf { it!!.isNotBlank() },
+        user.address?.barangay.takeIf { it!!.isNotBlank() },
+//        user.address?.municipality.takeIf { it!!.isNotBlank() },
+    ).joinToString(", ")
+
     val userInfo = listOf(
         "First Name" to user.firstName,
         "Middle Name" to (user.middleName ?: ""),
         "Last Name" to user.lastName,
-        "Address" to (user.address?.province ?: ""),
+        "Gender" to user.gender,
+        "Role" to when {
+            user.isAdmin -> "Admin"
+            user.isResidence -> "Residence"
+            else -> "User"
+        },
+        "Address" to fullAddress,
         "Mobile Number" to (user.mobileNumber ?: ""),
         "Date of Birth" to formatDate(user.dateOfBirth),
         "Email" to user.email
@@ -65,19 +86,63 @@ fun UserPreview(
             InfoRow(label, value)
         }
 
+        user.validId?.let { validId ->
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Uploaded ID:",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                fontFamily = FontFamily.SansSerif
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val imageBitmap = remember(validId) {
+                if (!validId.startsWith("http") && !validId.startsWith("content://")) {
+                    try {
+                        val bytes = Base64.decode(validId, Base64.DEFAULT)
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                    } catch (e: Exception) {
+                        Log.e("UserPreview", "Failed to decode Base64 image: ${e.message}")
+                        null
+                    }
+                } else null
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFEFEFEF)),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    imageBitmap != null -> Image(
+                        bitmap = imageBitmap,
+                        contentDescription = "User Valid ID",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    validId.startsWith("http") || validId.startsWith("content://") -> AsyncImage(
+                        model = validId,
+                        contentDescription = "User Valid ID",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    else -> Text("No valid image", color = Color.Gray)
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = {
                 if (!isSaving.value) {
                     isSaving.value = true
-                    Log.d("UserPreview", "Saving user: $user")
                     coroutineScope.launch {
                         try {
                             onSave(user)
-                            Log.d("UserPreview", "User save request completed")
-                        } catch (e: Exception) {
-                            Log.e("UserPreview", "Error saving user: ${e.message}", e)
                         } finally {
                             isSaving.value = false
                         }
@@ -106,7 +171,8 @@ fun UserPreview(
             Text(
                 text = "Cancel",
                 fontSize = 15.sp,
-                fontFamily = FontFamily.SansSerif
+                fontFamily = FontFamily.SansSerif,
+                color = Color(0xFF0049AD)
             )
         }
 
@@ -133,7 +199,7 @@ fun InfoRow(label: String, value: String) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = value,
+                text = value.ifBlank { "N/A" },
                 fontSize = 17.sp,
                 fontFamily = FontFamily.SansSerif
             )
