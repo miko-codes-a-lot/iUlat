@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.formatterDate
 import dev.cloudants.iulat.lib.components.header.CustomHeader
 import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
@@ -71,7 +72,7 @@ fun GarbageDisposalList(navController: NavController) {
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CustomHeader("Garbage Disposal")
+            CustomHeader(MODULE.GARBAGE_DISPOSAL)
             if (state.isLoading) {
                 CircularProgressIndicator(color = Color(0xFF0049AD))
             }
@@ -108,16 +109,24 @@ fun GarbageListContainer(
         }
 
         items(items) { report ->
-            GarbageDisposalItem(report)
+            GarbageDisposalItem(navController, report)
         }
     }
 }
 
 
 @Composable
-fun GarbageDisposalItem(report: GarbageDisposalDto) {
+fun GarbageDisposalItem(
+    navController: NavController,
+    report: GarbageDisposalDto,
+
+) {
     ElevatedButton(
-        onClick = {  },
+        onClick = {
+            report.id?.let { id ->
+                navController.navigate(MainNav.EditReport("Garbage Disposal", id!!))
+            }
+        },
         colors = ButtonDefaults.elevatedButtonColors(
             containerColor = Color.White,
             contentColor = Color(0xFF0049AD)

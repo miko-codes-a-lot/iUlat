@@ -37,17 +37,14 @@ class GarbageDisposalServiceImpl @Inject constructor(
 
     override suspend fun update(id: String, garbage: GarbageDisposalDto): GarbageDisposalDto {
         return try {
-            val doc = collection.getDocument(id) ?: MutableDocument(id)
+            val doc = collection.getDocument(id)?.toMutable() ?: MutableDocument(id)
+
             val updated = garbage.copy(lastUpdatedAt = Date().toString())
+            val jsonString = Json.encodeToString(GarbageDisposalDto.serializer(), updated)
 
-            val jsonElement = Json.encodeToJsonElement(updated).jsonObject
-            val mutableDoc = doc.toMutable()
-            jsonElement.forEach { (key, value) ->
-                mutableDoc.setValue(key, value.toString())
-            }
+            doc.setJSON(jsonString)
+            collection.save(doc)
 
-            collection.save(mutableDoc)
-            Log.d("GarbageServiceImpl", "Updated garbage report: $updated")
             updated
         } catch (e: Exception) {
             Log.e("GarbageServiceImpl", "Failed to update garbage: ${e.message}", e)
@@ -75,7 +72,7 @@ class GarbageDisposalServiceImpl @Inject constructor(
                 val dict = result.getDictionary(collection.name)
                 dict?.let {
                     try {
-                        Json.decodeFromString<GarbageDisposalDto>(it.toJSON())
+                        Json { ignoreUnknownKeys = true }.decodeFromString<GarbageDisposalDto>(it.toJSON())
                     } catch (e: Exception) {
                         Log.e("GarbageServiceImpl", "Error decoding GarbageDisposalDto: ${e.message}")
                         null
@@ -91,7 +88,7 @@ class GarbageDisposalServiceImpl @Inject constructor(
     override suspend fun getById(id: String): GarbageDisposalDto? {
         return try {
             val doc = collection.getDocument(id) ?: return null
-            Json.decodeFromString<GarbageDisposalDto>(doc.toJSON())
+            Json { ignoreUnknownKeys = true }.decodeFromString<GarbageDisposalDto>(doc.toJSON())
         } catch (e: Exception) {
             Log.e("GarbageServiceImpl", "Failed to fetch garbage by id $id: ${e.message}")
             null

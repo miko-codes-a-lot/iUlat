@@ -1,5 +1,11 @@
 package dev.cloudants.iulat.lib.components.context
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
+import android.util.Log
 import org.mindrot.jbcrypt.BCrypt
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -40,3 +46,23 @@ fun formatterDate(dateString: String?): String {
 
     return ""
 }
+
+fun uriToBase64(context: Context, uri: Uri): String? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val bytes = inputStream?.readBytes() ?: return null
+        Base64.encodeToString(bytes, Base64.DEFAULT)
+    } catch (e: Exception) {
+        null
+    }
+}
+
+fun base64ToBitmap(base64: String): Bitmap? {
+    return try {
+        val decodedBytes = Base64.decode(base64, Base64.DEFAULT)
+        BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+    } catch (e: Exception) {
+        null
+    }
+}
+

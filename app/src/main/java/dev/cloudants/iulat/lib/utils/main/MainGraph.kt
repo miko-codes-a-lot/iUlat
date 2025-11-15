@@ -20,6 +20,7 @@ import dev.cloudants.iulat.lib.ui.message.ChatLobby
 import dev.cloudants.iulat.lib.ui.message.MessageDto
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.CreateReport
+import dev.cloudants.iulat.lib.ui.report.EditReport
 import dev.cloudants.iulat.lib.ui.report.residence_report.BrokenLightList
 import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
 import dev.cloudants.iulat.lib.ui.report.residence_report.NoWaterSupplyList
@@ -139,6 +140,25 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 )
             }
         }
+
+        composable<MainNav.EditReport> {
+            Guard(navController) { currentUser ->
+                val args = it.toRoute<MainNav.EditReport>()
+                val title = args.title
+                val reportId = args.reportId
+                val viewModel : ReportViewModel = hiltViewModel()
+                val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                EditReport(
+                    navController = navController,
+                    reportTitle = title,
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    garbageDisposalViewModel = garbageDisposalViewModel,
+                    reportId = reportId
+                )
+            }
+        }
+
         composable<MainNav.NotificationList> {
             Guard(navController = navController) { currentUser ->
                 NotificationList(navController)

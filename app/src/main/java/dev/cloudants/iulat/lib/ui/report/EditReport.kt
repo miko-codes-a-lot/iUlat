@@ -1,66 +1,78 @@
 package dev.cloudants.iulat.lib.ui.report
 
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import dev.cloudants.iulat.lib.components.button.CustomButton
-import dev.cloudants.iulat.lib.components.context.MODULE
-import dev.cloudants.iulat.lib.components.context.uriToBase64
-import dev.cloudants.iulat.lib.components.dialog.LoginDialog
+import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import dev.cloudants.iulat.lib.components.context.base64ToBitmap
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
-import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
-import dev.cloudants.iulat.lib.ui.report.intent.ReportIntent
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.lib.viewmodels.ReportViewModel
 
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun CreateReportPrev() {
-    CreateReport(
-        navController = rememberNavController(),
-        reportTitle = "SAMPLE ",
-        viewModel = viewModel(),
-        currentUser = UserDto(),
-        garbageDisposalViewModel = viewModel()
-    )
-}
-
-@Composable
-fun CreateReport(
+fun EditReport(
     navController: NavController,
     reportTitle: String,
     viewModel: ReportViewModel,
     currentUser: UserDto,
-    garbageDisposalViewModel : GarbageDisposalViewModel
+    garbageDisposalViewModel : GarbageDisposalViewModel,
+    reportId: String
 ) {
     val state by viewModel.state.collectAsState()
     var textValue by remember { mutableStateOf("") }
+    val garbageState by garbageDisposalViewModel.state.collectAsState()
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    val context = LocalContext.current
+
+    LaunchedEffect(reportId) {
+        garbageDisposalViewModel.fetchReportById(reportId)
+    }
+
+    LaunchedEffect(garbageState.selectedReport) {
+        textValue = garbageState.selectedReport?.reportDetails ?: ""
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -72,7 +84,7 @@ fun CreateReport(
         Spacer(Modifier.weight(1f))
 
         Text(
-            text = "Issue Details ($reportTitle)",
+            text = "Edit Report ($reportTitle)",
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
             modifier = Modifier
@@ -110,11 +122,7 @@ fun CreateReport(
         }
 
         Spacer(Modifier.weight(1f))
-        val imagePicker = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent()
-        ) { uri: Uri? ->
-            imageUri = uri
-        }
+
         Text(
             text = "Upload a softcopy evidence",
             fontWeight = FontWeight.Bold,
@@ -127,46 +135,48 @@ fun CreateReport(
         )
         UploadImageUI(
             title = "Tap to Upload Evidence",
-            existingBase64 = null,
+            existingBase64 = garbageState.selectedReport?.reportImage,
             onImageSelected = { uri -> imageUri = uri }
         )
 
-        Spacer(Modifier.weight(1f))
-        Log.e("CURRENT USER ", currentUser.email)
-        Log.e("REPORT TITLE ", reportTitle)
-        CustomButton(
-            text = "Submit",
-            onClick = {
-                if(reportTitle == MODULE.GARBAGE_DISPOSAL || reportTitle.equals("Garbage Disposal")) {
-                    val base64Image = imageUri?.let { uriToBase64(context, it) }
-                    val garbage = GarbageDisposalDto(
-                        userId = currentUser.id!!,
-                        reportDetails = textValue,
-                        reportImage = base64Image,
-                        createdById = currentUser.id
-                    )
-                    garbageDisposalViewModel.createGarbageReport(garbage)
 
-                    viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
+//        if (state.isDialogVisible) {
+//            LoginDialog(
+//                title = "Report Submitted",
+//                label = "Success",
+//                message = "Your report has been successfully submitted.",
+//                isLoginSuccessful = true,
+//                onConfirm = {
+//                    viewModel.onIntent(ReportIntent.DismissDialog)
+//                    navController.popBackStack()
+//                },
+//                onDismiss = {
+//                    viewModel.onIntent(ReportIntent.DismissDialog)
+//                }
+//            )
+//        }
 
-                }
-            }
-        )
         Spacer(Modifier.weight(1f))
-    }
-    if (state.isDialogVisible) {
-        LoginDialog(
-            title = "Report Submitted",
-            label = "Success",
-            message = "Your report has been successfully submitted.",
-            isLoginSuccessful = true,
-            onConfirm = {
-                viewModel.onIntent(ReportIntent.DismissDialog)
-                navController.popBackStack()
-            },
-            onDismiss = {
-                viewModel.onIntent(ReportIntent.DismissDialog)
-            }
-        )
+//        CustomButton(
+//            text = "Update",
+//            onClick = {
+//                if(reportTitle == MODULE.GARBAGE_DISPOSAL || reportTitle.equals("Garbage Disposal")) {
+//                     val base64Image = imageUri?.let { uriToBase64(context, it) }
+//                        ?: garbageState.selectedReport?.reportImage
+//
+//                    val garbage = GarbageDisposalDto(
+//                        userId = currentUser.id!!,
+//                        reportDetails = textValue,
+//                        reportImage = base64Image,
+//                        createdById = currentUser.id
+//                    )
+//                    garbageDisposalViewModel.createGarbageReport(garbage)
+//
+//                    viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
+//
+//                }
+//            }
+//        )
+//        Spacer(Modifier.weight(1f))
     }
 }

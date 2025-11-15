@@ -6,5 +6,6 @@ data class GarbageDisposalState(
     val items: List<GarbageDisposalDto> = emptyList(),
     val isLoading: Boolean = false,
     val isDialogVisible: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val selectedReport: GarbageDisposalDto? = null
 )

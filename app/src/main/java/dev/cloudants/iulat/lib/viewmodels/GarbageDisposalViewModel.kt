@@ -24,7 +24,7 @@ class GarbageDisposalViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
             val reports = garbageService.getAll()
-            _state.value = _state.value.copy(items = reports, isLoading = false)
+            _state.value = _state.value.copy(items = reports.sortedByDescending { it.createdAt }, isLoading = false)
         }
     }
 
@@ -43,5 +43,32 @@ class GarbageDisposalViewModel @Inject constructor(
 
     fun dismissDialog() {
         _state.value = _state.value.copy(isDialogVisible = false)
+    }
+
+    fun fetchReportById(reportId: String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            val report = garbageService.getById(reportId)
+            _state.value = _state.value.copy(
+                selectedReport = report,
+                isLoading = false
+            )
+        }
+    }
+
+    fun updateGarbageReport(dto: GarbageDisposalDto) {
+        viewModelScope.launch {
+            try {
+                val reportId = dto.id
+                    ?: throw IllegalArgumentException("Report ID must be provided for update.")
+                _state.value = _state.value.copy(isLoading = true)
+                val updatedReport = garbageService.update(reportId, dto)
+                Log.d("GarbageDisposalViewModel", "Garbage report updated: $updatedReport")
+                _state.value = _state.value.copy(isDialogVisible = true, isLoading = false)
+            } catch (e: Exception) {
+                Log.e("GarbageDisposalViewModel", "Update failed: ${e.message}", e)
+                _state.value = _state.value.copy(isLoading = false, error = e.message)
+            }
+        }
     }
 }
