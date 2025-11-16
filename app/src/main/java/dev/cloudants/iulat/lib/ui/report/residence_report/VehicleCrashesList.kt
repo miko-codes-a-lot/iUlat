@@ -42,11 +42,9 @@ import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.formatterDate
 import dev.cloudants.iulat.lib.components.header.CustomHeader
-import dev.cloudants.iulat.lib.models.entities.RoadRepairDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.models.entities.VehicleCrashDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
-import dev.cloudants.iulat.lib.viewmodels.RoadRepairViewModel
 import dev.cloudants.iulat.lib.viewmodels.VehicleCrashViewModel
 
 @Composable
@@ -76,7 +74,7 @@ fun VehicleCrashesList(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CustomHeader(MODULE.VEHICLE_CRASHES)
+            CustomHeader(MODULE.VEHICLE_CRASH)
             if (state.isLoading) {
                 CircularProgressIndicator(color = Color(0xFF0049AD))
             }
@@ -124,7 +122,7 @@ private fun VehicleCrashesButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                navController.navigate(MainNav.EditReport("Vehicle Crash", id!!))
+                navController.navigate(MainNav.EditReport("Vehicle Crashes", id!!))
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(
@@ -177,7 +175,7 @@ fun FloatingVehicleCrashesRecordIcon(
     ) {
         FloatingActionButton(
             onClick = {
-                navController.navigate(MainNav.CreateReport("Vehicle Crash"))
+                navController.navigate(MainNav.CreateReport("Vehicle Crashes"))
             },
             containerColor = Color(0xFF0049AD),
             contentColor = Color(0xFFFFFFFF),

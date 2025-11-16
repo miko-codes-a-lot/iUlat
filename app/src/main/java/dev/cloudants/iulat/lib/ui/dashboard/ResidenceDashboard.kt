@@ -78,7 +78,7 @@ fun CropsCategory(navController: NavController) {
         ResidenceReportItems(R.drawable.ic_public_disturbance, navController, "Public Disturbance",MODULE.PUBLIC_DISTURBANCE),
         ResidenceReportItems(R.drawable.ic_robberies, navController, "Robberies",MODULE.ROBBERIES),
         ResidenceReportItems(R.drawable.streetlight, navController, "Broken Streetlights",MODULE.BROKEN_STREETLIGHTS),
-        ResidenceReportItems(R.drawable.ic_vehicle_crashes, navController, "Vehicle Crashes", MODULE.VEHICLE_CRASHES),
+        ResidenceReportItems(R.drawable.ic_vehicle_crashes, navController, "Vehicle Crashes", MODULE.VEHICLE_CRASH),
         ResidenceReportItems(R.drawable.road_work, navController, "Road Repair", MODULE.ROAD_REPAIR),
         ResidenceReportItems(R.drawable.no_water, navController, "No Water Supply", MODULE.NO_WATER_SUPPLY),
         ResidenceReportItems(R.drawable.ic_others, navController, "Others",MODULE.OTHERS),
@@ -100,7 +100,7 @@ fun CropsCategory(navController: NavController) {
                                 MODULE.PUBLIC_DISTURBANCE -> navController.navigate(MainNav.PublicDisturbanceList)
                                 MODULE.ROBBERIES -> navController.navigate(MainNav.RobberiesList)
                                 MODULE.BROKEN_STREETLIGHTS -> navController.navigate(MainNav.BrokenLightList)
-                                MODULE.VEHICLE_CRASHES -> navController.navigate(MainNav.VehicleCrashesList)
+                                MODULE.VEHICLE_CRASH -> navController.navigate(MainNav.VehicleCrashesList)
                                 MODULE.ROAD_REPAIR -> navController.navigate(MainNav.RoadRepairList)
                                 MODULE.NO_WATER_SUPPLY -> navController.navigate(MainNav.NoWaterSupplyList)
                                 MODULE.OTHERS -> navController.navigate(MainNav.OthersList)
