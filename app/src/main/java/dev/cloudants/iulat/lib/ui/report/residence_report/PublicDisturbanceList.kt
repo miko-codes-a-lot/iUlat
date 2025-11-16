@@ -13,16 +13,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,13 +37,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.context.formatterDate
 import dev.cloudants.iulat.lib.components.header.CustomHeader
+import dev.cloudants.iulat.lib.models.entities.NoWaterSupplyDto
+import dev.cloudants.iulat.lib.models.entities.PublicDisturbanceDto
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.NoWaterSupplyViewModel
+import dev.cloudants.iulat.lib.viewmodels.PublicDisturbanceViewModel
 
 
 @Composable
-fun PublicDisturbanceList(navController: NavController) {
+fun PublicDisturbanceList(
+    navController: NavController,
+    currentUser: UserDto
+) {
+    val publicDisturbanceViewModel: PublicDisturbanceViewModel = hiltViewModel()
+    val state by publicDisturbanceViewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        publicDisturbanceViewModel.fetchAll(currentUser.id!!)
+    }
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -55,8 +77,14 @@ fun PublicDisturbanceList(navController: NavController) {
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CustomHeader("Public Disturbance")
-            PublicDisturbanceListContainer(navController = navController)
+            CustomHeader(MODULE.PUBLIC_DISTURBANCE)
+            if (state.isLoading) {
+                CircularProgressIndicator(color = Color(0xFF0049AD))
+            }
+            PublicDisturbanceListContainer(
+                navController = navController,
+                items = state.items
+            )
         }
     }
 }
@@ -64,6 +92,7 @@ fun PublicDisturbanceList(navController: NavController) {
 @Composable
 fun PublicDisturbanceListContainer(
     navController: NavController,
+    items: List<PublicDisturbanceDto>
 ) {
     LazyColumn(
         modifier = Modifier
@@ -71,17 +100,34 @@ fun PublicDisturbanceListContainer(
             .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item{
-            OthersButton()
+        if (items.isEmpty()) {
+            item {
+                Text(
+                    text = "No public disturbance reports found.",
+                    color = Color.Gray,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+        }
+
+        items(items) { report ->
+            PublicDisturbanceButton(navController, report)
         }
     }
 }
 
 @Composable
-private fun OthersButton(
+private fun PublicDisturbanceButton(
+    navController: NavController,
+    report: PublicDisturbanceDto,
 ) {
     ElevatedButton(
-        onClick = {  },
+        onClick = {
+            report.id?.let { id ->
+                navController.navigate(MainNav.EditReport("Public Disturbance", id!!))
+            }
+        },
         colors = ButtonDefaults.elevatedButtonColors(
             containerColor = Color.White,
             contentColor = Color(0xFF0049AD)
@@ -104,9 +150,17 @@ private fun OthersButton(
         ) {
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "Public Disturbance",
+                text = formatterDate(report.createdAt),
                 fontSize = 15.sp,
                 textAlign = TextAlign.Start,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.SansSerif
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "${report.status}",
+                fontSize = 15.sp,
+                textAlign = TextAlign.End,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.SansSerif
             )

@@ -13,16 +13,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,10 +38,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.context.formatterDate
 import dev.cloudants.iulat.lib.components.header.CustomHeader
+import dev.cloudants.iulat.lib.models.entities.BrokenStreetlightsDto
+import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
+import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 
 @Preview(
     showBackground = true,
@@ -44,11 +57,24 @@ import dev.cloudants.iulat.lib.utils.main.MainNav
 )
 @Composable
 fun BrokenLightListPreview() {
-    BrokenLightList(navController = rememberNavController())
+    BrokenLightList(
+        navController = rememberNavController(),
+        currentUser = UserDto()
+    )
 }
 
 @Composable
-fun BrokenLightList(navController: NavController) {
+fun BrokenLightList(
+    navController: NavController,
+    currentUser: UserDto
+) {
+    val brokenStreetLightViewModel: BrokenStreetLightViewModel = hiltViewModel()
+    val state by brokenStreetLightViewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        brokenStreetLightViewModel.fetchAll(currentUser.id!!)
+    }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -65,8 +91,15 @@ fun BrokenLightList(navController: NavController) {
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CustomHeader("Broken Streetlights")
-            BrokenListContainer(navController = navController)
+            CustomHeader(MODULE.BROKEN_STREETLIGHTS)
+            if (state.isLoading) {
+                CircularProgressIndicator(color = Color(0xFF0049AD))
+            }
+
+            BrokenListContainer(
+                navController = navController,
+                items = state.items
+            )
         }
     }
 }
@@ -74,6 +107,7 @@ fun BrokenLightList(navController: NavController) {
 @Composable
 fun BrokenListContainer(
     navController: NavController,
+    items: List<BrokenStreetlightsDto>
 ) {
     LazyColumn(
         modifier = Modifier
@@ -81,17 +115,34 @@ fun BrokenListContainer(
             .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        item{
-            BrokenLightButton()
+        if (items.isEmpty()) {
+            item {
+                Text(
+                    text = "No broken street lights reports found.",
+                    color = Color.Gray,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+        }
+
+        items(items) { report ->
+            BrokenLightButton(navController, report)
         }
     }
 }
 
 @Composable
 private fun BrokenLightButton(
+    navController: NavController,
+    report: BrokenStreetlightsDto,
 ) {
     ElevatedButton(
-        onClick = {  },
+        onClick = {
+            report.id?.let { id ->
+                navController.navigate(MainNav.EditReport("Broken Streetlights", id!!))
+            }
+        },
         colors = ButtonDefaults.elevatedButtonColors(
             containerColor = Color.White,
             contentColor = Color(0xFF0049AD)
@@ -114,9 +165,17 @@ private fun BrokenLightButton(
         ) {
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "Broken Light",
+                text = formatterDate(report.createdAt),
                 fontSize = 15.sp,
                 textAlign = TextAlign.Start,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.SansSerif
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "${report.status}",
+                fontSize = 15.sp,
+                textAlign = TextAlign.End,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.SansSerif
             )

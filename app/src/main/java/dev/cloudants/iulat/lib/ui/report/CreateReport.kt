@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -31,11 +32,25 @@ import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.uriToBase64
 import dev.cloudants.iulat.lib.components.dialog.LoginDialog
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
+import dev.cloudants.iulat.lib.models.entities.BrokenStreetlightsDto
 import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
+import dev.cloudants.iulat.lib.models.entities.NoWaterSupplyDto
+import dev.cloudants.iulat.lib.models.entities.OthersDto
+import dev.cloudants.iulat.lib.models.entities.PublicDisturbanceDto
+import dev.cloudants.iulat.lib.models.entities.RoadRepairDto
+import dev.cloudants.iulat.lib.models.entities.RobberiesDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.models.entities.VehicleCrashDto
 import dev.cloudants.iulat.lib.ui.report.intent.ReportIntent
+import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
+import dev.cloudants.iulat.lib.viewmodels.NoWaterSupplyViewModel
+import dev.cloudants.iulat.lib.viewmodels.OthersViewModel
+import dev.cloudants.iulat.lib.viewmodels.PublicDisturbanceViewModel
 import dev.cloudants.iulat.lib.viewmodels.ReportViewModel
+import dev.cloudants.iulat.lib.viewmodels.RoadRepairViewModel
+import dev.cloudants.iulat.lib.viewmodels.RobberiesViewModel
+import dev.cloudants.iulat.lib.viewmodels.VehicleCrashViewModel
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
@@ -45,7 +60,14 @@ fun CreateReportPrev() {
         reportTitle = "SAMPLE ",
         viewModel = viewModel(),
         currentUser = UserDto(),
-        garbageDisposalViewModel = viewModel()
+        garbageDisposalViewModel = viewModel(),
+        publicDisturbanceViewModel = viewModel(),
+        robberiesViewModel = viewModel(),
+        brokenStreetLightViewModel = viewModel(),
+        vehicleCrashViewModel = viewModel(),
+        roadRepairViewModel = viewModel(),
+        noWaterSupplyViewModel = viewModel(),
+        othersViewModel = viewModel(),
     )
 }
 
@@ -55,7 +77,14 @@ fun CreateReport(
     reportTitle: String,
     viewModel: ReportViewModel,
     currentUser: UserDto,
-    garbageDisposalViewModel : GarbageDisposalViewModel
+    garbageDisposalViewModel : GarbageDisposalViewModel,
+    publicDisturbanceViewModel : PublicDisturbanceViewModel,
+    robberiesViewModel : RobberiesViewModel,
+    brokenStreetLightViewModel : BrokenStreetLightViewModel,
+    vehicleCrashViewModel : VehicleCrashViewModel,
+    roadRepairViewModel : RoadRepairViewModel,
+    noWaterSupplyViewModel : NoWaterSupplyViewModel,
+    othersViewModel : OthersViewModel,
 ) {
     val state by viewModel.state.collectAsState()
     var textValue by remember { mutableStateOf("") }
@@ -137,20 +166,111 @@ fun CreateReport(
         CustomButton(
             text = "Submit",
             onClick = {
-                if(reportTitle == MODULE.GARBAGE_DISPOSAL || reportTitle.equals("Garbage Disposal")) {
-                    val base64Image = imageUri?.let { uriToBase64(context, it) }
-                    val garbage = GarbageDisposalDto(
-                        userId = currentUser.id!!,
-                        reportDetails = textValue,
-                        reportImage = base64Image,
-                        createdById = currentUser.id
-                    )
-                    garbageDisposalViewModel.createGarbageReport(garbage)
+                if (textValue.isBlank()) return@CustomButton
+                val base64Image = imageUri?.let { uriToBase64(context, it) }
+                val userId = currentUser.id ?: return@CustomButton
+                var reportCreated = false
+                when (reportTitle) {
+                    MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> {
+                        garbageDisposalViewModel.createGarbageReport(
+                            GarbageDisposalDto(
+                                userId = userId,
+                                reportDetails = textValue,
+                                reportImage = base64Image,
+                                createdById = userId
+                            )
+                        )
+                        reportCreated = true
+                    }
 
-                    viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
+                    MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
+                        publicDisturbanceViewModel.createPublicDisturbanceReport(
+                            PublicDisturbanceDto(
+                                userId = userId,
+                                reportDetails = textValue,
+                                reportImage = base64Image,
+                                createdById = userId
+                            )
+                        )
+                        reportCreated = true
+                    }
 
+                    MODULE.ROBBERIES, "Robberies" -> {
+                        robberiesViewModel.createRobberiesReport(
+                            RobberiesDto(
+                                userId = userId,
+                                reportDetails = textValue,
+                                reportImage = base64Image,
+                                createdById = userId
+                            )
+                        )
+                        reportCreated = true
+                    }
+
+                    MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> {
+                        brokenStreetLightViewModel.createBrokenLightReport(
+                            BrokenStreetlightsDto(
+                                userId = userId,
+                                reportDetails = textValue,
+                                reportImage = base64Image,
+                                createdById = userId
+                            )
+                        )
+                        reportCreated = true
+                    }
+
+                    MODULE.VEHICLE_CRASHES, "Vehicle Crashes" -> {
+                        vehicleCrashViewModel.createVehicleReport(
+                            VehicleCrashDto(
+                                userId = userId,
+                                reportDetails = textValue,
+                                reportImage = base64Image,
+                                createdById = userId
+                            )
+                        )
+                        reportCreated = true
+                    }
+
+                    MODULE.ROAD_REPAIR, "Road Repair" -> {
+                        roadRepairViewModel.createRoadRepairReport(
+                            RoadRepairDto(
+                                userId = userId,
+                                reportDetails = textValue,
+                                reportImage = base64Image,
+                                createdById = userId
+                            )
+                        )
+                        reportCreated = true
+                    }
+
+                    MODULE.NO_WATER_SUPPLY, "No Water Supply" -> {
+                        noWaterSupplyViewModel.createNoWaterSupplyReport(
+                            NoWaterSupplyDto(
+                                userId = userId,
+                                reportDetails = textValue,
+                                reportImage = base64Image,
+                                createdById = userId
+                            )
+                        )
+                        reportCreated = true
+                    }
+
+                    MODULE.OTHERS, "Others" -> {
+                        othersViewModel.createOthersReport(
+                            OthersDto(
+                                userId = userId,
+                                reportDetails = textValue,
+                                reportImage = base64Image,
+                                createdById = userId
+                            )
+                        )
+                        reportCreated = true
+                    }
                 }
-            }
+
+                if (reportCreated) {
+                    viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
+                }            }
         )
         Spacer(Modifier.weight(1f))
     }
