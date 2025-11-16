@@ -7,6 +7,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import dev.cloudants.iulat.lib.services_impl.VehicleCrashServicelmpl
 import dev.cloudants.iulat.lib.ui.user.Account
 import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
 import dev.cloudants.iulat.lib.ui.Login
@@ -34,10 +35,17 @@ import dev.cloudants.iulat.lib.ui.user.CreateAccount
 import dev.cloudants.iulat.lib.ui.user.EditAccount
 import dev.cloudants.iulat.lib.ui.user.UserEdit
 import dev.cloudants.iulat.lib.ui.user.UsersList
+import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
+import dev.cloudants.iulat.lib.viewmodels.NoWaterSupplyViewModel
+import dev.cloudants.iulat.lib.viewmodels.OthersViewModel
+import dev.cloudants.iulat.lib.viewmodels.PublicDisturbanceViewModel
+import dev.cloudants.iulat.lib.viewmodels.RoadRepairViewModel
+import dev.cloudants.iulat.lib.viewmodels.RobberiesViewModel
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
+import dev.cloudants.iulat.lib.viewmodels.VehicleCrashViewModel
 import dev.cloudants.iulat.shared.Guard
 
 fun NavGraphBuilder.mainGraph(navController: NavController) {
@@ -131,12 +139,26 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 val title = args.title
                 val viewModel : ReportViewModel = hiltViewModel()
                 val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                val publicDisturbanceViewModel : PublicDisturbanceViewModel = hiltViewModel()
+                val robberiesViewModel : RobberiesViewModel = hiltViewModel()
+                val brokenStreetLightViewModel : BrokenStreetLightViewModel = hiltViewModel()
+                val vehicleCrashViewModel : VehicleCrashViewModel = hiltViewModel()
+                val roadRepairViewModel : RoadRepairViewModel = hiltViewModel()
+                val noWaterSupplyViewModel : NoWaterSupplyViewModel = hiltViewModel()
+                val othersViewModel : OthersViewModel = hiltViewModel()
                 CreateReport(
                     navController = navController,
                     reportTitle = title,
                     viewModel = viewModel,
                     currentUser = currentUser,
-                    garbageDisposalViewModel = garbageDisposalViewModel
+                    garbageDisposalViewModel = garbageDisposalViewModel,
+                    publicDisturbanceViewModel = publicDisturbanceViewModel,
+                    robberiesViewModel = robberiesViewModel,
+                    brokenStreetLightViewModel = brokenStreetLightViewModel,
+                    vehicleCrashViewModel = vehicleCrashViewModel,
+                    roadRepairViewModel = roadRepairViewModel,
+                    noWaterSupplyViewModel = noWaterSupplyViewModel,
+                    othersViewModel = othersViewModel,
                 )
             }
         }
@@ -173,43 +195,64 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
 
         composable<MainNav.PublicDisturbanceList> {
             Guard(navController = navController) { currentUser ->
-                PublicDisturbanceList(navController)
+                PublicDisturbanceList(
+                    navController,
+                    currentUser
+                )
             }
         }
 
         composable<MainNav.RobberiesList> {
             Guard(navController = navController) { currentUser ->
-                RobberiesList(navController)
+                RobberiesList(
+                    navController,
+                    currentUser
+                )
             }
         }
 
         composable<MainNav.BrokenLightList> {
             Guard(navController = navController) { currentUser ->
-                BrokenLightList(navController)
+                BrokenLightList(
+                    navController,
+                    currentUser = currentUser
+                )
             }
         }
 
         composable<MainNav.VehicleCrashesList> {
             Guard(navController = navController) { currentUser ->
-                VehicleCrashesList(navController)
+                VehicleCrashesList(
+                    navController,
+                    currentUser = currentUser
+                )
             }
         }
 
         composable<MainNav.RoadRepairList> {
             Guard(navController = navController) { currentUser ->
-                RoadRepairList(navController)
+                RoadRepairList(
+                    navController,
+                    currentUser
+                )
             }
         }
 
         composable<MainNav.NoWaterSupplyList> {
             Guard(navController = navController) { currentUser ->
-                NoWaterSupplyList(navController)
+                NoWaterSupplyList(
+                    navController,
+                    currentUser
+                )
             }
         }
 
         composable<MainNav.OthersList> {
             Guard(navController = navController) { currentUser ->
-                OthersList(navController)
+                OthersList(
+                    navController,
+                    currentUser
+                )
             }
         }
 
