@@ -1,10 +1,12 @@
 package dev.cloudants.iulat.lib.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,6 +22,8 @@ import dev.cloudants.iulat.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +49,8 @@ import dev.cloudants.iulat.lib.ui.user.UserDetails
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,7 +66,8 @@ fun Menu(
     val routeName by viewModel.routeName
     val topBarTitle by viewModel.topBarTitle
     val navItems = currentUserState.value?.let { getNavItems(navController, it) } ?: emptyList()
-
+    val isLoggingOut = remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(currentUserState.value) {
         val user = currentUserState.value
         if (user == null) {
@@ -100,10 +107,13 @@ fun Menu(
                     IconButton(
                         onClick = {
                             if (routeName == MODULE.ACCOUNT) {
-                                UserSession.clearSession(context)
-                                currentUserState.value = null
-                                navController.navigate(MainNav.Login) {
-                                    popUpTo(0)
+                                isLoggingOut.value = true
+                                coroutineScope.launch {
+                                    kotlinx.coroutines.delay(1000)
+                                    UserSession.clearSession(context)
+                                    currentUserState.value = null
+                                    navController.navigate(MainNav.Login) { popUpTo(0) }
+                                    isLoggingOut.value = false
                                 }
                             } else {
                                 navController.navigate(MainNav.NotificationList)
@@ -166,6 +176,22 @@ fun Menu(
             }
         }
     }
+    if (isLoggingOut.value) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0x88000000)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color.White, strokeWidth = 4.dp)
+            Text(
+                text = "Logging out...",
+                color = Color.White,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+
 }
 
 @Composable
