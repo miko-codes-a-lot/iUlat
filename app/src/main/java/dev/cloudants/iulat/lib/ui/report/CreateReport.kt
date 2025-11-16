@@ -169,7 +169,7 @@ fun CreateReport(
                 if (textValue.isBlank()) return@CustomButton
                 val base64Image = imageUri?.let { uriToBase64(context, it) }
                 val userId = currentUser.id ?: return@CustomButton
-
+                var reportCreated = false
                 when (reportTitle) {
                     MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> {
                         garbageDisposalViewModel.createGarbageReport(
@@ -180,6 +180,7 @@ fun CreateReport(
                                 createdById = userId
                             )
                         )
+                        reportCreated = true
                     }
 
                     MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
@@ -191,6 +192,7 @@ fun CreateReport(
                                 createdById = userId
                             )
                         )
+                        reportCreated = true
                     }
 
                     MODULE.ROBBERIES, "Robberies" -> {
@@ -202,6 +204,7 @@ fun CreateReport(
                                 createdById = userId
                             )
                         )
+                        reportCreated = true
                     }
 
                     MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> {
@@ -213,6 +216,7 @@ fun CreateReport(
                                 createdById = userId
                             )
                         )
+                        reportCreated = true
                     }
 
                     MODULE.VEHICLE_CRASHES, "Vehicle Crashes" -> {
@@ -224,6 +228,7 @@ fun CreateReport(
                                 createdById = userId
                             )
                         )
+                        reportCreated = true
                     }
 
                     MODULE.ROAD_REPAIR, "Road Repair" -> {
@@ -235,6 +240,7 @@ fun CreateReport(
                                 createdById = userId
                             )
                         )
+                        reportCreated = true
                     }
 
                     MODULE.NO_WATER_SUPPLY, "No Water Supply" -> {
@@ -246,6 +252,7 @@ fun CreateReport(
                                 createdById = userId
                             )
                         )
+                        reportCreated = true
                     }
 
                     MODULE.OTHERS, "Others" -> {
@@ -257,11 +264,13 @@ fun CreateReport(
                                 createdById = userId
                             )
                         )
+                        reportCreated = true
                     }
                 }
 
-                viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
-            }
+                if (reportCreated) {
+                    viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
+                }            }
         )
         Spacer(Modifier.weight(1f))
     }

@@ -14,9 +14,12 @@ import java.util.UUID
 import kotlinx.serialization.json.Json
 
 class GarbageDisposalServiceImpl @Inject constructor(
-    private val collection: Collection
+    private val db: Database
 ) : GarbageDisposalService {
-
+    private val collection: Collection by lazy {
+        db.getCollection("garbage_disposal")
+            ?: throw IllegalStateException("Collection 'garbage_disposal' not found.")
+    }
     override suspend fun create(garbage: GarbageDisposalDto): GarbageDisposalDto {
         return try {
             val id = garbage.id ?: UUID.randomUUID().toString()

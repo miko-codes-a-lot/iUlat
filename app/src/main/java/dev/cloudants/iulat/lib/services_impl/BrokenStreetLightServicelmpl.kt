@@ -3,6 +3,7 @@ package dev.cloudants.iulat.lib.services_impl
 import android.util.Log
 import com.couchbase.lite.Collection
 import com.couchbase.lite.DataSource
+import com.couchbase.lite.Database
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
@@ -14,9 +15,12 @@ import java.util.UUID
 import javax.inject.Inject
 
 class BrokenStreetLightServicelmpl @Inject constructor(
-    private val collection: Collection
+    private val db: Database
 ) : BrokenStreetLightsService {
-
+    private val collection: Collection by lazy {
+        db.getCollection("broken_streetlights")
+            ?: throw IllegalStateException("Collection 'broken_streetlights' not found.")
+    }
     override suspend fun create(brokenStreetlightsDto: BrokenStreetlightsDto): BrokenStreetlightsDto {
         return try {
             val id = brokenStreetlightsDto.id ?: UUID.randomUUID().toString()
