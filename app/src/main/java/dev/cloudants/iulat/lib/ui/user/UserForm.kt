@@ -1,8 +1,9 @@
 package dev.cloudants.iulat.lib.ui.user
 
-import android.annotation.SuppressLint
 import android.app.DatePickerDialog
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,15 +12,27 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip 
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.layout.ContentScale 
+import androidx.compose.ui.layout.ContentScale
+import android.util.Base64
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -27,8 +40,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.times
+import androidx.compose.ui.unit.toSize
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -37,8 +53,11 @@ import dev.cloudants.iulat.lib.components.button.CustomButton
 import dev.cloudants.iulat.lib.intent.UserIntent
 import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.viewmodels.AddressViewModel
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 import kotlinx.coroutines.delay
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -51,7 +70,8 @@ fun UserForm(
     includePassword: Boolean = true,
     navController: NavController,
     addressDto: AddressDto?,
-    viewModel: UserViewModel = hiltViewModel()
+    viewModel: UserViewModel = hiltViewModel(),
+    addressViewModel: AddressViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val (chosenRole, setChosenRole) = remember {
@@ -63,7 +83,9 @@ fun UserForm(
             }
         )
     }
+    val context = LocalContext.current
     var selectedIdUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedGender by remember { mutableStateOf(targetUserDto?.gender ?: "Unspecified") }
 
     val listOfLabel = mutableListOf(
         "First Name", "Middle Name", "Last Name", "Date Of Birth",
@@ -73,23 +95,34 @@ fun UserForm(
     if (includePassword || targetUserDto != null) {
         listOfLabel.add("Password")
     }
+    LaunchedEffect(Unit) {
+        addressViewModel.loadAddresses()
+    }
 
     val statesValue = remember(targetUserDto) {
-        listOfLabel.associateWith { label ->
-            mutableStateOf(
-                when (label) {
-                    "First Name" -> targetUserDto?.firstName ?: ""
-                    "Middle Name" -> targetUserDto?.middleName ?: ""
-                    "Last Name" -> targetUserDto?.lastName ?: ""
-                    "Date Of Birth" -> targetUserDto?.dateOfBirth ?: ""
-                    "Address" -> targetUserDto?.address?.province ?: ""
-                    "Mobile Number" -> targetUserDto?.mobileNumber ?: ""
-                    "Email" -> targetUserDto?.email ?: ""
-                    "Password" -> targetUserDto?.password ?: ""
-                    else -> ""
-                }
-            )
-        }
+        (listOfLabel + listOf("Province", "Municipality", "Barangay", "Zone", "Latitude", "Longitude"))
+            .associateWith { label ->
+                mutableStateOf(
+                    when(label) {
+                        "First Name" -> targetUserDto?.firstName?.trim() ?: ""
+                        "Middle Name" -> targetUserDto?.middleName?.trim() ?: ""
+                        "Last Name" -> targetUserDto?.lastName?.trim() ?: ""
+                        "Date Of Birth" -> targetUserDto?.dateOfBirth?.trim() ?: ""
+                        "Address" -> targetUserDto?.address?.zone?.trim() ?: ""
+                        "Province" -> targetUserDto?.address?.province ?: ""
+                        "Municipality" -> targetUserDto?.address?.municipality ?: ""
+                        "Barangay" -> targetUserDto?.address?.barangay ?: ""
+                        "Zone" -> targetUserDto?.address?.zone ?: ""
+                        "Latitude" -> targetUserDto?.address?.latitude?.toString() ?: "0.0"
+                        "Longitude" -> targetUserDto?.address?.longitude?.toString() ?: "0.0"
+                        "Mobile Number" -> targetUserDto?.mobileNumber?.trim() ?: ""
+                        "Email" -> targetUserDto?.email?.trim() ?: ""
+                        "Password" -> ""
+//                        "Password" -> targetUserDto?.password?.trim() ?: ""
+                        else -> ""
+                    }
+                )
+            }
     }
 
     LaunchedEffect(targetUserDto) {
@@ -101,7 +134,10 @@ fun UserForm(
             statesValue["Address"]?.value = it.address?.province ?: ""
             statesValue["Mobile Number"]?.value = it.mobileNumber ?: ""
             statesValue["Email"]?.value = it.email
-            statesValue["Password"]?.value = it.password
+//            statesValue["Password"]?.value = it.password
+            Log.d("UserForm", "Editing user: ${it.username}")
+            Log.d("UserForm", "Original hashed password: ${it.password}")
+            statesValue["Password"]?.value = ""
         }
     }
 
@@ -137,7 +173,20 @@ fun UserForm(
                                 }
                             )
                         }
-
+                        "Address" -> {
+                            AddressSelector(
+                                userAddress = targetUserDto?.address,
+                                viewModel = addressViewModel,
+                                onAddressSelected = { selected ->
+                                    statesValue["Province"]?.value = selected.province
+                                    statesValue["Municipality"]?.value = selected.municipality
+                                    statesValue["Barangay"]?.value = selected.barangay
+                                    statesValue["Zone"]?.value = selected.zone
+                                    statesValue["Latitude"]?.value = selected.latitude.toString()
+                                    statesValue["Longitude"]?.value = selected.longitude.toString()
+                                }
+                            )
+                        }
                         else -> {
                             TextFieldContainer(
                                 textFieldLabel = label,
@@ -147,6 +196,32 @@ fun UserForm(
                                 }
                             )
                         }
+                    }
+                }
+            }
+        }
+
+        item {
+            Text(
+                text = "Select Gender:",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                listOf("Male", "Female").forEach { gender ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = selectedGender == gender,
+                            onClick = { selectedGender = gender },
+                            colors = RadioButtonDefaults.colors(selectedColor = Color.Blue)
+                        )
+                        Text(gender)
                     }
                 }
             }
@@ -199,26 +274,45 @@ fun UserForm(
                 else -> CustomButton(
                     text = "Submit",
                     onClick = {
+                        val rawPassword = statesValue["Password"]?.value ?: ""
+                        val finalPassword = rawPassword.ifBlank {
+                            targetUserDto?.password ?: ""
+                        }
+                        var validId: String? = null
+                        selectedIdUri?.let { uri ->
+                            try {
+                                val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+                                val byteArrayOutputStream = ByteArrayOutputStream()
+                                inputStream?.copyTo(byteArrayOutputStream)
+                                val byteArray = byteArrayOutputStream.toByteArray()
+                                validId = Base64.encodeToString(byteArray, Base64.DEFAULT)
+                            } catch (e: Exception) {
+                                Log.e("UserForm", "Failed to encode image to Base64: ${e.message}")
+                            }
+                        }
                         val user = UserDto(
                             id =  targetUserDto?.id,
                             username = statesValue["Email"]?.value ?: "",
-                            password = statesValue["Password"]?.value ?: "",
+                            password = finalPassword,
                             firstName = statesValue["First Name"]?.value ?: "",
                             middleName = statesValue["Middle Name"]?.value,
                             lastName = statesValue["Last Name"]?.value ?: "",
                             email = statesValue["Email"]?.value ?: "",
                             mobileNumber = statesValue["Mobile Number"]?.value,
                             dateOfBirth = statesValue["Date Of Birth"]?.value ?: "",
-                            gender = "Unspecified",
+                            gender = selectedGender,
                             address = AddressDto(
-                                province = statesValue["Address"]?.value ?: "",
-                                municipality = "",
-                                barangay = ""
+                                province = statesValue["Province"]?.value ?: "",
+                                municipality = statesValue["Municipality"]?.value ?: "",
+                                barangay = statesValue["Barangay"]?.value ?: "",
+                                zone = statesValue["Zone"]?.value ?: "",
+                                latitude = statesValue["Latitude"]?.value?.toDoubleOrNull() ?: 0.0,
+                                longitude = statesValue["Longitude"]?.value?.toDoubleOrNull() ?: 0.0
                             ),
                             type = "user",
                             isAdmin = chosenRole == "Admin",
                             isResidence = chosenRole == "Residence",
-                            validId = selectedIdUri?.toString() ?: targetUserDto?.validId
+                            validId = validId ?: targetUserDto?.validId
                         )
 
                         onSubmit(user)
@@ -257,6 +351,19 @@ fun UploadIdUI(
     onImageSelected: (Uri?) -> Unit
 ) {
     var selectedImgUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val base64Bitmap by remember(existingImageUrl) {
+        mutableStateOf(
+            if (!existingImageUrl.isNullOrEmpty() && !existingImageUrl.startsWith("http") && !existingImageUrl.startsWith("content://")) {
+                try {
+                    val decodedBytes = Base64.decode(existingImageUrl, Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+                } catch (e: Exception) {
+                    Log.e("UploadIdUI", "Failed to decode base64 image: ${e.message}")
+                    null
+                }
+            } else null
+        )
+    }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -265,10 +372,16 @@ fun UploadIdUI(
             onImageSelected(uri)
         }
     )
-    val displayImage: Any? = selectedImgUri ?: existingImageUrl
+
+    val displayImage: Any? = when {
+        selectedImgUri != null -> selectedImgUri
+        base64Bitmap != null -> base64Bitmap!!.asImageBitmap()
+        existingImageUrl?.startsWith("http") == true || existingImageUrl?.startsWith("https") == true -> existingImageUrl
+        else -> null
+    }
 
     Box(
-        Modifier
+        modifier = Modifier
             .padding(top = 10.dp)
             .fillMaxWidth()
             .clickable(
@@ -288,23 +401,36 @@ fun UploadIdUI(
                 .background(if (displayImage != null) Color.White else Color.Gray),
             contentAlignment = Alignment.Center
         ) {
-            if (displayImage != null) {
-                AsyncImage(
-                    model = displayImage,
-                    contentDescription = "Valid ID",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(4f / 3f)
-                        .padding(8.dp),
-                    contentScale = ContentScale.Crop
-                )
-
-            } else {
-                Text(
-                    "Tap to Upload ID",
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
+            when (displayImage) {
+                is ImageBitmap -> {
+                    Image(
+                        bitmap = displayImage,
+                        contentDescription = "Valid ID",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(4f / 3f)
+                            .padding(8.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                is String, is Uri -> {
+                    AsyncImage(
+                        model = displayImage,
+                        contentDescription = "Valid ID",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(4f / 3f)
+                            .padding(8.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                else -> {
+                    Text(
+                        "Tap to Upload ID",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
             }
         }
     }
@@ -322,21 +448,13 @@ fun TextFieldContainer(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
             .padding(vertical = 8.dp)
     ) {
-        Text(
-            text = "$textFieldLabel:",
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.SansSerif,
-            fontSize = 17.sp
-        )
-        TextField(
+        OutlinedTextField(
             value = textFieldValue,
             onValueChange = onValueChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(textFieldLabel, fontWeight = FontWeight.Bold) },
             visualTransformation = if (isPasswordField && !isPasswordVisible) {
                 PasswordVisualTransformation()
             } else {
@@ -360,160 +478,206 @@ fun TextFieldContainer(
                 fontFamily = FontFamily.SansSerif
             ),
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = Color.Transparent,
-                focusedContainerColor = Color.Gray,
-            )
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                focusedLabelColor = Color(0xFF0049AD),
+                cursorColor = Color(0xFF0049AD),
+            ),
+            singleLine = true
         )
     }
 }
 
-
-@SuppressLint("RememberReturnType")
 @Composable
 fun DatePickerField(
-    label: String, dateValue: String,
-    onDateChange: (String) -> Unit,
+    label: String,
+    dateValue: String,
+    onDateChange: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val calendar = Calendar.getInstance()
+    val calendar = remember { Calendar.getInstance() }
+
     LaunchedEffect(dateValue) {
-        try {
-            val parsedDate = SimpleDateFormat(
+        if (dateValue.isNotBlank()) {
+            val formats = listOf(
                 "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                Locale.getDefault()
-            ).parse(dateValue)
-            parsedDate?.let {
-                calendar.time = it
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                "yyyy-MM-dd"
+            )
+            for (f in formats) {
+                try {
+                    val parsed = SimpleDateFormat(f, Locale.getDefault()).parse(dateValue)
+                    if (parsed != null) {
+                        calendar.time = parsed
+                        break
+                    }
+                } catch (_: Exception) {}
             }
-        } catch (_: Exception) {
         }
     }
+
+    val displayFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+    val displayDate = try {
+        if (dateValue.isBlank()) "Select Date"
+        else SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+            .parse(dateValue)?.let { displayFormat.format(it) } ?: "Select Date"
+    } catch (_: Exception) {
+        "Select Date"
+    }
+
     val datePickerDialog = remember {
-        android.app.DatePickerDialog(
+        DatePickerDialog(
             context,
             { _, year, month, dayOfMonth ->
                 calendar.set(year, month, dayOfMonth)
-                val isoFormat =
-                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+                val isoFormat = SimpleDateFormat(
+                    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                    Locale.getDefault()
+                )
                 isoFormat.timeZone = TimeZone.getTimeZone("UTC")
-                val dateISO = isoFormat.format(calendar.time)
-                onDateChange(dateISO)
+                onDateChange(isoFormat.format(calendar.time))
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         )
     }
-    val displayFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
-    val displayDate = remember(dateValue) {
-        if (dateValue.isBlank()) {
-            "Select Date"
-        } else {
-            val possibleFormats = listOf(
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                "yyyy-MM-dd'T'HH:mm:ss'Z'",
-                "yyyy-MM-dd"
-            )
-
-            var parsedDate: Date? = null
-            for (pattern in possibleFormats) {
-                try {
-                    parsedDate = SimpleDateFormat(pattern, Locale.getDefault()).parse(dateValue)
-                    if (parsedDate != null) break
-                } catch (_: Exception) {}
-            }
-            parsedDate?.let { displayFormat.format(it) } ?: "Select Date"
-        }
-    }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
-            .padding(horizontal = 4.dp)
-            .padding(top = 8.dp)
-            .clickable {
-                DatePickerDialog(
-                    context,
-                    { _, year, month, dayOfMonth ->
-                        calendar.set(year, month, dayOfMonth)
-                        val isoFormat = SimpleDateFormat(
-                            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                            Locale.getDefault()
-                        )
-                        isoFormat.timeZone = TimeZone.getTimeZone("UTC")
-                        val dateISO = isoFormat.format(calendar.time)
-                        onDateChange(dateISO)
-                    },
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.DAY_OF_MONTH)
-                ).show()
-            }
+            .padding(top = 10.dp)
+            .clickable { datePickerDialog.show() },
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Text(
+            text = "$label :",
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.SansSerif,
+            fontSize = 17.sp
+        )
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Icon(
+            painter = painterResource(id = R.drawable.calendar_icon),
+            contentDescription = "Calendar Icon",
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Surface(
             modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+                .clickable { datePickerDialog.show() }
+                .height(40.dp)
+                .width(200.dp),
+            color = Color.White,
+            shadowElevation = 2.dp
         ) {
-            Text(
-                text = label,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.SansSerif,
-                fontSize = 17.sp
-            )
-
-            Spacer(modifier = Modifier.width(18.dp))
-
-            Icon(
-                painter = painterResource(id = R.drawable.calendar_icon),
-                contentDescription = "Calendar Icon",
-                modifier = Modifier.size(24.dp)
-            )
-
-            Text(" : ", fontWeight = FontWeight.Bold)
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Surface(
-                modifier = Modifier
-                    .clickable {
-                        datePickerDialog.show()
-                    }
-                    .padding(4.dp)
-                    .background(Color.Transparent),
+            Box(
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.padding(start = 10.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .width(202.dp)
-                        .height(40.dp)
-                        .background(Color.White)
-                ) {
-//                    if (isError) {
-//                        Text(
-//                            text = errorMessage,
-//                            color = Color.Red,
-//                            modifier = Modifier.padding(top = 4.dp),
-//                            fontSize = 12.sp
-//                        )
-//                    }else {
-                    Text(
-                        text = displayDate,
-                        fontFamily = FontFamily.SansSerif,
+                Text(
+                    text = displayDate,
+                    fontFamily = FontFamily.SansSerif,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = Color.Black
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AddressSelector(
+    userAddress: AddressDto? = null,
+    viewModel: AddressViewModel,
+    onAddressSelected: (AddressDto) -> Unit
+) {
+    val addresses = viewModel.addressList
+    var expanded by remember { mutableStateOf(false) }
+    var selectedAddress by remember { mutableStateOf(userAddress) }
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
+    val icon = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "Address",
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            fontFamily = FontFamily.SansSerif,
+            fontSize = 17.sp
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    expanded = !expanded
+                }
+        ) {
+            OutlinedTextField(
+                value = selectedAddress?.zone?.let {
+                    if (selectedAddress?.barangay?.isNotEmpty() == true) "${it}, ${selectedAddress?.barangay}"
+                    else it
+                } ?: "Select Address",
+                onValueChange = {},
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { coordinates ->
+                        textFieldSize = coordinates.size.toSize()
+                    }
+                    .clickable { expanded = !expanded },
+                readOnly = true,
+                trailingIcon = {
+                    Icon(icon, "Dropdown Icon", modifier = Modifier.clickable { expanded = !expanded })
+                },
+                textStyle = TextStyle(
+                    color = Color.Black,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                )
+            )
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier
+                    .background(Color.White)
+                    .padding(start = 10.dp, end = 10.dp)
+                    .width(textFieldSize.width.dp)
+                    .heightIn(max = 5 * 48.dp)
+            ) {
+                addresses.forEach { address ->
+                    DropdownMenuItem(
                         modifier = Modifier
-                            .padding(10.dp)
-                            .align(Alignment.CenterStart),
-                        fontSize = 17.sp,
-                        color = Color.Black
-                    )
-//                    }
-                    HorizontalDivider(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .fillMaxWidth(),
-                        thickness = 1.dp,
-                        color = Color.Gray
+                            .background(Color.White)
+                            .padding(start = 10.dp, end = 10.dp),
+                        text = {
+                            Text(
+                                text = if (address.barangay.isNotEmpty())
+                                    "${address.zone}, ${address.barangay}"
+                                else address.zone,
+                                color = Color.Black,
+                                fontFamily = FontFamily.SansSerif,
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        },
+                        onClick = {
+                            selectedAddress = address
+                            onAddressSelected(address)
+                            expanded = false
+                        }
                     )
                 }
             }

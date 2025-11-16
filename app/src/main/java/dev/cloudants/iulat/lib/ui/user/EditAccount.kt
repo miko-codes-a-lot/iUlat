@@ -647,12 +647,9 @@ fun PasswordEdit(navController: NavController, currentDto: UserDto, accountViewM
                         newPasswordError = "New passwords do not match"
                     }
                     else -> {
-                        val hashedNewPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt())
-                        Log.d("PasswordCheck", "✅ New hashed password: $hashedNewPassword")
-
                         coroutineScope.launch {
                             try {
-                                val result = viewModel.updateUser(currentDto.copy(password = hashedNewPassword))
+                                val result = viewModel.updateUser(currentDto.copy(password = newPassword))
                                 if (result.isSuccess) {
                                     accountViewModel.showDialog()
                                     navController.navigate(MainNav.Menu) {

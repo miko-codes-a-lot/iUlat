@@ -33,7 +33,7 @@ class AuthServiceImpl @Inject constructor(
                 if (BCrypt.checkpw(password, user.password)) {
                     user
                 } else {
-                    Log.w("AuthServiceImpl", "  Incorrect password for ${user.email}")
+                    Log.w("AuthServiceImpl", "  Incorrect password for ${user.email} ${user.password} ")
                     null
                 }
             } else {

@@ -20,6 +20,7 @@ import dev.cloudants.iulat.lib.ui.message.ChatLobby
 import dev.cloudants.iulat.lib.ui.message.MessageDto
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.CreateReport
+import dev.cloudants.iulat.lib.ui.report.EditReport
 import dev.cloudants.iulat.lib.ui.report.residence_report.BrokenLightList
 import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
 import dev.cloudants.iulat.lib.ui.report.residence_report.NoWaterSupplyList
@@ -33,6 +34,7 @@ import dev.cloudants.iulat.lib.ui.user.CreateAccount
 import dev.cloudants.iulat.lib.ui.user.EditAccount
 import dev.cloudants.iulat.lib.ui.user.UserEdit
 import dev.cloudants.iulat.lib.ui.user.UsersList
+import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
@@ -128,9 +130,35 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 val args = it.toRoute<MainNav.CreateReport>()
                 val title = args.title
                 val viewModel : ReportViewModel = hiltViewModel()
-                CreateReport(navController, reportTitle = title, viewModel = viewModel)
+                val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                CreateReport(
+                    navController = navController,
+                    reportTitle = title,
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    garbageDisposalViewModel = garbageDisposalViewModel
+                )
             }
         }
+
+        composable<MainNav.EditReport> {
+            Guard(navController) { currentUser ->
+                val args = it.toRoute<MainNav.EditReport>()
+                val title = args.title
+                val reportId = args.reportId
+                val viewModel : ReportViewModel = hiltViewModel()
+                val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                EditReport(
+                    navController = navController,
+                    reportTitle = title,
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    garbageDisposalViewModel = garbageDisposalViewModel,
+                    reportId = reportId
+                )
+            }
+        }
+
         composable<MainNav.NotificationList> {
             Guard(navController = navController) { currentUser ->
                 NotificationList(navController)
@@ -139,7 +167,7 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
 
         composable<MainNav.GarbageDisposalList> {
             Guard(navController = navController) { currentUser ->
-                GarbageDisposalList(navController)
+                GarbageDisposalList(navController, currentUser)
             }
         }
 

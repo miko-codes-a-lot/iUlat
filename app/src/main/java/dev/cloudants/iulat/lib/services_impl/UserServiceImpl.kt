@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.services_impl
 
+import android.util.Base64
 import android.util.Log
 import com.couchbase.lite.DataSource
 import com.couchbase.lite.Database
@@ -14,17 +15,22 @@ import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.services.UserService
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.mindrot.jbcrypt.BCrypt
 import java.util.UUID
 import javax.inject.Inject
 
 class UserServiceImpl @Inject constructor (
     private val db: Database,
 ): UserService {
+
     private val collection by lazy {
         db.getCollection("users")
             ?: throw IllegalStateException("Collection 'users' not found")
     }
-
+    init {
+        collection
+        logAllUsers()
+    }
     private fun getDocument(id: String): Document {
         val doc = collection.getDocument(id)
         if (doc == null) {
@@ -32,6 +38,26 @@ class UserServiceImpl @Inject constructor (
         }
         return doc
     }
+
+    fun logAllUsers() {
+        try {
+            val results = QueryBuilder
+                .select(SelectResult.all())
+                .from(DataSource.collection(collection))
+                .execute()
+                .allResults()
+
+            results.forEach { result ->
+                val dict = result.getDictionary(collection.name)
+                Log.d("UserServiceImpl", "User doc: ${dict?.toJSON()}")
+            }
+
+            Log.d("UserServiceImpl", "Total users: ${results.size}")
+        } catch (e: Exception) {
+            Log.e("UserServiceImpl", "Failed to fetch all users: ${e.message}")
+        }
+    }
+
 
     override fun findOne(id: String): UserDto {
         return fetchOne(id) ?: throw NotFoundException("User not found: $id")
@@ -61,15 +87,35 @@ class UserServiceImpl @Inject constructor (
             }
     }
 
+    override fun createAdminUser(user: UserDto): UserDto {
+        return try {
+            val freshId = UUID.randomUUID().toString()
+            val adminUser = user.copy(
+                id = freshId,
+                isAdmin = true,
+                type = "admin"
+            )
+            val json = Json.encodeToString(adminUser)
+            val doc = MutableDocument(freshId).apply { setJSON(json) }
+            collection.save(doc)
+            Log.e("UserServiceImpl", "Admin user created successfully: ${adminUser.email}")
+            adminUser
+        } catch (e: Exception) {
+            Log.e("UserServiceImpl", "Failed to create admin user: ${e.message}", e)
+            throw e
+        }
+    }
+
     override fun create(user: UserDto): UserDto {
         try {
             val freshId = UUID.randomUUID().toString()
-            val userWithId = user.copy(id = freshId)
-            val json = Json.Default.encodeToString(userWithId)
-            val doc = MutableDocument(freshId)
-            doc.setJSON(json)
+            val hashedPassword = BCrypt.hashpw(user.password, BCrypt.gensalt())
+            val userWithHashedPassword = user.copy(id = freshId,password = hashedPassword)
+            val json = Json.Default.encodeToString(userWithHashedPassword)
+            val doc = MutableDocument(freshId).apply { setJSON(json) }
             collection.save(doc)
-            return userWithId
+            Log.e("UserServiceImpl", "User created successfully: ${user.email}")
+            return userWithHashedPassword
         } catch (e: Exception) {
             Log.e("UserServiceImpl", "Failed to create user: ${e.message}", e)
             throw e
@@ -80,11 +126,15 @@ class UserServiceImpl @Inject constructor (
     override fun update(id: String, user: UserDto): UserDto {
         try {
             val doc = this.getDocument(id)
-            val userToSave = user.copy(id = id)
+            val isHashedAlready = user.password.startsWith("\$2a\$") || user.password.startsWith("\$2b\$")
+            val finalPassword = if (isHashedAlready) user.password else BCrypt.hashpw(user.password, BCrypt.gensalt())
+            val userToSave = user.copy(id = id, password = finalPassword)
             val json = Json.Default.encodeToString(userToSave)
+
             val mutableDoc = doc.toMutable()
             mutableDoc.setJSON(json)
             collection.save(mutableDoc)
+
             return userToSave
         } catch (e: Exception) {
             Log.e("UserServiceImpl", "Failed to update user: ${e.message}", e)
@@ -123,13 +173,14 @@ class UserServiceImpl @Inject constructor (
             }
 
             val addressDict = userDict.getDictionary("address")
-            val address = if (addressDict != null) {
-                AddressDto(
-                    province = addressDict.getString("province") ?: "",
-                    municipality = addressDict.getString("municipality") ?: "",
-                    barangay = addressDict.getString("barangay") ?: ""
-                )
-            } else AddressDto("", "", "")
+//            val address = if (addressDict != null) {
+//                AddressDto(
+//                    province = addressDict.getString("province") ?: "",
+//                    municipality = addressDict.getString("municipality") ?: "",
+//                    barangay = addressDict.getString("barangay") ?: ""
+//                )
+//            } else AddressDto("", "", "")
+            val address = AddressDto("","","","","",0.0, 0.0)
 
             val user = UserDto(
                 id = userDict.getString("id") ?: "",
@@ -152,11 +203,12 @@ class UserServiceImpl @Inject constructor (
 
             Log.e("UserServiceImpl", "Found user: ${user.email}")
 
-            return if (user.password == password) {
-                Log.e("UserServiceImpl", " Password matched for ${user.email}")
+            return if (BCrypt.checkpw(password, user.password)) {
+//          return if (user.password == password) {
+                Log.e("UserServiceImpl", "Password matched for ${user.email}")
                 user
             } else {
-                Log.e("UserServiceImpl", " Incorrect password for ${user.email}")
+                Log.e("UserServiceImpl", "Incorrect password for ${user.email}")
                 null
             }
         } else {
@@ -164,6 +216,53 @@ class UserServiceImpl @Inject constructor (
         }
 
         return null
+    }
+
+    override fun saveZonesToDatabase(zones: List<AddressDto>): Boolean {
+        return try {
+            zones.forEach { address ->
+                val id = address.id?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
+
+                val doc = MutableDocument(id).apply {
+                    setString("id", id)
+                    setString("province", address.province)
+                    setString("municipality", address.municipality)
+                    setString("barangay", address.barangay)
+                    setString("zone", address.zone)
+                    setDouble("latitude", address.latitude)
+                    setDouble("longitude", address.longitude)
+                }
+                collection.save(doc)
+                Log.e("AddressInit", "Saved address: $id -> ${address.zone}, ${address.barangay}")
+            }
+
+            Log.e("AddressInit", "Inserted all zones successfully.")
+            true
+        } catch (e: Exception) {
+            Log.e("AddressInit", "Failed to insert zones: ${e.message}")
+            false
+        }
+    }
+
+    override fun saveValidId(userId: String, imageUri: ByteArray?): Result<UserDto> {
+        return try {
+            val userDoc = getDocument(userId)
+            val user = Json.decodeFromString<UserDto>(userDoc.toJSON())
+            if (imageUri != null) {
+                val base64Image = Base64.encodeToString(imageUri, Base64.DEFAULT)
+                val updatedUser = user.copy(imageBase64 = base64Image)
+
+                val json = Json.encodeToString(updatedUser)
+                val mutableDoc = userDoc.toMutable().apply { setJSON(json) }
+                collection.save(mutableDoc)
+                Result.success(updatedUser)
+            } else {
+                Result.failure(Exception("No image provided"))
+            }
+        } catch (e: Exception) {
+            Log.e("UserServiceImpl", "Failed to save valid ID: ${e.message}", e)
+            Result.failure(e)
+        }
     }
 
     override fun findByEmail(email: String): UserDto? {
@@ -174,15 +273,15 @@ class UserServiceImpl @Inject constructor (
         val result = query.execute().firstOrNull() ?: return null
         val userDict = result.getDictionary(collection.name) ?: return null
 
-        val addressDict = userDict.getDictionary("address")
-        val address = if (addressDict != null) {
-            AddressDto(
-                province = addressDict.getString("province") ?: "",
-                municipality = addressDict.getString("municipality") ?: "",
-                barangay = addressDict.getString("barangay") ?: ""
-            )
-        } else AddressDto("", "", "")
-
+//        val addressDict = userDict.getDictionary("address")
+//        val address = if (addressDict != null) {
+//            AddressDto(
+//                province = addressDict.getString("province") ?: "",
+//                municipality = addressDict.getString("municipality") ?: "",
+//                barangay = addressDict.getString("barangay") ?: ""
+//            )
+//        } else AddressDto("", "", "")
+        val addres = AddressDto("","","","","",0.0, 0.0)
         return UserDto(
             id = userDict.getString("id") ?: "",
             username = userDict.getString("username") ?: "",
@@ -199,7 +298,7 @@ class UserServiceImpl @Inject constructor (
             type = userDict.getString("type") ?: "",
             isAdmin = userDict.getBoolean("isAdmin"),
             isResidence = userDict.getBoolean("isResidence"),
-            address = address
+            address = addres
         )
     }
 }

@@ -51,6 +51,10 @@ object MainNav {
     data class CreateReport (var title: String = "")
 
     @Serializable
+    data class EditReport (var title: String = "", var reportId: String)
+
+
+    @Serializable
     object GarbageDisposalList
 
     @Serializable
