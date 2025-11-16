@@ -14,17 +14,20 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GarbageDisposalViewModel @Inject constructor(
-    val garbageService: GarbageDisposalService
+    val garbageService: GarbageDisposalService,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GarbageDisposalState())
     val state: StateFlow<GarbageDisposalState> = _state
 
-    fun fetchAll() {
+    fun fetchAll(currentUserId: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
-            val reports = garbageService.getAll()
-            _state.value = _state.value.copy(items = reports.sortedByDescending { it.createdAt }, isLoading = false)
+            val reports = garbageService.getAll(currentUserId)
+            _state.value = _state.value.copy(
+                items = reports.sortedByDescending { it.createdAt },
+                isLoading = false
+            )
         }
     }
 

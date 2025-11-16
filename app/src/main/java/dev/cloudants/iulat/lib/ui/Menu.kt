@@ -162,7 +162,7 @@ fun Menu(
                 MODULE.ADMINREPORTLIST -> AdminReportList()
                 MODULE.RESIDENCEDASHBOARD -> ResidenceDashboard(navController)
                 MODULE.NOTIFICATIONLIST -> NotificationList(navController)
-                MODULE.RESIDENCEREPORTLIST -> GarbageDisposalList(navController)
+                MODULE.RESIDENCEREPORTLIST -> GarbageDisposalList(navController,currentUser)
             }
         }
     }

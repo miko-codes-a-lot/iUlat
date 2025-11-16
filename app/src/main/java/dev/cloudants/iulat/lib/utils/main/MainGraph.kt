@@ -167,7 +167,7 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
 
         composable<MainNav.GarbageDisposalList> {
             Guard(navController = navController) { currentUser ->
-                GarbageDisposalList(navController)
+                GarbageDisposalList(navController, currentUser)
             }
         }
 

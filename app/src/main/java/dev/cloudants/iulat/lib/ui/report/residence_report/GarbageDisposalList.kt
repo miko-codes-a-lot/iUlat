@@ -42,19 +42,23 @@ import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.formatterDate
 import dev.cloudants.iulat.lib.components.header.CustomHeader
-import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
+import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 
 
 @Composable
-fun GarbageDisposalList(navController: NavController) {
+fun GarbageDisposalList(
+    navController: NavController,
+    currentUser: UserDto
+) {
     val garbageDisposalViewModel: GarbageDisposalViewModel = hiltViewModel()
     val state by garbageDisposalViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
-        garbageDisposalViewModel.fetchAll()
+        garbageDisposalViewModel.fetchAll(currentUser.id!!)
     }
+
 
     Scaffold(
         modifier = Modifier

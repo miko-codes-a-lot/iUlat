@@ -35,6 +35,33 @@ class GarbageDisposalServiceImpl @Inject constructor(
         }
     }
 
+    override suspend fun getAll(userId: String?): List<GarbageDisposalDto> {
+        return try {
+            val query = QueryBuilder
+                .select(SelectResult.all())
+                .from(DataSource.collection(collection))
+
+            val results = query.execute().allResults()
+
+            results.mapNotNull { result ->
+                val dict = result.getDictionary(collection.name)
+                dict?.let {
+                    try {
+                        val dto = Json { ignoreUnknownKeys = true }.decodeFromString<GarbageDisposalDto>(it.toJSON())
+                        if (userId == null || dto.userId == userId) dto else null
+                    } catch (e: Exception) {
+                        Log.e("GarbageServiceImpl", "Error decoding GarbageDisposalDto: ${e.message}")
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("GarbageServiceImpl", "Failed to fetch garbage reports: ${e.message}")
+            emptyList()
+        }
+    }
+
+
     override suspend fun update(id: String, garbage: GarbageDisposalDto): GarbageDisposalDto {
         return try {
             val doc = collection.getDocument(id)?.toMutable() ?: MutableDocument(id)
@@ -59,29 +86,6 @@ class GarbageDisposalServiceImpl @Inject constructor(
             Log.d("GarbageServiceImpl", "Deleted garbage report with id: $id")
         } catch (e: Exception) {
             Log.e("GarbageServiceImpl", "Failed to delete garbage report: ${e.message}", e)
-        }
-    }
-
-    override suspend fun getAll(): List<GarbageDisposalDto> {
-        return try {
-            val query = QueryBuilder.select(SelectResult.all())
-                .from(DataSource.collection(collection))
-            val results = query.execute().allResults()
-
-            results.mapNotNull { result ->
-                val dict = result.getDictionary(collection.name)
-                dict?.let {
-                    try {
-                        Json { ignoreUnknownKeys = true }.decodeFromString<GarbageDisposalDto>(it.toJSON())
-                    } catch (e: Exception) {
-                        Log.e("GarbageServiceImpl", "Error decoding GarbageDisposalDto: ${e.message}")
-                        null
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("GarbageServiceImpl", "Failed to fetch all garbage reports: ${e.message}")
-            emptyList()
         }
     }
 
