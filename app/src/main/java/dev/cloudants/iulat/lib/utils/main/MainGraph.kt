@@ -170,12 +170,26 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 val reportId = args.reportId
                 val viewModel : ReportViewModel = hiltViewModel()
                 val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                val publicDisturbanceViewModel : PublicDisturbanceViewModel = hiltViewModel()
+                val robberiesViewModel : RobberiesViewModel = hiltViewModel()
+                val brokenStreetLightViewModel : BrokenStreetLightViewModel = hiltViewModel()
+                val vehicleCrashViewModel : VehicleCrashViewModel = hiltViewModel()
+                val roadRepairViewModel : RoadRepairViewModel = hiltViewModel()
+                val noWaterSupplyViewModel : NoWaterSupplyViewModel = hiltViewModel()
+                val othersViewModel : OthersViewModel = hiltViewModel()
                 EditReport(
                     navController = navController,
                     reportTitle = title,
                     viewModel = viewModel,
                     currentUser = currentUser,
                     garbageDisposalViewModel = garbageDisposalViewModel,
+                    publicDisturbanceViewModel = publicDisturbanceViewModel,
+                    robberiesViewModel = robberiesViewModel,
+                    brokenStreetLightViewModel = brokenStreetLightViewModel,
+                    vehicleCrashViewModel = vehicleCrashViewModel,
+                    roadRepairViewModel = roadRepairViewModel,
+                    noWaterSupplyViewModel = noWaterSupplyViewModel,
+                    othersViewModel = othersViewModel,
                     reportId = reportId
                 )
             }

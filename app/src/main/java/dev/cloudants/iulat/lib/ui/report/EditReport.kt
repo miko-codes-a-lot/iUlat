@@ -1,23 +1,14 @@
 package dev.cloudants.iulat.lib.ui.report
 
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Base64
-import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,22 +25,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
-import dev.cloudants.iulat.lib.components.context.base64ToBitmap
+import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
 import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
+import dev.cloudants.iulat.lib.viewmodels.NoWaterSupplyViewModel
+import dev.cloudants.iulat.lib.viewmodels.OthersViewModel
+import dev.cloudants.iulat.lib.viewmodels.PublicDisturbanceViewModel
 import dev.cloudants.iulat.lib.viewmodels.ReportViewModel
+import dev.cloudants.iulat.lib.viewmodels.RoadRepairViewModel
+import dev.cloudants.iulat.lib.viewmodels.RobberiesViewModel
+import dev.cloudants.iulat.lib.viewmodels.VehicleCrashViewModel
 
 @Composable
 fun EditReport(
@@ -58,19 +50,90 @@ fun EditReport(
     viewModel: ReportViewModel,
     currentUser: UserDto,
     garbageDisposalViewModel : GarbageDisposalViewModel,
+    publicDisturbanceViewModel : PublicDisturbanceViewModel,
+    robberiesViewModel : RobberiesViewModel,
+    brokenStreetLightViewModel : BrokenStreetLightViewModel,
+    vehicleCrashViewModel : VehicleCrashViewModel,
+    roadRepairViewModel : RoadRepairViewModel,
+    noWaterSupplyViewModel : NoWaterSupplyViewModel,
+    othersViewModel : OthersViewModel,
     reportId: String
 ) {
     val state by viewModel.state.collectAsState()
     var textValue by remember { mutableStateOf("") }
-    val garbageState by garbageDisposalViewModel.state.collectAsState()
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    val garbageState by garbageDisposalViewModel.state.collectAsState()
+    val publicState by publicDisturbanceViewModel.state.collectAsState()
+    val robberyState by robberiesViewModel.state.collectAsState()
+    val brokenState by brokenStreetLightViewModel.state.collectAsState()
+    val crashState by vehicleCrashViewModel.state.collectAsState()
+    val roadState by roadRepairViewModel.state.collectAsState()
+    val waterState by noWaterSupplyViewModel.state.collectAsState()
+    val othersState by othersViewModel.state.collectAsState()
 
-    LaunchedEffect(reportId) {
-        garbageDisposalViewModel.fetchReportById(reportId)
+    val selectedReport = when (reportTitle) {
+        MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> garbageState.selectedReport?.reportImage
+        MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> publicState.selectedReport?.reportImage
+        MODULE.ROBBERIES, "Robberies" -> robberyState.selectedReport?.reportImage
+        MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> brokenState.selectedReport?.reportImage
+        MODULE.VEHICLE_CRASHES, "Vehicle Crashes" -> crashState.selectedReport?.reportImage
+        MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.reportImage
+        MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.reportImage
+        MODULE.OTHERS, "Others" -> othersState.selectedReport?.reportImage
+        else -> null
     }
 
-    LaunchedEffect(garbageState.selectedReport) {
-        textValue = garbageState.selectedReport?.reportDetails ?: ""
+    LaunchedEffect(reportId) {
+        when (reportTitle) {
+            MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> {
+                garbageDisposalViewModel.fetchReportById(reportId)
+                garbageDisposalViewModel.state.collect { state ->
+                    textValue = state.selectedReport?.reportDetails ?: ""
+                }
+            }
+            MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
+                publicDisturbanceViewModel.fetchReportById(reportId)
+                publicDisturbanceViewModel.state.collect { state ->
+                    textValue = state.selectedReport?.reportDetails ?: ""
+                }
+            }
+            MODULE.ROBBERIES, "Robberies" -> {
+                robberiesViewModel.fetchReportById(reportId)
+                robberiesViewModel.state.collect { state ->
+                    textValue = state.selectedReport?.reportDetails ?: ""
+                }
+            }
+            MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> {
+                brokenStreetLightViewModel.fetchReportById(reportId)
+                brokenStreetLightViewModel.state.collect { state ->
+                    textValue = state.selectedReport?.reportDetails ?: ""
+                }
+            }
+            MODULE.VEHICLE_CRASHES, "Vehicle Crashes" -> {
+                vehicleCrashViewModel.fetchReportById(reportId)
+                vehicleCrashViewModel.state.collect { state ->
+                    textValue = state.selectedReport?.reportDetails ?: ""
+                }
+            }
+            MODULE.ROAD_REPAIR, "Road Repair" -> {
+                roadRepairViewModel.fetchReportById(reportId)
+                roadRepairViewModel.state.collect { state ->
+                    textValue = state.selectedReport?.reportDetails ?: ""
+                }
+            }
+            MODULE.NO_WATER_SUPPLY, "No Water Supply" -> {
+                noWaterSupplyViewModel.fetchReportById(reportId)
+                noWaterSupplyViewModel.state.collect { state ->
+                    textValue = state.selectedReport?.reportDetails ?: ""
+                }
+            }
+            MODULE.OTHERS, "Others" -> {
+                othersViewModel.fetchReportById(reportId)
+                othersViewModel.state.collect { state ->
+                    textValue = state.selectedReport?.reportDetails ?: ""
+                }
+            }
+        }
     }
 
     Column(
@@ -135,7 +198,7 @@ fun EditReport(
         )
         UploadImageUI(
             title = "Tap to Upload Evidence",
-            existingBase64 = garbageState.selectedReport?.reportImage,
+            existingBase64 = selectedReport,
             onImageSelected = { uri -> imageUri = uri }
         )
 
