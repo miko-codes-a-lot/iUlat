@@ -4,7 +4,6 @@ import android.util.Log
 import com.couchbase.lite.*
 import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
 import dev.cloudants.iulat.lib.services.GarbageDisposalService
-import kotlinx.serialization.json.jsonObject
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
 import com.couchbase.lite.DataSource
@@ -13,7 +12,6 @@ import jakarta.inject.Inject
 import java.util.Date
 import java.util.UUID
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.encodeToJsonElement
 
 class GarbageDisposalServiceImpl @Inject constructor(
     private val collection: Collection

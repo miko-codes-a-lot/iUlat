@@ -34,10 +34,25 @@ object CouchbaseLiteModule {
         val userCollection = db.createCollection("users")
         val addressCollection = db.createCollection("address")
         val garbageDisposalCollection = db.createCollection("garbage_disposal")
+        val brokenStreetLightsCollection = db.createCollection("broken_streetlights")
+        val noWaterSupplyCollection = db.createCollection("no_water_supply")
+        val othersCollection = db.createCollection("others")
+        val publicDisturbanceCollection = db.createCollection("public_disturbance")
+        val roadRepairCollection = db.createCollection("road_repair")
+        val robberiesCollection = db.createCollection("robberies")
+        val vehicleCrashCollection = db.createCollection("vehicle_crash")
+
         val collections = mutableListOf(
             userCollection,
             addressCollection,
-            garbageDisposalCollection
+            garbageDisposalCollection,
+            brokenStreetLightsCollection,
+            noWaterSupplyCollection,
+            othersCollection,
+            publicDisturbanceCollection,
+            roadRepairCollection,
+            robberiesCollection,
+            vehicleCrashCollection
         )
 
         val repl = Replicator(
