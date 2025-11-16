@@ -21,6 +21,7 @@ class BrokenStreetLightServicelmpl @Inject constructor(
         db.getCollection("broken_streetlights")
             ?: throw IllegalStateException("Collection 'broken_streetlights' not found.")
     }
+
     override suspend fun create(brokenStreetlightsDto: BrokenStreetlightsDto): BrokenStreetlightsDto {
         return try {
             val id = brokenStreetlightsDto.id ?: UUID.randomUUID().toString()
