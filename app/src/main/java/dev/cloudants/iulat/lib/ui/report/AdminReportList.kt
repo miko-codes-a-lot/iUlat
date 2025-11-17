@@ -46,24 +46,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.delay
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.context.formatterDate
+import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ReportPreview() {
-    AdminReportList()
+    AdminReportList(navController = rememberNavController())
 }
 
 @Composable
-fun AdminReportList() {
+fun AdminReportList(navController: NavController) {
     val adminReportViewModel: AdminReportViewModel = hiltViewModel()
     val reports by adminReportViewModel.reports.collectAsState()
 
@@ -101,13 +105,27 @@ fun AdminReportList() {
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (reports.isEmpty()) {
+                item {
+                    Text(
+                        text = "No Report found",
+                        fontSize = 20.sp,
+                        fontFamily = FontFamily.SansSerif,
+                        modifier = Modifier.padding(top = 20.dp)
+                    )
+                }
+            }
             items(reports) { reportItem ->
                 SingleItemCard(
                     title = reportItem.reportType,
                     userName = "from : " + reportItem.userName,
                     date = formatterDate(reportItem.reportDate),
                     imageUrl = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg",
-                    onClick = { /* Handle card click */ },
+                    onClick = {
+                        navController.navigate(
+                            MainNav.Map(reportItem.addressId)
+                        )
+                    },
                     onDeleteClick = { adminReportViewModel.updateReportStatus(reportItem, "Rejected") },
                     onCheckClick = { adminReportViewModel.updateReportStatus(reportItem, "Resolved") }
                 )
@@ -277,6 +295,7 @@ fun SingleItemCard(
                 ambientColor = Color.Gray,
                 spotColor = Color.Black
             )
+            .clickable { onClick() }
             .padding(vertical = 4.dp)
     ) {
         ElevatedCard(

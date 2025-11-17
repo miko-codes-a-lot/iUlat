@@ -170,6 +170,12 @@ class ChatServiceImpl @Inject constructor(
                 updatedAt = chatDoc?.getLong("updatedAt")?.let { Instant.ofEpochMilli(it) }
             )
         }
-        emit(users.sortedByDescending { it.updatedAt ?: Instant.EPOCH })
+        emit(users
+                .filter {
+                    (it.userDto.firstName?.isNotBlank() == true) ||
+                            (it.userDto.lastName?.isNotBlank() == true)
+                }
+                .sortedByDescending { it.updatedAt ?: Instant.EPOCH }
+        )
     }
 }

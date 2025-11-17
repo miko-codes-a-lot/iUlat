@@ -8,5 +8,5 @@ data class DashboardReportItemDto(
     val status: String,
     val userName: String,
     val userEmail: String,
-    val userLocation: String // Use this for your 'Location' column
+    val addressId: String
 )

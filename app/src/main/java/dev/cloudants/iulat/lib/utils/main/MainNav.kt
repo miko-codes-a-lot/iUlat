@@ -81,4 +81,7 @@ object MainNav {
     @Serializable
     data class EditUser(val userId: String)
 
+    @Serializable
+    data class Map(var addressId: String)
+
 }

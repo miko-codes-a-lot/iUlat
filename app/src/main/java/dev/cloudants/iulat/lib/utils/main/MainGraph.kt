@@ -20,6 +20,7 @@ import dev.cloudants.iulat.lib.ui.report.AdminReportList
 import dev.cloudants.iulat.lib.ui.SplashScreen
 import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
 import dev.cloudants.iulat.lib.ui.email.ForgotPassword
+import dev.cloudants.iulat.lib.ui.map.MapUI
 import dev.cloudants.iulat.lib.ui.message.ChatDirect
 import dev.cloudants.iulat.lib.ui.message.ChatLobby
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
@@ -38,6 +39,7 @@ import dev.cloudants.iulat.lib.ui.user.CreateAccount
 import dev.cloudants.iulat.lib.ui.user.EditAccount
 import dev.cloudants.iulat.lib.ui.user.UserEdit
 import dev.cloudants.iulat.lib.ui.user.UsersList
+import dev.cloudants.iulat.lib.viewmodels.AddressViewModel
 import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
 import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
@@ -111,7 +113,7 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
         composable<MainNav.AdminReportList> {
             Guard(navController = navController) { currentUser ->
-                AdminReportList()
+                AdminReportList(navController = navController)
             }
         }
         composable<MainNav.ChatLobby> {
@@ -294,6 +296,18 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                     userDto = userDto,
                 )
 
+            }
+        }
+
+        composable<MainNav.Map> {
+            val args = it.toRoute<MainNav.Map>()
+            val addressViewModel: AddressViewModel = hiltViewModel()
+            LaunchedEffect(args.addressId) {
+                addressViewModel.fetchAddress(args.addressId)
+            }
+            val addressDto = addressViewModel.selectedAddress.value
+            Guard(navController = navController) {
+                MapUI(addressDto = addressDto)
             }
         }
     }

@@ -38,8 +38,14 @@ class AdminReportServicelmpl @Inject constructor(
             val lastName = row.getString("lastName") ?: ""
             val name = "$firstName$middleName $lastName".trim()
             val email = row.getString("email") ?: "No Email"
-            val address = row.getString("address") ?: "No Location"
-            usersMap[id] = Triple(name.ifBlank { "Unknown User" }, email, address)
+            val addressDict = row.getDictionary("address")
+            val province = addressDict?.getString("province") ?: ""
+            val municipality = addressDict?.getString("municipality") ?: ""
+            val barangay = addressDict?.getString("barangay") ?: ""
+            val latitude = addressDict?.getDouble("latitude") ?: 0.0
+            val longitude = addressDict?.getDouble("longitude") ?: 0.0
+            val address = "$barangay, $municipality, $province"
+            usersMap[id] = Triple(name, email, "$latitude,$longitude")
         }
 
         fun queryCollection(collectionName: String, type: String): List<DashboardReportItemDto> {
@@ -71,7 +77,7 @@ class AdminReportServicelmpl @Inject constructor(
                         status = row.getString("status") ?: "",
                         userName = userInfo.first,
                         userEmail = userInfo.second,
-                        userLocation = userInfo.third
+                        addressId = userInfo.third
                     )
                 )
             }
@@ -176,7 +182,7 @@ class AdminReportServicelmpl @Inject constructor(
                         status = row.getString("status") ?: "",
                         userName = userInfo.first,
                         userEmail = userInfo.second,
-                        userLocation = userInfo.third
+                        addressId = userInfo.third
                     )
                 )
             }

@@ -11,6 +11,7 @@ import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.services.AddressService
 import dev.cloudants.iulat.lib.services.UserService
 import dev.cloudants.iulat.lib.state.UserState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -24,6 +25,15 @@ class UserViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(UserState())
     val uiState: StateFlow<UserState> = _uiState
+    private val _users = MutableStateFlow<List<UserDto>>(emptyList())
+    val users: StateFlow<List<UserDto>> = _users
+
+    fun loadUsers() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = userService.findAll()
+            _users.value = result
+        }
+    }
 
     fun onIntent(intent: UserIntent) {
         when (intent) {

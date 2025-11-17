@@ -170,7 +170,7 @@ fun Menu(
 //                MODULE.CHATDIRECT -> ChatDirect(currentUser )
                 MODULE.ACCOUNT -> Account(navController)
                 MODULE.USERLIST -> UsersList(navController)
-                MODULE.ADMINREPORTLIST -> AdminReportList()
+                MODULE.ADMINREPORTLIST -> AdminReportList(navController)
                 MODULE.RESIDENCEDASHBOARD -> ResidenceDashboard(navController)
                 MODULE.NOTIFICATIONLIST -> NotificationList(navController)
                 MODULE.RESIDENCEREPORTLIST -> GarbageDisposalList(navController,currentUser)

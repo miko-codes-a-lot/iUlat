@@ -58,11 +58,25 @@ fun ChatLobby(
 
     var searchQuery by remember { mutableStateOf("") }
     val filteredUsers = remember(users, searchQuery) {
-        if (searchQuery.isEmpty()) users
-        else users.filter {
-            val fullName = "${it.userDto.firstName} ${it.userDto.middleName.orEmpty()} ${it.userDto.lastName}"
-            fullName.contains(searchQuery, ignoreCase = true)
-        }
+        users
+            .filter {
+                val hasName =
+                    it.userDto.firstName.isNotBlank() ||
+                            it.userDto.lastName.isNotBlank()
+                hasName
+            }
+            .filter { user ->
+                if (searchQuery.isBlank()) return@filter true
+
+                val fullName = buildString {
+                    append(user.userDto.firstName)
+                    append(" ")
+                    append(user.userDto.middleName.orEmpty())
+                    append(" ")
+                    append(user.userDto.lastName)
+                }
+                fullName.contains(searchQuery, ignoreCase = true)
+            }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {

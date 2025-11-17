@@ -30,6 +30,8 @@ import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.ui.report.PlaceholderImage
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
@@ -39,17 +41,19 @@ fun PreviewUsersUI() {
 
 @Composable
 fun UsersList(navController: NavController) {
-    var userViewModel: UserViewModel = hiltViewModel()
+    val userViewModel: UserViewModel = hiltViewModel()
+    val users by userViewModel.users.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
-    val users by produceState<List<UserDto>>(emptyList(), userViewModel) {
-        value = userViewModel.fetchAllUsers()
-    }
-    val filteredUsers = users.filter {
-        it.firstName.contains(searchQuery, ignoreCase = true) ||
-                it.lastName.contains(searchQuery, ignoreCase = true) ||
-                it.email.contains(searchQuery, ignoreCase = true)
+
+    LaunchedEffect(Unit) {
+        userViewModel.loadUsers()
     }
 
+    val filteredUsers = users.filter {
+        it.firstName.contains(searchQuery, true) ||
+                it.lastName.contains(searchQuery, true) ||
+                it.email.contains(searchQuery, true)
+    }
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
