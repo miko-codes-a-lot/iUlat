@@ -1,7 +1,5 @@
 package dev.cloudants.iulat.lib.ui.message
 
-import android.icu.text.SimpleDateFormat
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,70 +16,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import dev.cloudants.iulat.R
-import dev.cloudants.iulat.lib.components.context.UserSession
+import dev.cloudants.iulat.lib.ui.message.model.MessageDto
 import kotlinx.coroutines.launch
-import java.util.Locale
-
-data class MessageDto(
-    val senderId: String,
-    val content: String,
-    val createdAt: String = "2025-10-31T10:00:00.000Z"
-)
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun ChatDirectPrev() {
-    val sampleMessages = listOf(
-        MessageDto(senderId = "user_1", content = "Hi there!"),
-        MessageDto(senderId = "admin_1", content = "Hello! How can I help you?"),
-        MessageDto(senderId = "user_1", content = "Just checking in about the update.")
-    )
-    ChatDirect(
-        messages = sampleMessages,
-        currentUserId = "user_1",
-        onSendMessage = {}
-    )
-}
-@Composable
-fun ChatDirect(navController: NavController) {
-    val context = LocalContext.current
-    val role = UserSession.getUserRole(context)
-    val currentUserId = if (role.equals("Admin", ignoreCase = true)) "admin_1" else "user_1"
-    Log.e("ChatDirect", "Loaded role: $role")
-
-    val messages = remember {
-        mutableStateListOf(
-            MessageDto(senderId = "user_1", content = "Hi!"),
-            MessageDto(senderId = "admin_1", content = "Hello!")
-        )
-    }
-
-    ChatDirect(
-        messages = messages,
-        currentUserId = currentUserId,
-        onSendMessage = { content ->
-            messages.add(
-                MessageDto(
-                    senderId = currentUserId,
-                    content = content,
-                    createdAt = "2025-10-31T10:00:00.000Z"
-                )
-            )
-        }
-    )
-}
-
 
 @Composable
 fun ChatDirect(
@@ -181,16 +125,6 @@ fun MessageBubble(message: MessageDto, isSentByCurrentUser: Boolean) {
     } else {
         Color(0xFFE6E6E6) to Color.Black
     }
-
-    val displayFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    val formattedDate = try {
-        val parsedDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-            .parse(message.createdAt)
-        parsedDate?.let { displayFormat.format(it) } ?: "Invalid Date"
-    } catch (e: Exception) {
-        "Invalid Date"
-    }
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -214,7 +148,8 @@ fun MessageBubble(message: MessageDto, isSentByCurrentUser: Boolean) {
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
-                    text = formattedDate,
+//                    text = formattedDate,
+                    text = "",
                     fontSize = 12.sp,
                     textAlign = TextAlign.End,
                     fontFamily = FontFamily.SansSerif,

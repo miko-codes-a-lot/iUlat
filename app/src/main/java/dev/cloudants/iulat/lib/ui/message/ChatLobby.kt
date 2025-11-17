@@ -27,9 +27,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
 import kotlinx.coroutines.delay
 
 data class ChatUser(
@@ -42,41 +44,28 @@ data class ChatUser(
     val isRead: Boolean
 )
 
-private val sampleChats = listOf(
-    ChatUser("1", "Jericho", "T.", "Me", null, "Hello! How are you?", false),
-    ChatUser("2", "Maria", null, "Santos", null, "Let's meet tomorrow.", true),
-    ChatUser("3", "John", "D.", "Smith", null, "Please send the report ASAP.", false),
-    ChatUser("4", "Elena", "R.", "Cruz", null, "Thank you!", true),
-)
-
 @Composable
-fun ChatLobby(navController: NavController) {
-    var searchQuery by remember { mutableStateOf("") }
-    var debouncedQuery by remember { mutableStateOf("") }
+fun ChatLobby(
+    navController: NavController,
+    currentUserId: String
+) {
+    val viewModel: ChatViewModel = hiltViewModel()
+    val users by viewModel.users.collectAsState()
 
-    LaunchedEffect(searchQuery) {
-        delay(400L)
-        debouncedQuery = searchQuery
+    LaunchedEffect(currentUserId) {
+        viewModel.loadUsers(currentUserId)
     }
 
-    val filteredChats = remember(debouncedQuery) {
-        if (debouncedQuery.isEmpty()) {
-            sampleChats
-        } else {
-            sampleChats.filter { chat ->
-                val fullName = "${chat.firstName} ${chat.middleName.orEmpty()} ${chat.lastName}"
-                fullName.contains(debouncedQuery, ignoreCase = true)
-            }
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredUsers = remember(users, searchQuery) {
+        if (searchQuery.isEmpty()) users
+        else users.filter {
+            val fullName = "${it.userDto.firstName} ${it.userDto.middleName.orEmpty()} ${it.userDto.lastName}"
+            fullName.contains(searchQuery, ignoreCase = true)
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         SearchMessageIcon(
             searchQuery = searchQuery,
             onSearchQueryChanged = { searchQuery = it }
@@ -85,13 +74,20 @@ fun ChatLobby(navController: NavController) {
         Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(filteredChats) { chat ->
+            items(filteredUsers) { userChat ->
                 ChatCard(
                     navController = navController,
-                    chatUser = chat,
+                    chatUser = ChatUser(
+                        id = userChat.userDto.id!!,
+                        firstName = userChat.userDto.firstName,
+                        middleName = userChat.userDto.middleName,
+                        lastName = userChat.userDto.lastName,
+                        userProfile = userChat.userDto.userProfile,
+                        lastMessage = userChat.chatDto.lastMessage,
+                        isRead = userChat.chatDto.isRead
+                    )
                 )
             }
         }

@@ -32,6 +32,8 @@ object CouchbaseLiteModule {
         CouchbaseLite.init(context)
         val db = Database("iulat")
         val userCollection = db.createCollection("users")
+        val chatCollection = db.createCollection("chats")
+        val messageCollection = db.createCollection("messages")
         val addressCollection = db.createCollection("address")
         val garbageDisposalCollection = db.createCollection("garbage_disposal")
         val brokenStreetLightsCollection = db.createCollection("broken_streetlights")
@@ -44,6 +46,8 @@ object CouchbaseLiteModule {
 
         val collections = mutableListOf(
             userCollection,
+            chatCollection,
+            messageCollection,
             addressCollection,
             garbageDisposalCollection,
             brokenStreetLightsCollection,

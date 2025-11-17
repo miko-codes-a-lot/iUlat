@@ -109,13 +109,14 @@ fun Menu(
                             if (routeName == MODULE.ACCOUNT) {
                                 isLoggingOut.value = true
                                 coroutineScope.launch {
-                                    kotlinx.coroutines.delay(1000)
+                                    kotlinx.coroutines.delay(600)
                                     UserSession.clearSession(context)
                                     currentUserState.value = null
                                     navController.navigate(MainNav.Login) { popUpTo(0) }
                                     isLoggingOut.value = false
                                 }
                             } else {
+//                                navController.navigate(MainNav.ChatDirect(currentUser.id!!))
                                 navController.navigate(MainNav.NotificationList)
                             }
                     }) {
@@ -165,8 +166,8 @@ fun Menu(
         ) {
             when (routeName) {
                 MODULE.DASHBOARD -> Dashboard()
-                MODULE.CHATLOBBY -> ChatLobby(navController)
-                MODULE.CHATDIRECT -> ChatDirect(navController)
+                MODULE.CHATLOBBY -> ChatLobby(navController, currentUser.id!!)
+//                MODULE.CHATDIRECT -> ChatDirect(currentUser )
                 MODULE.ACCOUNT -> Account(navController)
                 MODULE.USERLIST -> UsersList(navController)
                 MODULE.ADMINREPORTLIST -> AdminReportList()

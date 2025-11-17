@@ -8,6 +8,7 @@ import dev.cloudants.iulat.lib.services.AddressService
 import dev.cloudants.iulat.lib.services.AdminReportService
 import dev.cloudants.iulat.lib.services.AuthService
 import dev.cloudants.iulat.lib.services.BrokenStreetLightsService
+import dev.cloudants.iulat.lib.services.ChatService
 import dev.cloudants.iulat.lib.services.GarbageDisposalService
 import dev.cloudants.iulat.lib.services.NoWaterSupplyService
 import dev.cloudants.iulat.lib.services.OthersService
@@ -20,6 +21,7 @@ import dev.cloudants.iulat.lib.services_impl.AddressServiceImpl
 import dev.cloudants.iulat.lib.services_impl.AdminReportServicelmpl
 import dev.cloudants.iulat.lib.services_impl.AuthServiceImpl
 import dev.cloudants.iulat.lib.services_impl.BrokenStreetLightServicelmpl
+import dev.cloudants.iulat.lib.services_impl.ChatServiceImpl
 import dev.cloudants.iulat.lib.services_impl.GarbageDisposalServiceImpl
 import dev.cloudants.iulat.lib.services_impl.NoWaterSupplyServicelmpl
 import dev.cloudants.iulat.lib.services_impl.OthersServicelmpl
@@ -36,6 +38,10 @@ abstract class ServiceModule {
     @Binds
     @Singleton
     abstract fun bindUserService(userServiceImpl: UserServiceImpl): UserService
+
+    @Binds
+    @Singleton
+    abstract fun bindChatService(chatServiceImpl: ChatServiceImpl): ChatService
 
     @Binds
     @Singleton

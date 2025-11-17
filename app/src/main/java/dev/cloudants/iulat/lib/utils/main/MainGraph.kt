@@ -1,13 +1,17 @@
 package dev.cloudants.iulat.lib.utils.main
 
+import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
-import dev.cloudants.iulat.lib.services_impl.VehicleCrashServicelmpl
 import dev.cloudants.iulat.lib.ui.user.Account
 import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
 import dev.cloudants.iulat.lib.ui.Login
@@ -18,7 +22,6 @@ import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
 import dev.cloudants.iulat.lib.ui.email.ForgotPassword
 import dev.cloudants.iulat.lib.ui.message.ChatDirect
 import dev.cloudants.iulat.lib.ui.message.ChatLobby
-import dev.cloudants.iulat.lib.ui.message.MessageDto
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.CreateReport
 import dev.cloudants.iulat.lib.ui.report.EditReport
@@ -36,6 +39,7 @@ import dev.cloudants.iulat.lib.ui.user.EditAccount
 import dev.cloudants.iulat.lib.ui.user.UserEdit
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
+import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
@@ -72,18 +76,24 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         composable<MainNav.ChatDirect> {
             Guard(navController = navController) { currentUser ->
                 val args = it.toRoute<MainNav.ChatDirect>()
-                val userId = args.userId
+                var userId = args.userId
+                val chatViewModel: ChatViewModel = hiltViewModel()
+                val isChatReady = remember { mutableStateOf(false) }
+                val userViewModel: UserViewModel = hiltViewModel()
+                val receiver = userViewModel.fetchUser(args.userId)
 
-                val sampleMessages = listOf(
-                    MessageDto("1", userId, "2025-10-30T10:00:00.000Z"),
-                    MessageDto("2", "me", "2025-10-30T10:05:00.000Z")
-                )
+                LaunchedEffect(key1 = currentUser, key2 = receiver) {
+                    chatViewModel.getOrCreateChat(currentUser, receiver)
+                    chatViewModel.startMessageFlow(currentUser, receiver)
+                    isChatReady.value = true
+                }
+                val messages by chatViewModel.messages.collectAsStateWithLifecycle()
 
                 ChatDirect(
-                    messages = sampleMessages,
-                    currentUserId = "me",
-                    onSendMessage = { content ->
-                        println("Send message to $userId: $content")
+                    messages = messages,
+                    currentUserId = currentUser.id!!,
+                    onSendMessage = { message ->
+                        chatViewModel.sendMessage(currentUser, receiver, message)
                     }
                 )
             }
@@ -106,7 +116,10 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
         composable<MainNav.ChatLobby> {
             Guard(navController = navController) { currentUser ->
-                ChatLobby(navController)
+                ChatLobby(
+                    navController = navController,
+                    currentUser.id!!
+                )
             }
         }
         composable<MainNav.ResidenceDashboard> {
