@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,6 +50,8 @@ import dev.cloudants.iulat.ui.theme.Purple200
 import dev.cloudants.iulat.ui.theme.Purple500
 import dev.cloudants.iulat.ui.theme.Teal200
 import dev.cloudants.iulat.R
+import dev.cloudants.iulat.ui.theme.Purple700
+import dev.cloudants.iulat.ui.theme.PurpleGrey40
 
 
 @Preview(showBackground = true, showSystemUi = true)
@@ -72,10 +75,10 @@ fun Dashboard() {
                 Pair("Public Disturbance", 120),
                 Pair("Robberies", 110),
                 Pair("Broken Streetlights", 170),
-//                Pair("Vehicle Crashes", 120),
-//                Pair("Road Repair", 120),
-//                Pair("No Water Supply", 120),
-//                Pair("Others", 120),
+                Pair("Vehicle Crashes", 120),
+                Pair("Road Repair", 120),
+                Pair("No Water Supply", 120),
+                Pair("Others", 120),
             )
         )
 
@@ -189,6 +192,8 @@ fun PieChart(
         Purple500,
         Teal200,
         Blue,
+        Purple700,
+        PurpleGrey40
     )
 
     var animationPlayed by remember { mutableStateOf(false) }
@@ -250,9 +255,9 @@ fun PieChart(
                     ) {
                         floatValue.forEachIndexed { index, value ->
                             drawArc(
-                                color = colors[index],
-                                lastValue,
-                                value,
+                                color = colors[index % colors.size],
+                                startAngle = lastValue,
+                                sweepAngle = value,
                                 useCenter = false,
                                 style = Stroke(chartBarWidth.toPx(), cap = StrokeCap.Butt)
                             )
@@ -281,17 +286,18 @@ fun DetailsPieChart(
     data: Map<String, Int>,
     colors: List<Color>
 ) {
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(max = 200.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        data.values.forEachIndexed { index, value ->
+        items(data.entries.toList().size) { index ->
             DetailsPieChartItem(
-                data = Pair(data.keys.elementAt(index), value),
-                color = colors[index]
+                data = data.entries.elementAt(index).toPair(),
+                color = colors[index % colors.size]
             )
         }
-
     }
 }
 

@@ -207,7 +207,8 @@ fun getNavItems(navController: NavController, userDto: UserDto): List<NavItem> {
         )
         userDto.isResidence -> listOf(
             NavItem(painterResource(R.drawable.home), MODULE.RESIDENCEDASHBOARD, navController),
-            NavItem(painterResource(R.drawable.message), MODULE.CHATDIRECT, navController),
+//            NavItem(painterResource(R.drawable.message), MODULE.CHATDIRECT, navController),
+            NavItem(painterResource(R.drawable.message), MODULE.CHATLOBBY, navController),
             NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
         )
         else -> listOf()
