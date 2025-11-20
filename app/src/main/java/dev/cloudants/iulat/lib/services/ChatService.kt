@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface ChatService {
     suspend fun findOneChatOrCreate(sender: UserDto, receiver: UserDto): ChatDto
-    suspend fun message(sender: UserDto, receiver: UserDto, content: String): MessageDto
+    suspend fun message(sender: UserDto, receiver: UserDto, content: String): Result<MessageDto>
     fun fetchDirectMessages(sender: UserDto, receiver: UserDto): Flow<List<MessageDto>>
     fun fetchUsers(userId: String): Flow<List<UserChatDto>>
 }

@@ -1,5 +1,7 @@
 package dev.cloudants.iulat.lib.ui.message
 
+import android.icu.text.SimpleDateFormat
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,8 +26,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cloudants.iulat.R
+import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.ui.message.model.MessageDto
 import kotlinx.coroutines.launch
+import java.util.Locale
+import kotlin.toString
 
 @Composable
 fun ChatDirect(
@@ -37,30 +42,59 @@ fun ChatDirect(
     val isSendingMessage = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
     Column(
         modifier = Modifier
-            .padding(16.dp)
             .fillMaxSize()
+            .padding(16.dp)
             .background(Color.White)
     ) {
-        LazyColumn(
-            state = listState,
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(Color(0xFF0049AD))
+                .height(50.dp)
+        ) {
+            Row {
+
+                IconButton(onClick = {
+
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.person_circle),
+                        contentDescription = "Profile",
+                        tint = Color.White,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+                IconButton(onClick = { }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.person_circle),
+                        contentDescription = "Profile",
+                        tint = Color.White,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+            }
+        }
+        LazyColumn(
+            modifier = Modifier
+                .padding(top = 50.dp)
+                .fillMaxWidth()
+                .fillMaxHeight()
                 .weight(1f),
             reverseLayout = true,
-            contentPadding = PaddingValues(vertical = 8.dp)
+            state = listState,
         ) {
-            items(messages.asReversed()) { message ->
+            items(messages) { message ->
                 MessageBubble(
                     message = message,
                     isSentByCurrentUser = message.senderId == currentUserId
                 )
-            }
-        }
-        LaunchedEffect(messages.size) {
-            if (messages.isNotEmpty()) {
-                listState.animateScrollToItem(0)
             }
         }
 
@@ -120,10 +154,22 @@ fun ChatDirect(
 @Composable
 fun MessageBubble(message: MessageDto, isSentByCurrentUser: Boolean) {
     val alignment = if (isSentByCurrentUser) Alignment.CenterEnd else Alignment.CenterStart
+    if (isSentByCurrentUser) {
+        PaddingValues(start = 64.dp, end = 8.dp)
+    }else {
+        PaddingValues(start = 8.dp, end = 64.dp)
+    }
     val (containerColor, contentColor) = if (isSentByCurrentUser) {
         Color(0xFF0049AD) to Color.White
     } else {
         Color(0xFFE6E6E6) to Color.Black
+    }
+    val displayFormat = remember { SimpleDateFormat("MMM-dd-yyyy", Locale.getDefault()) }
+    val formattedDate = try {
+        val parsedDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(message.createdAt.toString())
+        parsedDate?.let { displayFormat.format(it) } ?: "Invalid Date"
+    } catch (e: Exception) {
+        "Invalid Date"
     }
     Box(
         modifier = Modifier
@@ -148,14 +194,14 @@ fun MessageBubble(message: MessageDto, isSentByCurrentUser: Boolean) {
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
-//                    text = formattedDate,
-                    text = "",
+                    text = formattedDate,
                     fontSize = 12.sp,
                     textAlign = TextAlign.End,
                     fontFamily = FontFamily.SansSerif,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .alpha(0.5f)
+                        .alpha(0.38f),
+                    style = MaterialTheme.typography.labelSmall
                 )
             }
         }

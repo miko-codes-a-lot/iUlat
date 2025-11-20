@@ -16,41 +16,25 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val chatService: ChatService
 ) : ViewModel() {
-
-    private val _messages = MutableStateFlow<List<MessageDto>>(emptyList())
-    val messages: StateFlow<List<MessageDto>> = _messages.asStateFlow()
-
     private val _users = MutableStateFlow<List<UserChatDto>>(emptyList())
     val users: StateFlow<List<UserChatDto>> = _users.asStateFlow()
 
-    fun loadDirectMessages(sender: UserDto, receiver: UserDto): Flow<List<MessageDto>> {
+    fun fetchDirectMessages(sender: UserDto, receiver: UserDto) : Flow<List<MessageDto>> {
         return chatService.fetchDirectMessages(sender, receiver)
     }
 
-    fun startMessageFlow(sender: UserDto, receiver: UserDto) {
-        viewModelScope.launch {
-            chatService.fetchDirectMessages(sender, receiver)
-                .collect { fetchedMessages ->
-                    _messages.value = fetchedMessages.asReversed()
-                }
-        }
+    suspend fun sendMessage(sender: UserDto, receiver: UserDto, content: String) : Result<MessageDto> {
+        return chatService.message(sender, receiver, content)
     }
 
-    fun sendMessage(sender: UserDto, receiver: UserDto, content: String) {
-        viewModelScope.launch {
-            val msg = chatService.message(sender, receiver, content)
-            _messages.update { listOf(msg) + it }
-        }
-    }
-
-    fun loadUsers(userId: String) {
+    fun fetchUsers(userId: String) {
         viewModelScope.launch {
             chatService.fetchUsers(userId)
                 .collect { _users.value = it }
         }
     }
 
-    suspend fun getOrCreateChat(sender: UserDto, receiver: UserDto): ChatDto {
+    suspend fun findOneChatOrCreate(sender: UserDto, receiver: UserDto): ChatDto {
         return chatService.findOneChatOrCreate(sender, receiver)
     }
 }

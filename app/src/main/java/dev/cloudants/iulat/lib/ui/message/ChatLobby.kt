@@ -56,7 +56,7 @@ fun ChatLobby(
     val users by viewModel.users.collectAsState()
 
     LaunchedEffect(currentUserId) {
-        viewModel.loadUsers(currentUserId)
+        viewModel.fetchUsers(currentUserId)
     }
 
     var searchQuery by remember { mutableStateOf("") }

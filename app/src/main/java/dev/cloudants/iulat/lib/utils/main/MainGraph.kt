@@ -1,17 +1,18 @@
 package dev.cloudants.iulat.lib.utils.main
 
-import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.compose.runtime.getValue
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.ui.user.Account
 import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
 import dev.cloudants.iulat.lib.ui.Login
@@ -53,6 +54,7 @@ import dev.cloudants.iulat.lib.viewmodels.RobberiesViewModel
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 import dev.cloudants.iulat.lib.viewmodels.VehicleCrashViewModel
 import dev.cloudants.iulat.shared.Guard
+import kotlinx.coroutines.launch
 
 fun NavGraphBuilder.mainGraph(navController: NavController) {
     navigation<MainNav>(startDestination = MainNav.Splash) {
@@ -76,21 +78,27 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
             }
         }
         composable<MainNav.ChatDirect> {
+            val args = it.toRoute<MainNav.ChatDirect>()
             Guard(navController = navController) { currentUser ->
-                val args = it.toRoute<MainNav.ChatDirect>()
-                var userId = args.userId
                 val chatViewModel: ChatViewModel = hiltViewModel()
                 val isChatReady = remember { mutableStateOf(false) }
                 val userViewModel: UserViewModel = hiltViewModel()
+
                 val receiver = userViewModel.fetchUser(args.userId)
+                val scope = rememberCoroutineScope()
 
                 LaunchedEffect(key1 = currentUser, key2 = receiver) {
-                    chatViewModel.getOrCreateChat(currentUser, receiver)
-                    chatViewModel.startMessageFlow(currentUser, receiver)
+                chatViewModel.findOneChatOrCreate(currentUser, receiver)
                     isChatReady.value = true
                 }
-                val messages by chatViewModel.messages.collectAsStateWithLifecycle()
-
+                val messages = if (isChatReady.value) {
+                    chatViewModel.fetchDirectMessages(currentUser, receiver)
+                        .collectAsStateWithLifecycle(
+                            initialValue = emptyList()
+                        ).value
+                } else {
+                    emptyList()
+                }
                 ChatDirect(
                     messages = messages,
                     currentUserId = currentUser.id!!,

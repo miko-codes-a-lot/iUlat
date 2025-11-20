@@ -1,6 +1,5 @@
 package dev.cloudants.iulat.lib.services_impl
 
-import android.util.Log
 import com.couchbase.lite.*
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.services.ChatService
@@ -31,7 +30,6 @@ class ChatServiceImpl @Inject constructor(
         db.getCollection("users")
             ?: throw IllegalStateException("Collection 'users' not found.")
     }
-
 
     private fun generateChatId(input: String): String {
         val md = MessageDigest.getInstance("MD5")
@@ -78,8 +76,8 @@ class ChatServiceImpl @Inject constructor(
         return chatDto
     }
 
-    override suspend fun message(sender: UserDto, receiver: UserDto, content: String): MessageDto {
-        try {
+    override suspend fun message(sender: UserDto, receiver: UserDto, content: String): kotlin.Result<MessageDto> {
+        return runCatching {
             val adminId = getAdminId(sender, receiver)
             val userId = getUserId(sender, receiver)
             val chatId = generateChatId("$adminId$userId")
@@ -103,7 +101,7 @@ class ChatServiceImpl @Inject constructor(
             chatDoc.setLong("updatedAt", timestamp.toEpochMilli())
             collectionChats.save(chatDoc)
 
-            return MessageDto(
+            MessageDto(
                 id = messageId,
                 chatId = chatId,
                 senderId = sender.id!!,
@@ -111,11 +109,9 @@ class ChatServiceImpl @Inject constructor(
                 content = content,
                 createdAt = timestamp
             )
-        } catch (e: Exception) {
-            Log.e("ChatServiceImpl", "Failed to send message: ${e.message}", e)
-            throw e
         }
     }
+
 
     override fun fetchDirectMessages(sender: UserDto, receiver: UserDto): Flow<List<MessageDto>> = flow {
         val chatId = generateChatId("${getAdminId(sender, receiver)}${getUserId(sender, receiver)}")
