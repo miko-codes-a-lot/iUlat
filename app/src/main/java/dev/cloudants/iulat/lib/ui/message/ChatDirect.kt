@@ -53,34 +53,6 @@ fun ChatDirect(
             .padding(16.dp)
             .background(Color.White)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF0049AD))
-                .height(50.dp)
-        ) {
-            Row {
-
-                IconButton(onClick = {
-
-                }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.person_circle),
-                        contentDescription = "Profile",
-                        tint = Color.White,
-                        modifier = Modifier.size(48.dp)
-                    )
-                }
-                IconButton(onClick = { }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.person_circle),
-                        contentDescription = "Profile",
-                        tint = Color.White,
-                        modifier = Modifier.size(48.dp)
-                    )
-                }
-            }
-        }
         LazyColumn(
             modifier = Modifier
                 .padding(top = 50.dp)

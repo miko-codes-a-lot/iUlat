@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,7 +64,7 @@ fun Menu(
     val context = LocalContext.current
     val currentUserState = remember { mutableStateOf<UserDto?>(currentUser) }
 
-    val routeName by viewModel.routeName
+    val routeName by rememberSaveable { viewModel.routeName }
     val topBarTitle by viewModel.topBarTitle
     val navItems = currentUserState.value?.let { getNavItems(navController, it) } ?: emptyList()
     val isLoggingOut = remember { mutableStateOf(false) }
@@ -75,10 +76,12 @@ fun Menu(
                 popUpTo(0)
             }
         } else {
-            if (user.isResidence) {
-                viewModel.updateRoute(MODULE.RESIDENCEDASHBOARD)
-            } else {
-                viewModel.updateRoute(MODULE.DASHBOARD)
+            if (viewModel.routeName.value.isEmpty()) {
+                if (user.isResidence) {
+                    viewModel.updateRoute(MODULE.RESIDENCEDASHBOARD)
+                } else {
+                    viewModel.updateRoute(MODULE.DASHBOARD)
+                }
             }
         }
     }
