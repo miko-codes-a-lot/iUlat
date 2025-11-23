@@ -25,17 +25,39 @@ class OthersServicelmpl @Inject constructor(
         return try {
             val id = othersDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
-            val others = othersDto.copy(id = id,createdAt = now,lastUpdatedAt = now)
-            val jsonString = Json.encodeToString(OthersDto.serializer(), others)
-            val doc = MutableDocument(id).apply { setJSON(jsonString) }
+            val status = othersDto.status.takeIf { it.isNotBlank() } ?: "Pending"
+
+            val othersToSave = othersDto.copy(
+                id = id,
+                createdAt = now,
+                lastUpdatedAt = now,
+                status = status
+            )
+
+            val doc = MutableDocument(id).apply {
+                setString("id", othersToSave.id)
+                setString("userId", othersToSave.userId)
+                setString("reportDetails", othersToSave.reportDetails)
+                setString("reportImage", othersToSave.reportImage)
+                setString("status", othersToSave.status)
+                setString("createdAt", othersToSave.createdAt)
+                setString("lastUpdatedAt", othersToSave.lastUpdatedAt)
+                setString("createdById", othersToSave.createdById)
+                setString("reviewById", othersToSave.reviewById)
+                setString("lastUpdatedById", othersToSave.lastUpdatedById)
+                setString("deletedById", othersToSave.deletedById)
+                setString("deletedAt", othersToSave.deletedAt)
+            }
+
             collection.save(doc)
-            Log.d("OthersServiceImpl", "Created others report: $others")
-            others
+            Log.d("OthersServiceImpl", "Created others report: $othersToSave")
+            othersToSave
         } catch (e: Exception) {
             Log.e("OthersServiceImpl", "Failed to create others report: ${e.message}", e)
             throw e
         }
     }
+
 
     override suspend fun getAll(userId: String?): List<OthersDto> {
         return try {

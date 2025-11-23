@@ -21,16 +21,38 @@ class PublicDisturbanceServicelmpl @Inject constructor(
         db.getCollection("public_disturbance")
             ?: throw IllegalStateException("Collection 'public_disturbance' not found.")
     }
+
     override suspend fun create(publicDisturbanceDto: PublicDisturbanceDto): PublicDisturbanceDto {
         return try {
             val id = publicDisturbanceDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
-            val others = publicDisturbanceDto.copy(id = id,createdAt = now,lastUpdatedAt = now)
-            val jsonString = Json.encodeToString(PublicDisturbanceDto.serializer(), others)
-            val doc = MutableDocument(id).apply { setJSON(jsonString) }
+            val status = publicDisturbanceDto.status.takeIf { it.isNotBlank() } ?: "Pending"
+
+            val publicToSave = publicDisturbanceDto.copy(
+                id = id,
+                createdAt = now,
+                lastUpdatedAt = now,
+                status = status
+            )
+
+            val doc = MutableDocument(id).apply {
+                setString("id", publicToSave.id)
+                setString("userId", publicToSave.userId)
+                setString("reportDetails", publicToSave.reportDetails)
+                setString("reportImage", publicToSave.reportImage)
+                setString("status", publicToSave.status)
+                setString("createdAt", publicToSave.createdAt)
+                setString("lastUpdatedAt", publicToSave.lastUpdatedAt)
+                setString("createdById", publicToSave.createdById)
+                setString("reviewById", publicToSave.reviewById)
+                setString("lastUpdatedById", publicToSave.lastUpdatedById)
+                setString("deletedById", publicToSave.deletedById)
+                setString("deletedAt", publicToSave.deletedAt)
+            }
+
             collection.save(doc)
-            Log.d("PublicDisturbanceServiceImpl", "Created public disturbance report: $others")
-            others
+            Log.d("PublicDisturbanceServiceImpl", "Created public disturbance report: $publicToSave")
+            publicToSave
         } catch (e: Exception) {
             Log.e("PublicDisturbanceServiceImpl", "Failed to create public disturbance report: ${e.message}", e)
             throw e

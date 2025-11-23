@@ -18,7 +18,7 @@ class BrokenStreetLightViewModel @Inject constructor(
     val brokenStreetLightsService: BrokenStreetLightsService,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BrokenStreetLightState())
-    val state: StateFlow<BrokenStreetLightState> = _state.asStateFlow()
+    val state: StateFlow<BrokenStreetLightState> = _state
 
     fun fetchAll(currentUserId: String) {
         viewModelScope.launch {

@@ -171,15 +171,6 @@ class UserServiceImpl @Inject constructor (
                 Log.e("UserServiceImpl", " No dictionary found in result.")
                 return null
             }
-
-            val addressDict = userDict.getDictionary("address")
-//            val address = if (addressDict != null) {
-//                AddressDto(
-//                    province = addressDict.getString("province") ?: "",
-//                    municipality = addressDict.getString("municipality") ?: "",
-//                    barangay = addressDict.getString("barangay") ?: ""
-//                )
-//            } else AddressDto("", "", "")
             val address = AddressDto("","","","","",0.0, 0.0)
 
             val user = UserDto(
@@ -301,4 +292,25 @@ class UserServiceImpl @Inject constructor (
             address = addres
         )
     }
+
+    override fun isZoneExisting(province: String, municipality: String, barangay: String, zone: String): Boolean {
+        return try {
+            val query = QueryBuilder
+                .select(SelectResult.all())
+                .from(DataSource.collection(collection))
+                .where(
+                    Expression.property("province").equalTo(Expression.string(province))
+                        .and(Expression.property("municipality").equalTo(Expression.string(municipality)))
+                        .and(Expression.property("barangay").equalTo(Expression.string(barangay)))
+                        .and(Expression.property("zone").equalTo(Expression.string(zone)))
+                )
+
+            val result = query.execute().allResults()
+            result.isNotEmpty()
+        } catch (e: Exception) {
+            Log.e("UserServiceImpl", "Failed to check if zone exists: ${e.message}")
+            false
+        }
+    }
+
 }

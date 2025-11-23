@@ -1,7 +1,7 @@
 package dev.cloudants.iulat.lib.utils.main
 
+import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
@@ -12,7 +12,6 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
-import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.ui.user.Account
 import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
 import dev.cloudants.iulat.lib.ui.Login
@@ -27,6 +26,7 @@ import dev.cloudants.iulat.lib.ui.message.ChatLobby
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.CreateReport
 import dev.cloudants.iulat.lib.ui.report.EditReport
+import dev.cloudants.iulat.lib.ui.report.ViewReport
 import dev.cloudants.iulat.lib.ui.report.residence_report.BrokenLightList
 import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
 import dev.cloudants.iulat.lib.ui.report.residence_report.NoWaterSupplyList
@@ -41,6 +41,7 @@ import dev.cloudants.iulat.lib.ui.user.EditAccount
 import dev.cloudants.iulat.lib.ui.user.UserEdit
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.viewmodels.AddressViewModel
+import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
 import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
 import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
@@ -54,7 +55,6 @@ import dev.cloudants.iulat.lib.viewmodels.RobberiesViewModel
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 import dev.cloudants.iulat.lib.viewmodels.VehicleCrashViewModel
 import dev.cloudants.iulat.shared.Guard
-import kotlinx.coroutines.launch
 
 fun NavGraphBuilder.mainGraph(navController: NavController) {
     navigation<MainNav>(startDestination = MainNav.Splash) {
@@ -318,5 +318,40 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 MapUI(addressDto = addressDto)
             }
         }
+
+        composable<MainNav.ViewReport> {
+            Guard(navController) { currentUser ->
+                val args = it.toRoute<MainNav.ViewReport>()
+                val title = args.title
+                val reportId = args.reportId
+                val viewModel : ReportViewModel = hiltViewModel()
+                val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                val publicDisturbanceViewModel : PublicDisturbanceViewModel = hiltViewModel()
+                val robberiesViewModel : RobberiesViewModel = hiltViewModel()
+                val brokenStreetLightViewModel : BrokenStreetLightViewModel = hiltViewModel()
+                val vehicleCrashViewModel : VehicleCrashViewModel = hiltViewModel()
+                val roadRepairViewModel : RoadRepairViewModel = hiltViewModel()
+                val noWaterSupplyViewModel : NoWaterSupplyViewModel = hiltViewModel()
+                val othersViewModel : OthersViewModel = hiltViewModel()
+                val adminViewModel: AdminReportViewModel = hiltViewModel()
+                ViewReport(
+                    navController = navController,
+                    reportTitle = title,
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    garbageDisposalViewModel = garbageDisposalViewModel,
+                    publicDisturbanceViewModel = publicDisturbanceViewModel,
+                    robberiesViewModel = robberiesViewModel,
+                    brokenStreetLightViewModel = brokenStreetLightViewModel,
+                    vehicleCrashViewModel = vehicleCrashViewModel,
+                    roadRepairViewModel = roadRepairViewModel,
+                    noWaterSupplyViewModel = noWaterSupplyViewModel,
+                    othersViewModel = othersViewModel,
+                    reportId = reportId,
+                    adminViewModel = adminViewModel
+                )
+            }
+        }
+
     }
 }

@@ -1,8 +1,9 @@
 package dev.cloudants.iulat.lib.models.entities
 
 data class DashboardReportItemDto(
+    val docId: String,
     val reportId: String,
-    val reportType: String, // e.g., "Garbage Disposal"
+    val reportType: String,
     val reportDetails: String,
     val reportDate: String,
     val status: String,

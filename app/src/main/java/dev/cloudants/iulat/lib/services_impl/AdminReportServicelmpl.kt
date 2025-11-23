@@ -9,6 +9,9 @@ import com.couchbase.lite.QueryBuilder
 import dev.cloudants.iulat.lib.models.entities.DashboardReportItemDto
 import dev.cloudants.iulat.lib.services.AdminReportService
 import jakarta.inject.Inject
+import com.couchbase.lite.Meta
+import com.couchbase.lite.MutableDocument
+import dev.cloudants.iulat.lib.models.entities.TimelineEventDto
 
 class AdminReportServicelmpl @Inject constructor(
     private val db: Database
@@ -53,6 +56,7 @@ class AdminReportServicelmpl @Inject constructor(
 
             val query = QueryBuilder
                 .select(
+                    SelectResult.expression(Meta.id).`as`("docId"),
                     SelectResult.property("reportId"),
                     SelectResult.property("reportDetails"),
                     SelectResult.property("createdAt"),
@@ -70,6 +74,7 @@ class AdminReportServicelmpl @Inject constructor(
 
                 list.add(
                     DashboardReportItemDto(
+                        docId = row.getString("docId")!!,
                         reportId = row.getString("reportId") ?: "",
                         reportType = type,
                         reportDetails = row.getString("reportDetails") ?: "",
@@ -103,23 +108,23 @@ class AdminReportServicelmpl @Inject constructor(
         return finalList.sortedByDescending { it.reportDate }
     }
 
-    override suspend fun updateReportStatus(reportId: String, collectionName: String, newStatus: String) {
+    override suspend fun updateReportStatus(docId: String, collectionName: String, newStatus: String) {
         val col = db.getCollection(collectionName) ?: return
 
-        if (reportId.isEmpty()) {
-            Log.e("AdminReportService", "Empty reportId, cannot update")
-            return
-        }
-
-        val mutableDoc = col.getDocument(reportId)?.toMutable()
+        val mutableDoc = col.getDocument(docId)?.toMutable()
         if (mutableDoc == null) {
-            Log.e("AdminReportService", "Document not found for reportId '$reportId' in collection '$collectionName'")
+            Log.e("AdminReportService", "Document $docId NOT FOUND")
             return
         }
 
         mutableDoc.setString("status", newStatus)
-        col.save(mutableDoc)
-        Log.d("AdminReportService", "Updated report $reportId to status $newStatus")
+        try {
+            col.save(mutableDoc)
+            Log.d("AdminReportService", "SUCCESS: Status saved for $docId")
+        } catch (e: Exception) {
+            Log.e("AdminReportService", "ERROR saving status: ${e.message}")
+        }
+
     }
 
 
@@ -157,6 +162,7 @@ class AdminReportServicelmpl @Inject constructor(
 
             val query = QueryBuilder
                 .select(
+                    SelectResult.expression(Meta.id).`as`("docId"),
                     SelectResult.property("reportId"),
                     SelectResult.property("reportDetails"),
                     SelectResult.property("createdAt"),
@@ -164,7 +170,7 @@ class AdminReportServicelmpl @Inject constructor(
                     SelectResult.property("userId")
                 )
                 .from(DataSource.collection(col))
-                .where(Expression.property("status").equalTo(Expression.string("Pending"))) // Only pending
+                .where(Expression.property("status").equalTo(Expression.string("Pending")))
 
             val result = query.execute()
             val list = mutableListOf<DashboardReportItemDto>()
@@ -175,6 +181,7 @@ class AdminReportServicelmpl @Inject constructor(
 
                 list.add(
                     DashboardReportItemDto(
+                        docId = row.getString("docId")!!,
                         reportId = row.getString("reportId") ?: "",
                         reportType = type,
                         reportDetails = row.getString("reportDetails") ?: "",
@@ -207,6 +214,206 @@ class AdminReportServicelmpl @Inject constructor(
 
         return finalList.sortedByDescending { it.reportDate }
     }
+
+    override suspend fun getReportsByStatus(status: String, search: String ): List<DashboardReportItemDto> {
+
+        val finalList = mutableListOf<DashboardReportItemDto>()
+
+        val usersCol = db.getCollection("users") ?: return emptyList()
+        val usersMap = mutableMapOf<String, Triple<String, String, String>>()
+
+        val userQuery = QueryBuilder
+            .select(
+                SelectResult.property("id"),
+                SelectResult.property("firstName"),
+                SelectResult.property("middleName"),
+                SelectResult.property("lastName"),
+                SelectResult.property("email"),
+                SelectResult.property("address")
+            )
+            .from(DataSource.collection(usersCol))
+
+        val userResult = userQuery.execute()
+        for (row in userResult) {
+            val id = row.getString("id") ?: continue
+            val firstName = row.getString("firstName") ?: ""
+            val middleName = row.getString("middleName")?.let { " $it" } ?: ""
+            val lastName = row.getString("lastName") ?: ""
+            val name = "$firstName$middleName $lastName".trim()
+            val email = row.getString("email") ?: "No Email"
+            val addressDict = row.getDictionary("address")
+            val province = addressDict?.getString("province") ?: ""
+            val municipality = addressDict?.getString("municipality") ?: ""
+            val barangay = addressDict?.getString("barangay") ?: ""
+            val latitude = addressDict?.getDouble("latitude") ?: 0.0
+            val longitude = addressDict?.getDouble("longitude") ?: 0.0
+            val address = "$barangay, $municipality, $province"
+            usersMap[id] = Triple(name, email, "$latitude,$longitude")
+        }
+
+        fun queryFiltered(collectionName: String, type: String): List<DashboardReportItemDto> {
+            val col = db.getCollection(collectionName) ?: return emptyList()
+
+            var whereExp = Expression.booleanValue(true)
+            whereExp = whereExp.and(
+                Expression.property("status").equalTo(Expression.string(status))
+            )
+
+            if (search.isNotEmpty()) {
+                whereExp = whereExp.and(
+                    Expression.property("reportDetails")
+                        .like(Expression.string("%$search%"))
+                )
+            }
+
+            val query = QueryBuilder
+                .select(
+                    SelectResult.expression(Meta.id).`as`("docId"),
+                    SelectResult.property("reportId"),
+                    SelectResult.property("reportDetails"),
+                    SelectResult.property("createdAt"),
+                    SelectResult.property("status"),
+                    SelectResult.property("userId")
+                )
+                .from(DataSource.collection(col))
+                .where(whereExp)
+
+            val result = query.execute()
+            val list = mutableListOf<DashboardReportItemDto>()
+
+            for (row in result) {
+                val userId = row.getString("userId") ?: ""
+                val userInfo = usersMap[userId] ?: Triple("Unknown User", "No Email", "No Location")
+
+                list.add(
+                    DashboardReportItemDto(
+                        docId = row.getString("docId")!!,
+                        reportId = row.getString("reportId") ?: "",
+                        reportType = type,
+                        reportDetails = row.getString("reportDetails") ?: "",
+                        reportDate = row.getString("createdAt") ?: "",
+                        status = row.getString("status") ?: "",
+                        userName = userInfo.first,
+                        userEmail = userInfo.second,
+                        addressId = userInfo.third
+                    )
+                )
+            }
+            return list
+        }
+
+        val collections = mapOf(
+            "garbage_disposal" to "Garbage Disposal",
+            "broken_streetlights" to "Broken Streetlights",
+            "no_water_supply" to "No Water Supply",
+            "others" to "Others",
+            "public_disturbance" to "Public Disturbance",
+            "road_repair" to "Road Repair",
+            "robberies" to "Robberies",
+            "vehicle_crash" to "Vehicle Crash"
+        )
+
+        for ((collectionName, type) in collections) {
+            finalList += queryFiltered(collectionName, type)
+        }
+
+        return finalList.sortedByDescending { it.reportDate }
+    }
+
+    override suspend fun getTimelineEvents(reportId: String): List<TimelineEventDto> {
+        val col = db.getCollection("timeline_events") ?: return emptyList()
+
+        val query = QueryBuilder
+            .select(
+                SelectResult.expression(Meta.id).`as`("docId"),
+                SelectResult.property("userId"),
+                SelectResult.property("status"),
+                SelectResult.property("reportId"),
+                SelectResult.property("time"),
+                SelectResult.property("date"),
+                SelectResult.property("message")
+            )
+            .from(DataSource.collection(col))
+            .where(Expression.property("reportId").equalTo(Expression.string(reportId)))
+
+        val result = query.execute()
+        val list = mutableListOf<TimelineEventDto>()
+
+        for (row in result) {
+            list.add(
+                TimelineEventDto(
+                    docId = row.getString("docId")!!,
+                    userId = row.getString("userId") ?: "",
+                    status = row.getString("status") ?: "",
+                    reportId = row.getString("reportId") ?: "",
+                    time = row.getString("time") ?: "",
+                    date = row.getString("date") ?: "",
+                    message = row.getString("message") ?: ""
+                )
+            )
+        }
+
+        return list.sortedBy { it.date + it.time }
+    }
+
+    override suspend fun saveTimelineMessage(timelineEvent: TimelineEventDto) {
+        val col = db.getCollection("timeline_events") ?: return
+
+        val mutableDoc = MutableDocument()
+        mutableDoc.setString("userId", timelineEvent.userId)
+        mutableDoc.setString("status", timelineEvent.status)
+        mutableDoc.setString("reportId", timelineEvent.reportId)
+        mutableDoc.setString("time", timelineEvent.time)
+        mutableDoc.setString("date", timelineEvent.date)
+        mutableDoc.setString("message", timelineEvent.message)
+
+        try {
+            col.save(mutableDoc)
+            Log.d("AdminReportService", "Timeline message saved successfully")
+        } catch (e: Exception) {
+            Log.e("AdminReportService", "Error saving timeline message: ${e.message}")
+        }
+    }
+
+    override suspend fun deleteReportsWithNoStatus() {
+        val collections = listOf(
+            "garbage_disposal",
+            "broken_streetlights",
+            "no_water_supply",
+            "others",
+            "public_disturbance",
+            "road_repair",
+            "robberies",
+            "vehicle_crash"
+        )
+
+        for (collectionName in collections) {
+            val col = db.getCollection(collectionName) ?: continue
+
+            val query = QueryBuilder
+                .select(SelectResult.expression(Meta.id).`as`("docId"))
+                .from(DataSource.collection(col))
+                .where(
+                    Expression.property("status").equalTo(Expression.string(""))
+                        .or(Expression.property("status").equalTo(Expression.value(null)))
+                )
+
+            val result = query.execute()
+            for (row in result) {
+                val docId = row.getString("docId") ?: continue
+                col.getDocument(docId)?.let { doc ->
+                    try {
+                        col.delete(doc)
+                        Log.d("AdminReportService", "Deleted report with no status: $docId")
+                    } catch (e: Exception) {
+                        Log.e("AdminReportService", "Failed to delete report $docId: ${e.message}")
+                    }
+                }
+            }
+        }
+    }
+
+
 
 }
 

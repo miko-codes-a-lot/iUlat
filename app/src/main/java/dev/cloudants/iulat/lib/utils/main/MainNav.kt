@@ -84,4 +84,7 @@ object MainNav {
     @Serializable
     data class Map(var addressId: String)
 
+    @Serializable
+    data class ViewReport (var title: String = "", var reportId: String)
+
 }

@@ -15,4 +15,5 @@ interface UserService {
     fun login(email: String, password: String): UserDto?
     fun saveZonesToDatabase(zones: List<AddressDto>): Boolean
     fun saveValidId(userId: String, imageUri: ByteArray?): Result<UserDto>
+    fun isZoneExisting(province: String, municipality: String, barangay: String, zone: String): Boolean
 }

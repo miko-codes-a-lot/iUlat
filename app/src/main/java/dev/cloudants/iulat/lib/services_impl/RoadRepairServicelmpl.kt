@@ -21,16 +21,38 @@ class RoadRepairServicelmpl @Inject constructor(
         db.getCollection("road_repair")
             ?: throw IllegalStateException("Collection 'road_repair' not found.")
     }
+
     override suspend fun create(roadRepairDto: RoadRepairDto): RoadRepairDto {
         return try {
             val id = roadRepairDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
-            val others = roadRepairDto.copy(id = id,createdAt = now,lastUpdatedAt = now)
-            val jsonString = Json.encodeToString(RoadRepairDto.serializer(), others)
-            val doc = MutableDocument(id).apply { setJSON(jsonString) }
+            val status = roadRepairDto.status.takeIf { it.isNotBlank() } ?: "Pending"
+
+            val roadToSave = roadRepairDto.copy(
+                id = id,
+                createdAt = now,
+                lastUpdatedAt = now,
+                status = status
+            )
+
+            val doc = MutableDocument(id).apply {
+                setString("id", roadToSave.id)
+                setString("userId", roadToSave.userId)
+                setString("reportDetails", roadToSave.reportDetails)
+                setString("reportImage", roadToSave.reportImage)
+                setString("status", roadToSave.status)
+                setString("createdAt", roadToSave.createdAt)
+                setString("lastUpdatedAt", roadToSave.lastUpdatedAt)
+                setString("createdById", roadToSave.createdById)
+                setString("reviewById", roadToSave.reviewById)
+                setString("lastUpdatedById", roadToSave.lastUpdatedById)
+                setString("deletedById", roadToSave.deletedById)
+                setString("deletedAt", roadToSave.deletedAt)
+            }
+
             collection.save(doc)
-            Log.d("RoadRepairServiceImpl", "Created road repair report: $others")
-            others
+            Log.d("RoadRepairServiceImpl", "Created road repair report: $roadToSave")
+            roadToSave
         } catch (e: Exception) {
             Log.e("RoadRepairServiceImpl", "Failed to create road repair report: ${e.message}", e)
             throw e

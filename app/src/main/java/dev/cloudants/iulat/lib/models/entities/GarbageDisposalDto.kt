@@ -8,7 +8,7 @@ data class GarbageDisposalDto(
     var userId: String = "",
     var reportDetails: String = "",
     var reportImage: String? = null,
-    var status: String? = "pending",
+    var status: String = "Pending",
     var createdById: String? = null,
     var createdAt: String? = null,
     var reviewById: String? = null,

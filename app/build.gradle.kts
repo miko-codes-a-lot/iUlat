@@ -88,8 +88,12 @@ dependencies {
     implementation(libs.places)
     implementation(libs.coil.compose)
     implementation(libs.maps.compose)
-    implementation(libs.converter.gson)
     implementation(libs.mpandroidchart)
     implementation(libs.jbcrypt)
     implementation(libs.play.services.maps)
+
+    // Retrofit
+    implementation (libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
 }

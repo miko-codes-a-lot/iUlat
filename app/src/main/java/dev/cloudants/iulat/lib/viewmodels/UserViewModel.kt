@@ -89,7 +89,23 @@ class UserViewModel @Inject constructor(
     fun saveZonesToDatabase(zones: List<AddressDto>) {
         viewModelScope.launch {
             try {
-                zones.forEachIndexed { index, address ->
+                val uniqueZones = zones.distinctBy { "${it.province}-${it.municipality}-${it.barangay}-${it.zone}" }
+
+                val zonesToSave = uniqueZones.filter { address ->
+                    !userService.isZoneExisting(
+                        province = address.province,
+                        municipality = address.municipality,
+                        barangay = address.barangay,
+                        zone = address.zone
+                    )
+                }
+
+                if (zonesToSave.isEmpty()) {
+                    Log.e("UserViewModel", "⚠️ No new zones to save.")
+                    return@launch
+                }
+
+                zonesToSave.forEachIndexed { index, address ->
                     Log.d(
                         "UserViewModel",
                         """
@@ -104,19 +120,20 @@ class UserViewModel @Inject constructor(
                     )
                 }
 
-                val isSaved = userService.saveZonesToDatabase(zones)
+                val isSaved = userService.saveZonesToDatabase(zonesToSave)
 
                 if (isSaved) {
-                    Log.e("UserViewModel", "✅ Zones successfully saved to database.")
+                    Log.e("UserViewModel", " Zones successfully saved to database.")
                 } else {
-                    Log.e("UserViewModel", "❌ Failed to save zones.")
+                    Log.e("UserViewModel", " Failed to save zones.")
                 }
 
             } catch (e: Exception) {
-                Log.e("UserViewModel", "⚠️ Failed to save zones: ${e.message}")
+                Log.e("UserViewModel", "Failed to save zones: ${e.message}")
             }
         }
     }
+
 
     fun createAdmin() {
         viewModelScope.launch {

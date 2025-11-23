@@ -46,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,13 +70,16 @@ fun AdminReportList(navController: NavController) {
     val adminReportViewModel: AdminReportViewModel = hiltViewModel()
     val reports by adminReportViewModel.reports.collectAsState()
 
-    var selectedStatus by remember { mutableStateOf("New") }
+    var selectedStatus by remember { mutableStateOf("Pending") }
     var searchQuery by remember { mutableStateOf("") }
     var debouncedQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(searchQuery) {
         delay(500L)
         debouncedQuery = searchQuery
+    }
+    LaunchedEffect(selectedStatus, debouncedQuery) {
+        adminReportViewModel.loadReportsByStatus(selectedStatus, debouncedQuery)
     }
 
     Column(
@@ -118,16 +120,29 @@ fun AdminReportList(navController: NavController) {
             items(reports) { reportItem ->
                 SingleItemCard(
                     title = reportItem.reportType,
+                    status = reportItem.status,
                     userName = "from : " + reportItem.userName,
                     date = formatterDate(reportItem.reportDate),
                     imageUrl = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg",
                     onClick = {
-                        navController.navigate(
-                            MainNav.Map(reportItem.addressId)
+                        Log.e("Address :: ", reportItem.addressId)
+                         when(reportItem.status) {
+                            "Pending" -> navController.navigate(MainNav.Map(reportItem.addressId))
+                             else -> navController.navigate(MainNav.ViewReport(reportItem.reportType, reportItem.docId))
+                        }
+                    },
+                    onDeleteClick = {
+                        adminReportViewModel.updateReportStatus(
+                            reportItem,
+                            "Rejected"
                         )
                     },
-                    onDeleteClick = { adminReportViewModel.updateReportStatus(reportItem, "Rejected") },
-                    onCheckClick = { adminReportViewModel.updateReportStatus(reportItem, "Resolved") }
+                    onCheckClick = {
+                        when(reportItem.status) {
+                            "Approve" -> adminReportViewModel.updateReportStatus(reportItem,"Resolved")
+                            else -> adminReportViewModel.updateReportStatus(reportItem, "Approve" )
+                        }
+                    }
                 )
             }
         }
@@ -145,7 +160,7 @@ fun SearchReportIcon(
         value = searchQuery,
         onValueChange = { onSearchQueryChanged(it) },
         leadingIcon = {
-            IconButton(onClick = { } ) {
+            IconButton(onClick = { }) {
                 Icon(
                     imageVector = Icons.Filled.Search,
                     contentDescription = "Search Icon",
@@ -191,7 +206,7 @@ fun ReportTableHeader(
     selectedStatus: String,
     onStatusSelected: (String) -> Unit
 ) {
-    val statuses = listOf("New", "Pending", "Resolved", "Rejected")
+    val statuses = listOf("Pending", "Rejected", "Approve", "Resolved")
     ElevatedCard(
         modifier = Modifier
             .padding(start = 2.dp, end = 2.dp)
@@ -200,8 +215,7 @@ fun ReportTableHeader(
             containerColor = Color.White,
             contentColor = Color(0xFF0049AD)
         )
-    ) {
-        Column{
+    ) { Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -234,7 +248,11 @@ fun ReportStatusBox(
                 color = if (isSelected) Color(0xFF0049AD) else Color.Transparent,
                 shape = RoundedCornerShape(5.dp)
             )
-            .border(2.dp, if (isSelected) Color(0xFF0049AD) else Color.Gray, RoundedCornerShape(5.dp)),
+            .border(
+                2.dp,
+                if (isSelected) Color(0xFF0049AD) else Color.Gray,
+                RoundedCornerShape(5.dp)
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -279,6 +297,7 @@ fun UsersImageContainer(imageUrl: String) {
 @Composable
 fun SingleItemCard(
     title: String,
+    status: String,
     userName: String,
     date: String,
     imageUrl: String,
@@ -351,32 +370,50 @@ fun SingleItemCard(
                         )
                     }
                     Spacer(modifier = Modifier.weight(1f))
+                    when (status) {
+                        "Pending" -> {
+                            IconButton(onClick = onDeleteClick) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.cross),
+                                    contentDescription = "Delete Icon",
+                                    modifier = Modifier.size(45.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
 
-                    IconButton(
-                        onClick = onDeleteClick
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.cross),
-                            contentDescription = "Delete Icon",
-                            modifier = Modifier.size(45.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF2568ef))
+                            ) {
+                                IconButton(onClick = onCheckClick) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.checklist),
+                                        contentDescription = "Check Icon",
+                                        modifier = Modifier.size(42.dp)
+                                    )
+                                }
+                            }
+                        }
 
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2568ef))
-                    ) {
-                        IconButton(
-                            onClick = onCheckClick
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.checklist),
-                                contentDescription = "Check Icon",
-                                modifier = Modifier.size(42.dp)
-                            )
+                        "Approve" -> {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF2568ef))
+                            ) {
+                                IconButton(onClick = onCheckClick) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.checklist),
+                                        contentDescription = "Check Icon",
+                                        modifier = Modifier.size(42.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+
                         }
                     }
                 }

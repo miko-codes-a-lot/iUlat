@@ -65,6 +65,8 @@ fun Menu(
     val currentUserState = remember { mutableStateOf<UserDto?>(currentUser) }
 
     val routeName by rememberSaveable { viewModel.routeName }
+    val initialRouteSet = rememberSaveable { mutableStateOf(false) }
+
     val topBarTitle by viewModel.topBarTitle
     val navItems = currentUserState.value?.let { getNavItems(navController, it) } ?: emptyList()
     val isLoggingOut = remember { mutableStateOf(false) }
@@ -76,12 +78,13 @@ fun Menu(
                 popUpTo(0)
             }
         } else {
-            if (viewModel.routeName.value.isEmpty()) {
+            if (!initialRouteSet.value) {
                 if (user.isResidence) {
                     viewModel.updateRoute(MODULE.RESIDENCEDASHBOARD)
                 } else {
                     viewModel.updateRoute(MODULE.DASHBOARD)
                 }
+                initialRouteSet.value = true
             }
         }
     }

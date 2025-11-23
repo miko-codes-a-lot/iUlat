@@ -8,6 +8,7 @@ import dev.cloudants.iulat.lib.services.ChatService
 import dev.cloudants.iulat.lib.ui.message.model.ChatDto
 import dev.cloudants.iulat.lib.ui.message.model.MessageDto
 import dev.cloudants.iulat.lib.ui.message.model.UserChatDto
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,7 +29,8 @@ class ChatViewModel @Inject constructor(
     }
 
     fun fetchUsers(userId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+
             chatService.fetchUsers(userId)
                 .collect { _users.value = it }
         }
