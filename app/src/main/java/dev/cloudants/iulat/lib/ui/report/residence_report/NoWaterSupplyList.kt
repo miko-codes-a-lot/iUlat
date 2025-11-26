@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.ui.report.residence_report
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,16 @@ import dev.cloudants.iulat.lib.models.entities.NoWaterSupplyDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.NoWaterSupplyViewModel
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.ui.res.painterResource
+import dev.cloudants.iulat.R
+import android.os.Build
+import androidx.compose.ui.platform.LocalContext
+import dev.cloudants.iulat.MainActivity
+import dev.cloudants.iulat.lib.components.context.PrintableRowImpl
+import dev.cloudants.iulat.lib.components.print.Print
+import dev.cloudants.iulat.lib.components.print.exportDynamicPDF
 
 @Composable
 fun NoWaterSupplyList(
@@ -54,16 +65,25 @@ fun NoWaterSupplyList(
 ) {
     val noWaterSupplyViewModel: NoWaterSupplyViewModel = hiltViewModel()
     val state by noWaterSupplyViewModel.state.collectAsState()
-
+    val context = LocalContext.current
     LaunchedEffect(Unit) {
-        noWaterSupplyViewModel.fetchAll(currentUser.id!!)
+        if(currentUser.isResidence) {
+            noWaterSupplyViewModel.fetchAll(currentUser.id!!)
+        } else {
+            noWaterSupplyViewModel.fetchAllNoWater()
+        }
     }
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
         floatingActionButton = {
-            FloatingNoWaterSupplyRecordIcon(navController)
+            FloatingNoWaterSupplyRecordIcon(
+                navController,
+                currentUser,
+                context,
+                items = state.items
+            )
         }
     ) { padding ->
         Column(
@@ -122,7 +142,11 @@ private fun NoWaterButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                navController.navigate(MainNav.EditReport("No Water Supply", id!!))
+                if (report.status == "Rejected") {
+                    navController.navigate(MainNav.EditReport("No Water Supply", id))
+                } else {
+                    navController.navigate(MainNav.ViewReport("No Water Supply", id))
+                }
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(
@@ -168,27 +192,70 @@ private fun NoWaterButton(
 @Composable
 fun FloatingNoWaterSupplyRecordIcon(
     navController: NavController,
+    currentUser: UserDto,
+    context: Context,
+    items: List<NoWaterSupplyDto>
 ) {
+    val activity = context as? MainActivity
     Column(
         modifier = Modifier.background(Color.Transparent),
         horizontalAlignment = Alignment.End
     ) {
-        FloatingActionButton(
-            onClick = {
-                navController.navigate(MainNav.CreateReport("No Water Supply"))
-            },
-            containerColor = Color(0xFF0049AD),
-            contentColor = Color(0xFFFFFFFF),
-            shape = CircleShape,
-            modifier = Modifier
-                .size(75.dp)
-                .offset(x = (-5).dp, y = (-7).dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = "Add",
-                modifier = Modifier.size(30.dp)
-            )
+        if (currentUser.isAdmin) {
+            FloatingActionButton(
+                onClick = {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P && activity != null) {
+                        activity.requestStoragePermission()
+                    }
+                    val pdfRows = items.map { report ->
+                        PrintableRowImpl(
+                            listOf(
+                                formatterDate(report.createdAt),
+                                report.status
+                            )
+                        )
+                    }
+                    exportDynamicPDF(
+                        context = context,
+                        title = "No Water Supply",
+                        headers = listOf("No", "Date Created", "Status"),
+                        data = pdfRows,
+                        onFinish = { Print.openFile(context, it) },
+                        onError = { Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show() }
+                    )
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.printer),
+                    contentDescription = "Export",
+                    modifier = Modifier.size(30.dp),
+                    tint = Color.White
+                )
+            }
+        } else {
+            FloatingActionButton(
+                onClick = {
+                    navController.navigate(MainNav.CreateReport("No Water Supply"))
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Add",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
     }
 }

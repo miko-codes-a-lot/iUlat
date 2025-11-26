@@ -23,6 +23,7 @@ mapsCompose = "6.1.0"
 converterGson = "2.9.0"
 playServicesMaps = "19.0.0"
 hilt-navigation-compose = "1.2.0"
+itextpdf = "5.5.13.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -55,6 +56,7 @@ coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose"
 jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "jbcrypt" }
 mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpandroidchart" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt-navigation-compose" }
+itextpdf = { module = "com.itextpdf:itextpdf", version.ref = "itextpdf" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

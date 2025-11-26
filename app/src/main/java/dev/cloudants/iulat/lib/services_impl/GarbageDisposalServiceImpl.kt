@@ -30,6 +30,8 @@ class GarbageDisposalServiceImpl @Inject constructor(
             val doc = MutableDocument(id).apply {
                 setString("id", garbageToSave.id)
                 setString("userId", garbageToSave.userId)
+                setString("email", garbageToSave.email)
+                setString("mobileNumber", garbageToSave.mobileNumber)
                 setString("reportDetails", garbageToSave.reportDetails)
                 setString("reportImage", garbageToSave.reportImage)
                 setString("status", garbageToSave.status)

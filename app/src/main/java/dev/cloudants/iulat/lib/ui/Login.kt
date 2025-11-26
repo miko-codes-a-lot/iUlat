@@ -135,8 +135,8 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
 //            .height(50.dp),
 //        onClick
 //        = {
-//            userViewModel.saveZonesToDatabase(zones)
-//            userViewModel.createAdmin()
+////            userViewModel.saveZonesToDatabase(zones)
+////            userViewModel.createAdmin()
 //        }
 //    ) {
 //        Text("CLICK")

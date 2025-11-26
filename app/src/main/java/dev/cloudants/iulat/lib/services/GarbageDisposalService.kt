@@ -1,6 +1,7 @@
 package dev.cloudants.iulat.lib.services
 
 import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
+import dev.cloudants.iulat.lib.models.entities.UserDto
 
 interface GarbageDisposalService {
     suspend fun create(garbage: GarbageDisposalDto): GarbageDisposalDto

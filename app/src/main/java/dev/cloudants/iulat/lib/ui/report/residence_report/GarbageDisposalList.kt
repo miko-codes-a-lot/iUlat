@@ -1,5 +1,11 @@
 package dev.cloudants.iulat.lib.ui.report.residence_report
 
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.os.Environment
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,6 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,12 +47,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.itextpdf.text.Image
+import dev.cloudants.iulat.MainActivity
+import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.context.PrintableRowImpl
 import dev.cloudants.iulat.lib.components.context.formatterDate
 import dev.cloudants.iulat.lib.components.header.CustomHeader
-import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.components.print.Print
+import dev.cloudants.iulat.lib.components.print.exportDynamicPDF
+import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
+import java.util.Base64
 
 
 @Composable
@@ -54,9 +70,13 @@ fun GarbageDisposalList(
 ) {
     val garbageDisposalViewModel: GarbageDisposalViewModel = hiltViewModel()
     val state by garbageDisposalViewModel.state.collectAsState()
-
+    val context = LocalContext.current
     LaunchedEffect(Unit) {
-        garbageDisposalViewModel.fetchAll(currentUser.id!!)
+        if(currentUser.isResidence) {
+            garbageDisposalViewModel.fetchAll(currentUser.id!!)
+        } else {
+            garbageDisposalViewModel.fetchAllGarbageReports()
+        }
     }
 
 
@@ -65,7 +85,12 @@ fun GarbageDisposalList(
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
         floatingActionButton = {
-            FloatingGarbageDisposalRecordIcon(navController)
+            FloatingGarbageDisposalRecordIcon(
+                navController,
+                currentUser,
+                context,
+                items = state.items
+            )
         }
     ) { padding ->
         Column(
@@ -128,7 +153,11 @@ fun GarbageDisposalItem(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                navController.navigate(MainNav.EditReport("Garbage Disposal", id!!))
+                if (report.status == "Rejected") {
+                    navController.navigate(MainNav.EditReport("Garbage Disposal", id))
+                } else {
+                    navController.navigate(MainNav.ViewReport("Garbage Disposal", id))
+                }
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(
@@ -174,27 +203,76 @@ fun GarbageDisposalItem(
 @Composable
 fun FloatingGarbageDisposalRecordIcon(
     navController: NavController,
+    currentUser: UserDto,
+    context: Context,
+    items: List<GarbageDisposalDto>
 ) {
+    val activity = context as? MainActivity
     Column(
         modifier = Modifier.background(Color.Transparent),
         horizontalAlignment = Alignment.End
     ) {
-        FloatingActionButton(
-            onClick = {
-                navController.navigate(MainNav.CreateReport("Garbage Disposal"))
-            },
-            containerColor = Color(0xFF0049AD),
-            contentColor = Color(0xFFFFFFFF),
-            shape = CircleShape,
-            modifier = Modifier
-                .size(75.dp)
-                .offset(x = (-5).dp, y = (-7).dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = "Add",
-                modifier = Modifier.size(30.dp)
-            )
+
+        if (currentUser.isAdmin) {
+            FloatingActionButton(
+                onClick = {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P && activity != null) {
+                        activity.requestStoragePermission()
+                    }
+                    val pdfRows = items.map { report ->
+                        Log.e("ID :: ", report.id!!)
+                        Log.e("Email :: ", report.email ?: "N/A")
+                        PrintableRowImpl(
+                            listOf(
+                                report.email ?: "N/A",
+                                report.mobileNumber ?: "N/A",
+                                formatterDate(report.createdAt),
+                                report.status
+                            )
+                        )
+                    }
+
+                    exportDynamicPDF(
+                        context = context,
+                        title = "Garbage Disposal Report",
+                        headers = listOf("No", "Email", "Contact Info", "Date Created", "Status"),
+                        data = pdfRows,
+                        onFinish = { Print.openFile(context, it) },
+                        onError = { Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show() }
+                    )
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.printer),
+                    contentDescription = "Export",
+                    modifier = Modifier.size(30.dp),
+                    tint = Color.White
+                )
+            }
+        } else {
+            FloatingActionButton(
+                onClick = {
+                    navController.navigate(MainNav.CreateReport("Garbage Disposal"))
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Add",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
     }
 }

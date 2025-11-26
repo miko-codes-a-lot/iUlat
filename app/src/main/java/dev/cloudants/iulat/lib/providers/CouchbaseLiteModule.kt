@@ -3,7 +3,6 @@ package dev.cloudants.iulat.lib.providers
 import android.content.Context
 import android.util.Log
 import com.couchbase.lite.BasicAuthenticator
-import com.couchbase.lite.Collection
 import com.couchbase.lite.CollectionConfiguration
 import com.couchbase.lite.CouchbaseLite
 import com.couchbase.lite.CouchbaseLiteException
@@ -86,11 +85,5 @@ object CouchbaseLiteModule {
 
 
         return db
-    }
-
-    @Provides
-    @Singleton
-    fun provideUserCollection(db: Database): Collection {
-        return db.getCollection("users") ?: db.createCollection("users")
     }
 }

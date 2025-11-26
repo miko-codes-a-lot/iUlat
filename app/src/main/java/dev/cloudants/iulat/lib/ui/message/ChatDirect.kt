@@ -25,9 +25,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.ui.message.model.MessageDto
+import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
+import dev.cloudants.iulat.lib.viewmodels.RobberiesViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.toString
@@ -38,6 +41,7 @@ fun ChatDirect(
     currentUserId: String,
     onSendMessage: suspend (String) -> Unit
 ) {
+    val viewModel: ChatViewModel = hiltViewModel()
     var messageContent by remember { mutableStateOf(TextFieldValue("")) }
     val isSendingMessage = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()

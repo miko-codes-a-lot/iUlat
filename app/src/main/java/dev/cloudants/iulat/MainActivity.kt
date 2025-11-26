@@ -2,6 +2,7 @@ package dev.cloudants.iulat
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -57,6 +58,14 @@ class MainActivity : ComponentActivity() {
         }
         else -> {
             requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+        }
+    }
+
+    fun requestStoragePermission() {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            Toast.makeText(this, "No storage permission required for Android 10+", Toast.LENGTH_SHORT).show()
         }
     }
 

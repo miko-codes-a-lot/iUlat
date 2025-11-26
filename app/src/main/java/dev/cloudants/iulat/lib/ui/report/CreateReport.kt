@@ -174,6 +174,8 @@ fun CreateReport(
                         garbageDisposalViewModel.createGarbageReport(
                             GarbageDisposalDto(
                                 userId = userId,
+                                email = currentUser.email,
+                                mobileNumber = currentUser.mobileNumber,
                                 reportDetails = textValue,
                                 reportImage = base64Image,
                                 createdById = userId

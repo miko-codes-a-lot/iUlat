@@ -147,7 +147,7 @@ fun EditReport(
         Spacer(Modifier.weight(1f))
 
         Text(
-            text = "Edit Report ($reportTitle)",
+            text = "Report Status: Rejected ($reportTitle)",
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
             modifier = Modifier

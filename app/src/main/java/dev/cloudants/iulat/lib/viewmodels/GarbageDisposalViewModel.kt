@@ -28,6 +28,19 @@ class GarbageDisposalViewModel @Inject constructor(
                 items = reports.sortedByDescending { it.createdAt },
                 isLoading = false
             )
+            Log.e("REP ::", reports.size.toString())
+        }
+    }
+
+    fun fetchAllGarbageReports() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            val reports = garbageService.getAll()
+            _state.value = _state.value.copy(
+                items = reports.sortedByDescending { it.createdAt },
+                isLoading = false
+            )
+            Log.e("ALL REP ::", reports.size.toString())
         }
     }
 

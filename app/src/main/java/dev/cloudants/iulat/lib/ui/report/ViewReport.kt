@@ -170,10 +170,10 @@ fun ViewReport(
             .fillMaxSize()
             .background(Color.White)
             .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 50.dp),
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.weight(1f))
+//        Spacer(modifier = Modifier.weight(1f))
         Text(
             text = "View Report ($reportTitle)",
             fontWeight = FontWeight.Bold,
@@ -235,7 +235,7 @@ fun ViewReport(
             }
         }
 
-        if (timelineEventsMapped.size < 3) {
+        if(!currentUser.isResidence && timelineEventsMapped.size < 3) {
             OutlinedTextField(
                 value = newMessage,
                 onValueChange = { newMessage = it },
@@ -260,9 +260,9 @@ fun ViewReport(
                         adminViewModel.loadTimeline(reportId)
                     }
                 }
-            )
+             )
         }
-        Spacer(modifier = Modifier.weight(1f))
+//        Spacer(modifier = Modifier.weight(1f))
     }
 }
 

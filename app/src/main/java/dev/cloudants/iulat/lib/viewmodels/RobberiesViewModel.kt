@@ -32,7 +32,16 @@ class RobberiesViewModel @Inject constructor(
             )
         }
     }
-
+    fun fetchAllRobberies() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            val reports = robberiesService.getAll()
+            _state.value = _state.value.copy(
+                items = reports.sortedByDescending { it.createdAt },
+                isLoading = false
+            )
+        }
+    }
     fun createRobberiesReport(dto: RobberiesDto) {
         viewModelScope.launch {
             try {

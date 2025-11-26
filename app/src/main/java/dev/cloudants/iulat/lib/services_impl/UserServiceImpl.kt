@@ -6,6 +6,7 @@ import com.couchbase.lite.DataSource
 import com.couchbase.lite.Database
 import com.couchbase.lite.Document
 import com.couchbase.lite.Expression
+import com.couchbase.lite.Meta
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
@@ -23,16 +24,21 @@ class UserServiceImpl @Inject constructor (
     private val db: Database,
 ): UserService {
 
-    private val collection by lazy {
+    private val userCollection by lazy {
         db.getCollection("users")
             ?: throw IllegalStateException("Collection 'users' not found")
     }
+    private val addressCollection by lazy {
+        db.getCollection("address")
+            ?: throw IllegalStateException("Collection 'users' not found")
+    }
+
     init {
-        collection
+        userCollection
         logAllUsers()
     }
     private fun getDocument(id: String): Document {
-        val doc = collection.getDocument(id)
+        val doc = userCollection.getDocument(id)
         if (doc == null) {
             throw NotFoundException("User not found: $id")
         }
@@ -43,12 +49,12 @@ class UserServiceImpl @Inject constructor (
         try {
             val results = QueryBuilder
                 .select(SelectResult.all())
-                .from(DataSource.collection(collection))
+                .from(DataSource.collection(userCollection))
                 .execute()
                 .allResults()
 
             results.forEach { result ->
-                val dict = result.getDictionary(collection.name)
+                val dict = result.getDictionary(userCollection.name)
                 Log.d("UserServiceImpl", "User doc: ${dict?.toJSON()}")
             }
 
@@ -65,7 +71,7 @@ class UserServiceImpl @Inject constructor (
 
     override fun findAll(): List<UserDto> {
         return QueryBuilder.select(SelectResult.all())
-            .from(DataSource.collection(collection))
+            .from(DataSource.collection(userCollection))
             .where(
                 Expression.property("type")
                     .equalTo(
@@ -75,7 +81,7 @@ class UserServiceImpl @Inject constructor (
             .execute()
             .allResults()
             .mapNotNull { result ->
-                val userDict = result.getDictionary(collection.name)
+                val userDict = result.getDictionary(userCollection.name)
                 userDict?.let { dict ->
                     try {
                         Json.Default.decodeFromString<UserDto>(dict.toJSON())
@@ -97,7 +103,7 @@ class UserServiceImpl @Inject constructor (
             )
             val json = Json.encodeToString(adminUser)
             val doc = MutableDocument(freshId).apply { setJSON(json) }
-            collection.save(doc)
+            userCollection.save(doc)
             Log.e("UserServiceImpl", "Admin user created successfully: ${adminUser.email}")
             adminUser
         } catch (e: Exception) {
@@ -113,7 +119,7 @@ class UserServiceImpl @Inject constructor (
             val userWithHashedPassword = user.copy(id = freshId,password = hashedPassword)
             val json = Json.Default.encodeToString(userWithHashedPassword)
             val doc = MutableDocument(freshId).apply { setJSON(json) }
-            collection.save(doc)
+            userCollection.save(doc)
             Log.e("UserServiceImpl", "User created successfully: ${user.email}")
             return userWithHashedPassword
         } catch (e: Exception) {
@@ -133,7 +139,7 @@ class UserServiceImpl @Inject constructor (
 
             val mutableDoc = doc.toMutable()
             mutableDoc.setJSON(json)
-            collection.save(mutableDoc)
+            userCollection.save(mutableDoc)
 
             return userToSave
         } catch (e: Exception) {
@@ -145,7 +151,7 @@ class UserServiceImpl @Inject constructor (
     override fun delete(id: String): Boolean {
         val doc = this.getDocument(id)
         try {
-            collection.delete(doc)
+            userCollection.delete(doc)
 
             return true
         } catch(e: Exception) {
@@ -160,18 +166,34 @@ class UserServiceImpl @Inject constructor (
     }
 
     override fun login(email: String, password: String): UserDto? {
+
+
+        val test = QueryBuilder
+            .select(
+                SelectResult.expression(Meta.id),
+                SelectResult.all()
+            )
+            .from(DataSource.collection(userCollection))
+            .execute()
+            .allResults()
+            .forEach { user ->
+
+                Log.d("micool", "user: ${user.getString("id")}")
+            }
+
+
         val query = QueryBuilder.select(SelectResult.all())
-            .from(DataSource.collection(collection))
+            .from(DataSource.collection(userCollection))
             .where(Expression.property("email").equalTo(Expression.string(email)))
 
         val result = query.execute().firstOrNull()
         if (result != null) {
-            val userDict = result.getDictionary(collection.name)
+            val userDict = result.getDictionary(userCollection.name)
             if (userDict == null) {
                 Log.e("UserServiceImpl", " No dictionary found in result.")
                 return null
             }
-            val address = AddressDto("","","","","",0.0, 0.0)
+            val address = AddressDto(id = "",province = "", municipality = "",barangay = "",zone = "", latitude = 0.0, longitude = 0.0)
 
             val user = UserDto(
                 id = userDict.getString("id") ?: "",
@@ -223,7 +245,7 @@ class UserServiceImpl @Inject constructor (
                     setDouble("latitude", address.latitude)
                     setDouble("longitude", address.longitude)
                 }
-                collection.save(doc)
+                addressCollection.save(doc)
                 Log.e("AddressInit", "Saved address: $id -> ${address.zone}, ${address.barangay}")
             }
 
@@ -245,7 +267,7 @@ class UserServiceImpl @Inject constructor (
 
                 val json = Json.encodeToString(updatedUser)
                 val mutableDoc = userDoc.toMutable().apply { setJSON(json) }
-                collection.save(mutableDoc)
+                userCollection.save(mutableDoc)
                 Result.success(updatedUser)
             } else {
                 Result.failure(Exception("No image provided"))
@@ -258,21 +280,13 @@ class UserServiceImpl @Inject constructor (
 
     override fun findByEmail(email: String): UserDto? {
         val query = QueryBuilder.select(SelectResult.all())
-            .from(DataSource.collection(collection))
+            .from(DataSource.collection(userCollection))
             .where(Expression.property("email").equalTo(Expression.string(email)))
 
         val result = query.execute().firstOrNull() ?: return null
-        val userDict = result.getDictionary(collection.name) ?: return null
+        val userDict = result.getDictionary(userCollection.name) ?: return null
 
-//        val addressDict = userDict.getDictionary("address")
-//        val address = if (addressDict != null) {
-//            AddressDto(
-//                province = addressDict.getString("province") ?: "",
-//                municipality = addressDict.getString("municipality") ?: "",
-//                barangay = addressDict.getString("barangay") ?: ""
-//            )
-//        } else AddressDto("", "", "")
-        val addres = AddressDto("","","","","",0.0, 0.0)
+        val addres = AddressDto(id = "", province = "", municipality = "", barangay = "",zone = "", latitude = 0.0, longitude = 0.0)
         return UserDto(
             id = userDict.getString("id") ?: "",
             username = userDict.getString("username") ?: "",
@@ -297,7 +311,7 @@ class UserServiceImpl @Inject constructor (
         return try {
             val query = QueryBuilder
                 .select(SelectResult.all())
-                .from(DataSource.collection(collection))
+                .from(DataSource.collection(userCollection))
                 .where(
                     Expression.property("province").equalTo(Expression.string(province))
                         .and(Expression.property("municipality").equalTo(Expression.string(municipality)))

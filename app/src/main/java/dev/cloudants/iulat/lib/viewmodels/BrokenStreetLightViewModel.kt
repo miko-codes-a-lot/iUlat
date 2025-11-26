@@ -31,6 +31,17 @@ class BrokenStreetLightViewModel @Inject constructor(
         }
     }
 
+    fun fetchAllBrokenStreet() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            val reports = brokenStreetLightsService.getAll()
+            _state.value = _state.value.copy(
+                items = reports.sortedByDescending { it.createdAt },
+                isLoading = false
+            )
+        }
+    }
+
     fun createBrokenLightReport(dto: BrokenStreetlightsDto) {
         viewModelScope.launch {
             try {

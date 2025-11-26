@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,30 +40,40 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import dev.cloudants.iulat.ui.theme.Purple200
 import dev.cloudants.iulat.ui.theme.Purple500
 import dev.cloudants.iulat.ui.theme.Teal200
 import dev.cloudants.iulat.R
+import dev.cloudants.iulat.lib.components.context.AdminReportItems
+import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.ui.theme.Purple700
 import dev.cloudants.iulat.ui.theme.PurpleGrey40
 
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun DashboardPrev() {
-    Dashboard()
-}
+//@Preview(showBackground = true, showSystemUi = true)
+//@Composable
+//fun DashboardPrev() {
+//    Dashboard()
+//}
 
 @Composable
-fun Dashboard() {
+fun AdminDashboard(
+     navController: NavController,
+     currentUser: UserDto
+) {
 
     Column(
         modifier = Modifier
@@ -85,7 +97,9 @@ fun Dashboard() {
         Spacer(modifier = Modifier.height(8.dp))
         ReportList()
         Spacer(modifier = Modifier.height(8.dp))
-        DashboardMenu()
+        DashboardMenu(
+            navController = navController
+        )
     }
 }
 
@@ -349,16 +363,18 @@ fun DetailsPieChartItem(
 }
 
 @Composable
-fun DashboardMenu() {
+fun DashboardMenu(
+    navController: NavController
+) {
     val reportItems = listOf(
-        Triple(R.drawable.trash_can, "Garbage Disposal", 15f),
-        Triple(R.drawable.ic_public_disturbance, "Public Disturbance", 20f),
-        Triple(R.drawable.ic_robberies, "Robberies", 10f),
-        Triple(R.drawable.streetlight, "Broken Streetlights", 25f),
-        Triple(R.drawable.ic_vehicle_crashes, "Vehicle Crashes", 5f),
-        Triple(R.drawable.road_work, "Road Repair", 18f),
-        Triple(R.drawable.no_water, "No Water Supply", 12f),
-        Triple(R.drawable.ic_others, "Others", 30f)
+        AdminReportItems(R.drawable.trash_can, "Garbage Disposal", 15f),
+        AdminReportItems(R.drawable.ic_public_disturbance, "Public Disturbance", 20f),
+        AdminReportItems(R.drawable.ic_robberies, "Robberies", 10f),
+        AdminReportItems(R.drawable.streetlight, "Broken Streetlights", 25f),
+        AdminReportItems(R.drawable.ic_vehicle_crashes, "Vehicle Crashes", 5f),
+        AdminReportItems(R.drawable.road_work, "Road Repair", 18f),
+        AdminReportItems(R.drawable.no_water, "No Water Supply", 12f),
+        AdminReportItems(R.drawable.ic_others, "Others", 30f)
     )
 
     LazyColumn(
@@ -367,11 +383,23 @@ fun DashboardMenu() {
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        items(reportItems) { (imageResId, text, percentage) ->
+        items(reportItems) { item ->
             DashboardButton(
-                text = text,
-                iconResId = imageResId,
-                percentage = percentage
+                text = item.title,
+                iconResId = item.icon,
+                percentage = item.percentage,
+                onClick = {
+                    when (item.title) {
+                        "Garbage Disposal" -> navController.navigate(MainNav.GarbageDisposalList)
+                        "Public Disturbance" -> navController.navigate(MainNav.PublicDisturbanceList)
+                        "Robberies" -> navController.navigate(MainNav.RobberiesList)
+                        "Broken Streetlights" -> navController.navigate(MainNav.BrokenLightList)
+                        "Vehicle Crashes" -> navController.navigate(MainNav.VehicleCrashesList)
+                        "Road Repair" -> navController.navigate(MainNav.RoadRepairList)
+                        "No Water Supply" -> navController.navigate(MainNav.NoWaterSupplyList)
+                        "Others" -> navController.navigate(MainNav.OthersList)
+                    }
+                }
             )
         }
     }
@@ -381,7 +409,8 @@ fun DashboardMenu() {
 private fun DashboardButton(
     text: String,
     iconResId: Int? = null,
-    percentage: Float
+    percentage: Float,
+    onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -393,6 +422,7 @@ private fun DashboardButton(
                 spotColor = Color.Black
             )
             .padding(vertical = 4.dp)
+            .clickable { onClick() },
     ) {
         ElevatedCard(
             modifier = Modifier

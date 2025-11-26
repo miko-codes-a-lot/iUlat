@@ -5,16 +5,19 @@ import com.couchbase.lite.SelectResult
 import com.couchbase.lite.DataSource
 
 import com.couchbase.lite.Collection
+import com.couchbase.lite.Database
 import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.services.AddressService
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.lang.IllegalStateException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 class AddressServiceImpl @Inject constructor(
-    private val collection: Collection
+    private val db: Database,
 ) : AddressService {
+    private val collection by lazy { db.getCollection("address") ?: db.createCollection("address") }
 
     override fun fetchAll(): List<AddressDto> {
         return try {

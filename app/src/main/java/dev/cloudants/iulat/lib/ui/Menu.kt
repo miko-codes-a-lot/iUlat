@@ -29,28 +29,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.NavItem
 import dev.cloudants.iulat.lib.components.context.UserSession
 import dev.cloudants.iulat.lib.models.entities.UserDto
-import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
+import dev.cloudants.iulat.lib.ui.dashboard.AdminDashboard
 import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
-import dev.cloudants.iulat.lib.ui.message.ChatDirect
 import dev.cloudants.iulat.lib.ui.message.ChatLobby
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.AdminReportList
 import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
 import dev.cloudants.iulat.lib.ui.user.Account
-import dev.cloudants.iulat.lib.ui.user.UserDetails
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 
@@ -171,7 +165,7 @@ fun Menu(
                 .padding(paddingValues)
         ) {
             when (routeName) {
-                MODULE.DASHBOARD -> Dashboard()
+                MODULE.DASHBOARD -> AdminDashboard(navController, currentUser)
                 MODULE.CHATLOBBY -> ChatLobby(navController, currentUser.id!!)
 //                MODULE.CHATDIRECT -> ChatDirect(currentUser )
                 MODULE.ACCOUNT -> Account(navController)

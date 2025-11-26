@@ -1,11 +1,14 @@
 package dev.cloudants.iulat.lib.models.entities
 
+import dev.cloudants.iulat.lib.components.context.PrintableRow
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class GarbageDisposalDto(
     var id: String? = null,
     var userId: String = "",
+    val email: String? = null,
+    val mobileNumber: String? = null,
     var reportDetails: String = "",
     var reportImage: String? = null,
     var status: String = "Pending",
@@ -16,4 +19,13 @@ data class GarbageDisposalDto(
     var lastUpdatedAt: String? = null,
     var deletedById: String? = null,
     var deletedAt: String? = null,
-)
+
+) : PrintableRow {
+
+    override fun getColumns(): List<String> {
+        return listOf(
+            createdAt ?: "",
+            status
+        )
+    }
+}

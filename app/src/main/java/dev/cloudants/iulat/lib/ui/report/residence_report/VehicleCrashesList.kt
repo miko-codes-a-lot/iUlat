@@ -46,6 +46,17 @@ import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.models.entities.VehicleCrashDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.VehicleCrashViewModel
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.ui.res.painterResource
+import dev.cloudants.iulat.R
+import android.os.Build
+import androidx.compose.ui.platform.LocalContext
+import dev.cloudants.iulat.MainActivity
+import dev.cloudants.iulat.lib.components.context.PrintableRowImpl
+import dev.cloudants.iulat.lib.components.print.Print
+import dev.cloudants.iulat.lib.components.print.exportDynamicPDF
+import dev.cloudants.iulat.lib.models.entities.BrokenStreetlightsDto
 
 @Composable
 fun VehicleCrashesList(
@@ -54,16 +65,25 @@ fun VehicleCrashesList(
 ) {
     val vehicleCrashViewModel: VehicleCrashViewModel = hiltViewModel()
     val state by vehicleCrashViewModel.state.collectAsState()
-
+    val context = LocalContext.current
     LaunchedEffect(Unit) {
-        vehicleCrashViewModel.fetchAll(currentUser.id!!)
+        if(currentUser.isResidence) {
+            vehicleCrashViewModel.fetchAll(currentUser.id!!)
+        } else {
+            vehicleCrashViewModel.fetchAllVehicleCrash()
+        }
     }
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
         floatingActionButton = {
-            FloatingVehicleCrashesRecordIcon(navController)
+            FloatingVehicleCrashesRecordIcon(
+                navController,
+                currentUser,
+                context,
+                items = state.items
+            )
         }
     ) { padding ->
         Column(
@@ -122,7 +142,11 @@ private fun VehicleCrashesButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                navController.navigate(MainNav.EditReport("Vehicle Crashes", id!!))
+                if (report.status == "Rejected") {
+                    navController.navigate(MainNav.EditReport("Vehicle Crashes", id))
+                } else {
+                    navController.navigate(MainNav.ViewReport("Vehicle Crashes", id))
+                }
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(
@@ -168,27 +192,70 @@ private fun VehicleCrashesButton(
 @Composable
 fun FloatingVehicleCrashesRecordIcon(
     navController: NavController,
+    currentUser: UserDto,
+    context: Context,
+    items: List<VehicleCrashDto>
 ) {
+    val activity = context as? MainActivity
     Column(
         modifier = Modifier.background(Color.Transparent),
         horizontalAlignment = Alignment.End
     ) {
-        FloatingActionButton(
-            onClick = {
-                navController.navigate(MainNav.CreateReport("Vehicle Crashes"))
-            },
-            containerColor = Color(0xFF0049AD),
-            contentColor = Color(0xFFFFFFFF),
-            shape = CircleShape,
-            modifier = Modifier
-                .size(75.dp)
-                .offset(x = (-5).dp, y = (-7).dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = "Add",
-                modifier = Modifier.size(30.dp)
-            )
+        if (currentUser.isAdmin) {
+            FloatingActionButton(
+                onClick = {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P && activity != null) {
+                        activity.requestStoragePermission()
+                    }
+                    val pdfRows = items.map { report ->
+                        PrintableRowImpl(
+                            listOf(
+                                formatterDate(report.createdAt),
+                                report.status
+                            )
+                        )
+                    }
+                    exportDynamicPDF(
+                        context = context,
+                        title = "Vehicle Crashes",
+                        headers = listOf("No", "Date Created", "Status"),
+                        data = pdfRows,
+                        onFinish = { Print.openFile(context, it) },
+                        onError = { Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show() }
+                    )
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.printer),
+                    contentDescription = "Export",
+                    modifier = Modifier.size(30.dp),
+                    tint = Color.White
+                )
+            }
+        } else {
+            FloatingActionButton(
+                onClick = {
+                    navController.navigate(MainNav.CreateReport("Vehicle Crashes"))
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Add",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
     }
 }

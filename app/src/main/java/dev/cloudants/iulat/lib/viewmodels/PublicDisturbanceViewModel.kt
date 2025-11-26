@@ -33,6 +33,17 @@ class PublicDisturbanceViewModel @Inject constructor(
         }
     }
 
+    fun fetchAllPublicDisturbance() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            val reports = publicDisturbanceService.getAll()
+            _state.value = _state.value.copy(
+                items = reports.sortedByDescending { it.createdAt },
+                isLoading = false
+            )
+        }
+    }
+
     fun createPublicDisturbanceReport(dto: PublicDisturbanceDto) {
         viewModelScope.launch {
             try {
