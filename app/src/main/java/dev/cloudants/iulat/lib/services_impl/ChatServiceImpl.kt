@@ -6,6 +6,8 @@ import dev.cloudants.iulat.lib.services.ChatService
 import dev.cloudants.iulat.lib.ui.message.model.ChatDto
 import dev.cloudants.iulat.lib.ui.message.model.MessageDto
 import dev.cloudants.iulat.lib.ui.message.model.UserChatDto
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.security.MessageDigest
@@ -113,7 +115,11 @@ class ChatServiceImpl @Inject constructor(
     }
 
 
-    override fun fetchDirectMessages(sender: UserDto, receiver: UserDto): Flow<List<MessageDto>> = flow {
+    override fun fetchDirectMessages(
+        sender: UserDto,
+        receiver: UserDto
+    ): Flow<List<MessageDto>> = callbackFlow {
+
         val chatId = generateChatId("${getAdminId(sender, receiver)}${getUserId(sender, receiver)}")
 
         val query = QueryBuilder.select(SelectResult.all())
@@ -121,19 +127,25 @@ class ChatServiceImpl @Inject constructor(
             .where(Expression.property("chatId").equalTo(Expression.string(chatId)))
             .orderBy(Ordering.property("createdAt").descending())
 
-        val results = query.execute()
-        val messages = results.map { row ->
-            val doc = row.getDictionary(collectionMessages.name)!!
-            MessageDto(
-                id = doc.getString("id")!!,
-                chatId = doc.getString("chatId")!!,
-                senderId = doc.getString("senderId")!!,
-                receiverId = doc.getString("receiverId")!!,
-                content = doc.getString("content")!!,
-                createdAt = Instant.ofEpochMilli(doc.getLong("createdAt"))
-            )
+        val token = query.addChangeListener { change ->
+            val results = change.results ?: return@addChangeListener
+
+            val messages = results.map { row ->
+                val doc = row.getDictionary(collectionMessages.name)!!
+                MessageDto(
+                    id = doc.getString("id")!!,
+                    chatId = doc.getString("chatId")!!,
+                    senderId = doc.getString("senderId")!!,
+                    receiverId = doc.getString("receiverId")!!,
+                    content = doc.getString("content")!!,
+                    createdAt = Instant.ofEpochMilli(doc.getLong("createdAt"))
+                )
+            }
+
+            trySend(messages)
         }
-        emit(messages)
+
+        awaitClose { query.removeChangeListener(token) }
     }
 
     override fun fetchUsers(userId: String): Flow<List<UserChatDto>> = flow {

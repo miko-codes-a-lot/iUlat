@@ -41,16 +41,15 @@ fun ChatDirect(
     currentUserId: String,
     onSendMessage: suspend (String) -> Unit
 ) {
-    val viewModel: ChatViewModel = hiltViewModel()
     var messageContent by remember { mutableStateOf(TextFieldValue("")) }
     val isSendingMessage = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
-        }
-    }
+//    val listState = rememberLazyListState()
+//    LaunchedEffect(messages.size) {
+//        if (messages.isNotEmpty()) {
+//            listState.animateScrollToItem(messages.size - 1)
+//        }
+//    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -64,7 +63,7 @@ fun ChatDirect(
                 .fillMaxHeight()
                 .weight(1f),
             reverseLayout = true,
-            state = listState,
+//            state = listState,
         ) {
             items(messages) { message ->
                 MessageBubble(
@@ -111,9 +110,10 @@ fun ChatDirect(
                 modifier = Modifier
                     .size(30.dp)
                     .clickable {
-                        if (!isSendingMessage.value && messageContent.text.isNotBlank()) {
+                        if (isSendingMessage.value) return@clickable
+                        isSendingMessage.value = true
+                        if (messageContent.text.isNotBlank()) {
                             scope.launch {
-                                isSendingMessage.value = true
                                 onSendMessage(messageContent.text)
                                 messageContent = TextFieldValue("")
                                 isSendingMessage.value = false

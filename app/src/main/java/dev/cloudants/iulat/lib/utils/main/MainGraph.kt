@@ -87,11 +87,9 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 val chatViewModel: ChatViewModel = hiltViewModel()
                 val isChatReady = remember { mutableStateOf(false) }
                 val userViewModel: UserViewModel = hiltViewModel()
-
                 val receiver = userViewModel.fetchUser(args.userId)
-                val scope = rememberCoroutineScope()
 
-                LaunchedEffect(key1 = currentUser, key2 = receiver) {
+                LaunchedEffect(key1 = "message") {
                 chatViewModel.findOneChatOrCreate(currentUser, receiver)
                     isChatReady.value = true
                 }
