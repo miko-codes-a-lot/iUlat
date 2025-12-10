@@ -20,6 +20,8 @@ import dev.cloudants.iulat.lib.ui.report.AdminReportList
 import dev.cloudants.iulat.lib.ui.SplashScreen
 import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
 import dev.cloudants.iulat.lib.ui.email.ForgotPassword
+import dev.cloudants.iulat.lib.ui.email.ResetPassword
+import dev.cloudants.iulat.lib.ui.email.TokenVerification
 import dev.cloudants.iulat.lib.ui.map.MapUI
 import dev.cloudants.iulat.lib.ui.message.ChatDirect
 import dev.cloudants.iulat.lib.ui.message.ChatLobby
@@ -66,6 +68,21 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
             val loginViewModel: LoginViewModel = hiltViewModel()
             Login(navController, loginViewModel)
         }
+
+        composable<MainNav.TokenVerification> {
+            val args = it.toRoute<MainNav.TokenVerification>()
+            val userViewModel: UserViewModel = hiltViewModel()
+            val userDto = userViewModel.fetchByEmail(args.email)
+            if (userDto != null) {
+                TokenVerification(email = userDto.email!!, navController = navController)
+            }
+        }
+
+        composable<MainNav.ResetPassword> {
+            val args = it.toRoute<MainNav.ResetPassword>()
+                ResetPassword(email = args.email!!, token = args.passwordToken!!, navController = navController)
+        }
+
         composable<MainNav.Menu> {
             Guard(navController = navController) { currentUser ->
                 val viewModel: MenuViewModel = hiltViewModel()

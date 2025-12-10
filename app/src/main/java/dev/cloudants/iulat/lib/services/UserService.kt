@@ -6,6 +6,8 @@ import dev.cloudants.iulat.lib.models.entities.UserDto
 interface UserService {
     fun findOne(id: String): UserDto
     fun findAll(): List<UserDto>
+    fun saveNewPassword(email: String, token: String, newPassword: String): Boolean
+    fun fetchEmailAndToken(email: String, token: String): UserDto?
     fun create(user: UserDto): UserDto
     fun createAdminUser(user: UserDto): UserDto
     fun update(id: String, user: UserDto): UserDto

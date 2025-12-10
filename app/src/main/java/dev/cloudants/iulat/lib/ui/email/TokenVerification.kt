@@ -1,5 +1,7 @@
 package dev.cloudants.iulat.lib.ui.email
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,47 +18,63 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+
+@Preview(showBackground = true)
+@Composable
+fun TokenVerificationPreview() {
+    TokenVerification(
+        email = "william.henry.harrison@example-pet-store.com",
+        navController = rememberNavController()
+    )
+}
 
 @Composable
-fun ForgotPassword(
+fun TokenVerification(
+    email: String,
     navController: NavController,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
-
-    var email by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
+    val uiState by viewModel.uiState.collectAsState()
     Column(
         modifier = Modifier
             .padding(16.dp)
-            .background(Color.White)
             .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Enter your email to reset password", fontSize = 17.sp, fontFamily = FontFamily.SansSerif)
+        Text("Enter the token sent to your email", fontSize = 17.sp, fontFamily = FontFamily.SansSerif)
         Spacer(modifier = Modifier.height(10.dp))
-
         OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email", color = Color.Black, fontSize = 15.sp, fontFamily = FontFamily.SansSerif) },
+            value = token,
+            onValueChange = { token = it },
+            label = { Text("Token", color = Color.Black, fontSize = 15.sp, fontFamily = FontFamily.SansSerif) },
             modifier = Modifier
                 .fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
@@ -65,31 +83,23 @@ fun ForgotPassword(
                 focusedTextColor = Color.Black,
             )
         )
-
         Spacer(modifier = Modifier.height(10.dp))
 
         Button(
             onClick = {
-                when {
-                    email.isBlank() -> {
-                        message = "Email cannot be blank."
-                    }
-                    !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
-                        message = "Please enter a valid email address."
-                    }
-                    else -> {
-                        isLoading = true
-                        message = null
-                        viewModel.request(email) { success, responseMessage ->
-                            isLoading = false
-                            message = responseMessage
-                            if (success) {
-                                navController.navigate(MainNav.TokenVerification(email))
-                            }
+                viewModel.verifyToken(email, token) { success, errorMessage ->
+                    if (success) {
+                        Log.d("TokenVerificationUIF", "Success User Email: $email, Token: $token")
+                        Toast.makeText(context, "Token verified successfully!", Toast.LENGTH_SHORT).show()
+                        scope.launch {
+                            delay(1500)
+                            navController.navigate(MainNav.ResetPassword(email, token))
                         }
+                    } else {
+                        Log.d("TokenVerificationUIF", "Error User Email: $email, Token: $token")
+                        message = errorMessage ?: "Token verification failed"
                     }
                 }
-
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -97,33 +107,28 @@ fun ForgotPassword(
                 .height(55.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF0049AD),
-                contentColor = Color(0xFFFFFFFF),
+                contentColor = Color(0xFFFFFFFF)
             ),
+            enabled = !uiState.isLoading
         ) {
-
-            if (isLoading) {
+            if (uiState.isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Color.White
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
             } else {
                 Text(
-                    "Send Reset Token",
+                    "Verify Token",
                     fontSize = 16.sp,
                     fontFamily = FontFamily.SansSerif,
                     color = Color.White
                 )
             }
-
         }
+
         message?.let {
-            Text(
-                it,
-                color = if (it.contains("success")) Color.Green else Color.Red,
-                fontSize = 15.sp,
-                modifier = Modifier.padding(top = 10.dp),
-                textAlign = TextAlign.Center
-            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(it, color = Color.Red, fontSize = 15.sp, fontFamily = FontFamily.SansSerif)
         }
     }
 }

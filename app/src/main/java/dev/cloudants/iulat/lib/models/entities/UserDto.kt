@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.models.entities
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -24,6 +25,7 @@ data class UserDto(
     var createdAt: String? = null,
     var imageBase64: String? = null,
     var resetPasswordToken: String? = null,
+    @SerialName("token_expiration")
     var resetTokenExpiration: String? = null,
     var isVerified: Boolean = false,
 )

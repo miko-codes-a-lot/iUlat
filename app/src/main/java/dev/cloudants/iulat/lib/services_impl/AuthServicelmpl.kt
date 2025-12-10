@@ -9,6 +9,7 @@ import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.services.AuthService
+import dev.cloudants.iulat.lib.services.EmailService
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,7 +18,8 @@ import java.lang.IllegalStateException
 
 @Singleton
 class AuthServiceImpl @Inject constructor(
-    private val db: Database
+    private val db: Database,
+    private val emailServiceImpl: EmailServiceImpl
 ) : AuthService {
     private val userCollection by lazy {
         db.getCollection("users")
@@ -50,5 +52,15 @@ class AuthServiceImpl @Inject constructor(
             Log.e("AuthServiceImpl", "  Login error: ${e.message}")
             null
         }
+    }
+
+    override suspend fun verifyResetToken(email: String, token: String): Boolean {
+        Log.d("AuthServiceImpl", "Verifying token with server: $token")
+        return emailServiceImpl.verifyResetToken(email, token)
+    }
+
+    override suspend fun requestOTP(email: String): Boolean {
+        Log.d("AuthServiceImpl", "Requesting OTP from server for: $email")
+        return emailServiceImpl.requestPasswordResetToken(email)
     }
 }

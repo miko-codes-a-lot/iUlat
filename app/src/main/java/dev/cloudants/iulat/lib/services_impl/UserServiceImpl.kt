@@ -37,6 +37,9 @@ class UserServiceImpl @Inject constructor (
         userCollection
         logAllUsers()
     }
+    private val jsonParser = Json { ignoreUnknownKeys = true
+        isLenient = true
+    }
     private fun getDocument(id: String): Document {
         val doc = userCollection.getDocument(id)
         if (doc == null) {
@@ -84,13 +87,84 @@ class UserServiceImpl @Inject constructor (
                 val userDict = result.getDictionary(userCollection.name)
                 userDict?.let { dict ->
                     try {
-                        Json.Default.decodeFromString<UserDto>(dict.toJSON())
+                        jsonParser.decodeFromString<UserDto>(dict.toJSON())
                     } catch (e: Exception) {
                         Log.e("UserServiceImpl", "Error decoding UserDto from query result: ${e.message}")
                         null
                     }
                 }
             }
+    }
+
+    override fun fetchEmailAndToken(email: String, token: String): UserDto? {
+        return try {
+            val query = QueryBuilder
+                .select(SelectResult.all())
+                .from(DataSource.collection(userCollection))
+                .where(
+                    Expression.property("type").equalTo(Expression.string("user"))
+                        .and(Expression.property("email").equalTo(Expression.string(email)))
+                        .and(Expression.property("token").equalTo(Expression.string(token)))
+                )
+                .limit(Expression.intValue(1))
+
+            val results = query.execute().allResults()
+
+            if (results.isNotEmpty()) {
+                val dict = results.first().getDictionary(userCollection.name)
+                dict?.toJSON()?.let { json ->
+                    jsonParser.decodeFromString<UserDto>(json)
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("UserServiceImpl", "fetchEmailAndToken error: ${e.message}")
+            null
+        }
+    }
+
+    private fun findUserIdByEmail(email: String): String? {
+        val query = QueryBuilder
+            .select(SelectResult.expression(Meta.id))
+            .from(DataSource.collection(userCollection))
+            .where(
+                Expression.property("email").equalTo(Expression.string(email))
+            )
+
+        val result = query.execute().firstOrNull()
+        return result?.getString(0)
+    }
+
+    override fun saveNewPassword(email: String, token: String, newPassword: String): Boolean {
+        return try {
+            val userId = findUserIdByEmail(email)
+            if (userId == null) {
+                Log.e("ResetPassword", "User ID not found for email: $email")
+                return false
+            }
+            Log.d("ResetPassword", "2. Found User ID: $userId")
+
+            val doc = userCollection.getDocument(userId)?.toMutable()
+            if (doc == null) {
+                Log.e("ResetPassword", "Document is null for ID: $userId")
+                return false
+            }
+
+            val hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt())
+                Log.d("ResetPassword", "3. Password hashed successfully")
+                doc.setString("password", hashedPassword)
+            if (doc.contains("resetTokenExpiration")) doc.remove("resetTokenExpiration")
+            if (doc.contains("resetPasswordToken")) doc.remove("resetPasswordToken")
+
+            userCollection.save(doc)
+            Log.d("UserServiceImpl", "Password reset successfully for $email")
+            true
+
+        } catch (e: Exception) {
+            Log.e("UserServiceImpl", "Failed to reset password: ${e.message}", e)
+            false
+        }
     }
 
     override fun createAdminUser(user: UserDto): UserDto {
@@ -162,7 +236,7 @@ class UserServiceImpl @Inject constructor (
     override fun fetchOne(id: String): UserDto? {
         val doc = getDocument(id) ?: return null
         val json = doc.toJSON()
-        return Json.decodeFromString<UserDto>(json)
+        return jsonParser.decodeFromString<UserDto>(json)
     }
 
     override fun login(email: String, password: String): UserDto? {
@@ -260,7 +334,7 @@ class UserServiceImpl @Inject constructor (
     override fun saveValidId(userId: String, imageUri: ByteArray?): Result<UserDto> {
         return try {
             val userDoc = getDocument(userId)
-            val user = Json.decodeFromString<UserDto>(userDoc.toJSON())
+            val user = jsonParser.decodeFromString<UserDto>(userDoc.toJSON())
             if (imageUri != null) {
                 val base64Image = Base64.encodeToString(imageUri, Base64.DEFAULT)
                 val updatedUser = user.copy(imageBase64 = base64Image)

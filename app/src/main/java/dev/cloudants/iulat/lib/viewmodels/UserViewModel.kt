@@ -73,6 +73,14 @@ class UserViewModel @Inject constructor(
         return this.userService.findOne(userId)
     }
 
+    fun fetchByEmail(email: String): UserDto? {
+        return userService.findByEmail(email)
+    }
+
+    fun fetchUserByEmailAndToken(email: String, token: String): UserDto? {
+        return userService.fetchEmailAndToken(email, token)
+    }
+
     fun updateUser(userDto: UserDto): Result<UserDto> {
         return try {
             if (userDto.id?.isBlank()!!) {
