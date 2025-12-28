@@ -24,9 +24,26 @@ class GarbageDisposalServiceImpl @Inject constructor(
         return try {
             val id = garbage.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
-            val garbageToSave = garbage.copy(id = id,createdAt = now,lastUpdatedAt = now)
-            val jsonString = Json.encodeToString(GarbageDisposalDto.serializer(), garbageToSave)
-            val doc = MutableDocument(id).apply { setJSON(jsonString) }
+            val status = garbage.status?.takeIf { it.isNotBlank() } ?: "Pending"
+            val garbageToSave = garbage.copy(id = id, createdAt = now, lastUpdatedAt = now, status = status)
+
+            val doc = MutableDocument(id).apply {
+                setString("id", garbageToSave.id)
+                setString("userId", garbageToSave.userId)
+                setString("email", garbageToSave.email)
+                setString("mobileNumber", garbageToSave.mobileNumber)
+                setString("reportDetails", garbageToSave.reportDetails)
+                setString("reportImage", garbageToSave.reportImage)
+                setString("status", garbageToSave.status)
+                setString("createdAt", garbageToSave.createdAt)
+                setString("lastUpdatedAt", garbageToSave.lastUpdatedAt)
+                setString("createdById", garbageToSave.createdById)
+                setString("reviewById", garbageToSave.reviewById)
+                setString("lastUpdatedById", garbageToSave.lastUpdatedById)
+                setString("deletedById", garbageToSave.deletedById)
+                setString("deletedAt", garbageToSave.deletedAt)
+            }
+
             collection.save(doc)
             Log.d("GarbageServiceImpl", "Created garbage report: $garbageToSave")
             garbageToSave

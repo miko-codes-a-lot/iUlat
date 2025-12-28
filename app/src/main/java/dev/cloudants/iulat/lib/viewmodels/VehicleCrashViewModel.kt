@@ -31,6 +31,17 @@ class VehicleCrashViewModel @Inject constructor(
         }
     }
 
+    fun fetchAllVehicleCrash() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            val reports = vehicleCrashService.getAll()
+            _state.value = _state.value.copy(
+                items = reports.sortedByDescending { it.createdAt },
+                isLoading = false
+            )
+        }
+    }
+
     fun createVehicleReport(dto: VehicleCrashDto) {
         viewModelScope.launch {
             try {

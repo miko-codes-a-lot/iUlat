@@ -26,12 +26,33 @@ class RobberiesServicelmpl @Inject constructor(
         return try {
             val id = robberiesDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
-            val others = robberiesDto.copy(id = id,createdAt = now,lastUpdatedAt = now)
-            val jsonString = Json.encodeToString(RobberiesDto.serializer(), others)
-            val doc = MutableDocument(id).apply { setJSON(jsonString) }
+            val status = robberiesDto.status.takeIf { it.isNotBlank() } ?: "Pending"
+
+            val robberyToSave = robberiesDto.copy(
+                id = id,
+                createdAt = now,
+                lastUpdatedAt = now,
+                status = status
+            )
+
+            val doc = MutableDocument(id).apply {
+                setString("id", robberyToSave.id)
+                setString("userId", robberyToSave.userId)
+                setString("reportDetails", robberyToSave.reportDetails)
+                setString("reportImage", robberyToSave.reportImage)
+                setString("status", robberyToSave.status)
+                setString("createdAt", robberyToSave.createdAt)
+                setString("lastUpdatedAt", robberyToSave.lastUpdatedAt)
+                setString("createdById", robberyToSave.createdById)
+                setString("reviewById", robberyToSave.reviewById)
+                setString("lastUpdatedById", robberyToSave.lastUpdatedById)
+                setString("deletedById", robberyToSave.deletedById)
+                setString("deletedAt", robberyToSave.deletedAt)
+            }
+
             collection.save(doc)
-            Log.d("RobberiesServiceImpl", "Created robberies report: $others")
-            others
+            Log.d("RobberiesServiceImpl", "Created robberies report: $robberyToSave")
+            robberyToSave
         } catch (e: Exception) {
             Log.e("RobberiesServiceImpl", "Failed to create robberies report: ${e.message}", e)
             throw e

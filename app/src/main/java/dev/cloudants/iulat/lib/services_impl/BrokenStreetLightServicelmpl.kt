@@ -26,9 +26,29 @@ class BrokenStreetLightServicelmpl @Inject constructor(
         return try {
             val id = brokenStreetlightsDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
-            val brokenStreetToSave = brokenStreetlightsDto.copy(id = id,createdAt = now,lastUpdatedAt = now)
-            val jsonString = Json.encodeToString(BrokenStreetlightsDto.serializer(), brokenStreetToSave)
-            val doc = MutableDocument(id).apply { setJSON(jsonString) }
+            val status = brokenStreetlightsDto.status.takeIf { it.isNotBlank() } ?: "Pending"
+            val brokenStreetToSave = brokenStreetlightsDto.copy(
+                id = id,
+                createdAt = now,
+                lastUpdatedAt = now,
+                status = status
+            )
+
+            val doc = MutableDocument(id).apply {
+                setString("id", brokenStreetToSave.id)
+                setString("userId", brokenStreetToSave.userId)
+                setString("reportDetails", brokenStreetToSave.reportDetails)
+                setString("reportImage", brokenStreetToSave.reportImage)
+                setString("status", brokenStreetToSave.status)
+                setString("createdAt", brokenStreetToSave.createdAt)
+                setString("lastUpdatedAt", brokenStreetToSave.lastUpdatedAt)
+                setString("createdById", brokenStreetToSave.createdById)
+                setString("reviewById", brokenStreetToSave.reviewById)
+                setString("lastUpdatedById", brokenStreetToSave.lastUpdatedById)
+                setString("deletedById", brokenStreetToSave.deletedById)
+                setString("deletedAt", brokenStreetToSave.deletedAt)
+            }
+
             collection.save(doc)
             Log.d("BrokenStreetLightsServiceImpl", "Created broken street light report: $brokenStreetToSave")
             brokenStreetToSave
@@ -37,6 +57,7 @@ class BrokenStreetLightServicelmpl @Inject constructor(
             throw e
         }
     }
+
 
     override suspend fun getAll(userId: String?): List<BrokenStreetlightsDto> {
         return try {

@@ -76,7 +76,7 @@ fun EditReport(
         MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> publicState.selectedReport?.reportImage
         MODULE.ROBBERIES, "Robberies" -> robberyState.selectedReport?.reportImage
         MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> brokenState.selectedReport?.reportImage
-        MODULE.VEHICLE_CRASHES, "Vehicle Crashes" -> crashState.selectedReport?.reportImage
+        MODULE.VEHICLE_CRASH, "Vehicle Crashes" -> crashState.selectedReport?.reportImage
         MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.reportImage
         MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.reportImage
         MODULE.OTHERS, "Others" -> othersState.selectedReport?.reportImage
@@ -109,7 +109,7 @@ fun EditReport(
                     textValue = state.selectedReport?.reportDetails ?: ""
                 }
             }
-            MODULE.VEHICLE_CRASHES, "Vehicle Crashes" -> {
+            MODULE.VEHICLE_CRASH, "Vehicle Crashes" -> {
                 vehicleCrashViewModel.fetchReportById(reportId)
                 vehicleCrashViewModel.state.collect { state ->
                     textValue = state.selectedReport?.reportDetails ?: ""
@@ -147,7 +147,7 @@ fun EditReport(
         Spacer(Modifier.weight(1f))
 
         Text(
-            text = "Edit Report ($reportTitle)",
+            text = "Report Status: Rejected ($reportTitle)",
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
             modifier = Modifier

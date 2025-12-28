@@ -88,8 +88,17 @@ dependencies {
     implementation(libs.places)
     implementation(libs.coil.compose)
     implementation(libs.maps.compose)
-    implementation(libs.converter.gson)
     implementation(libs.mpandroidchart)
     implementation(libs.jbcrypt)
     implementation(libs.play.services.maps)
+    implementation ("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
+
+    // Retrofit
+    implementation (libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:0.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    // pdf
+    implementation (libs.itextpdf)
 }

@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.ui.report
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +33,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,19 +49,39 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.delay
 import dev.cloudants.iulat.R
-
+import dev.cloudants.iulat.lib.components.context.formatterDate
+import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ReportPreview() {
-    AdminReportList()
+    AdminReportList(navController = rememberNavController())
 }
 
 @Composable
-fun AdminReportList() {
+fun AdminReportList(navController: NavController) {
+    val adminReportViewModel: AdminReportViewModel = hiltViewModel()
+    val reports by adminReportViewModel.reports.collectAsState()
+
+    var selectedStatus by remember { mutableStateOf("Pending") }
+    var searchQuery by remember { mutableStateOf("") }
+    var debouncedQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(searchQuery) {
+        delay(500L)
+        debouncedQuery = searchQuery
+    }
+    LaunchedEffect(selectedStatus, debouncedQuery) {
+        adminReportViewModel.loadReportsByStatus(selectedStatus, debouncedQuery)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -67,40 +89,16 @@ fun AdminReportList() {
             .background(Color.White),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        var debouncedQuery by remember { mutableStateOf("") }
-        var searchQuery by remember { mutableStateOf("") }
 
-        val reportItems = listOf(
-            ReportListItem(
-                title = "Public Disturbance",
-                userName = "Jericho Me - Tagumpay II",
-                date = "March 2, 2025",
-                imageUrl = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg"
-            ),
-            ReportListItem(
-                title = "Noise Complaint",
-                userName = "Juan Dela Cruz - Maligaya 5",
-                date = "March 3, 2025",
-                imageUrl = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg"
-            ),
-            ReportListItem(
-                title = "Noise Complaint",
-                userName = "Juan Dela Cruz - Maligaya 5",
-                date = "March 3, 2025",
-                imageUrl = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg"
-            ),
-
-            )
-        LaunchedEffect(searchQuery) {
-            delay(500L)
-            debouncedQuery = searchQuery
-        }
         SearchReportIcon(
             searchQuery = searchQuery,
             onSearchQueryChanged = { searchQuery = it },
         )
         Spacer(modifier = Modifier.height(10.dp))
-        ReportTableHeader()
+        ReportTableHeader(
+            selectedStatus = selectedStatus,
+            onStatusSelected = { selectedStatus = it }
+        )
 
         LazyColumn(
             modifier = Modifier
@@ -109,15 +107,42 @@ fun AdminReportList() {
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(reportItems) { reportItem ->
+            if (reports.isEmpty()) {
+                item {
+                    Text(
+                        text = "No Report found",
+                        fontSize = 20.sp,
+                        fontFamily = FontFamily.SansSerif,
+                        modifier = Modifier.padding(top = 20.dp)
+                    )
+                }
+            }
+            items(reports) { reportItem ->
                 SingleItemCard(
-                    title = reportItem.title,
-                    userName = reportItem.userName,
-                    date = reportItem.date,
-                    imageUrl = reportItem.imageUrl,
-                    onClick = { /* Handle card click */ },
-                    onDeleteClick = { /* Handle delete click */ },
-                    onCheckClick = { /* Handle check click */ }
+                    title = reportItem.reportType,
+                    status = reportItem.status,
+                    userName = "from : " + reportItem.userName,
+                    date = formatterDate(reportItem.reportDate),
+                    imageUrl = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg",
+                    onClick = {
+                        Log.e("Address :: ", reportItem.addressId)
+                         when(reportItem.status) {
+                            "Pending" -> navController.navigate(MainNav.Map(reportItem.addressId))
+                             else -> navController.navigate(MainNav.ViewReport(reportItem.reportType, reportItem.docId))
+                        }
+                    },
+                    onDeleteClick = {
+                        adminReportViewModel.updateReportStatus(
+                            reportItem,
+                            "Rejected"
+                        )
+                    },
+                    onCheckClick = {
+                        when(reportItem.status) {
+                            "Approve" -> adminReportViewModel.updateReportStatus(reportItem,"Resolved")
+                            else -> adminReportViewModel.updateReportStatus(reportItem, "Approve" )
+                        }
+                    }
                 )
             }
         }
@@ -135,7 +160,7 @@ fun SearchReportIcon(
         value = searchQuery,
         onValueChange = { onSearchQueryChanged(it) },
         leadingIcon = {
-            IconButton(onClick = { } ) {
+            IconButton(onClick = { }) {
                 Icon(
                     imageVector = Icons.Filled.Search,
                     contentDescription = "Search Icon",
@@ -177,8 +202,11 @@ fun SearchReportIcon(
 }
 
 @Composable
-fun ReportTableHeader() {
-    var selectedItem by remember { mutableStateOf("") }
+fun ReportTableHeader(
+    selectedStatus: String,
+    onStatusSelected: (String) -> Unit
+) {
+    val statuses = listOf("Pending", "Rejected", "Approve", "Resolved")
     ElevatedCard(
         modifier = Modifier
             .padding(start = 2.dp, end = 2.dp)
@@ -187,34 +215,20 @@ fun ReportTableHeader() {
             containerColor = Color.White,
             contentColor = Color(0xFF0049AD)
         )
-    ) {
-        Column{
+    ) { Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                ReportStatusBox(
-                    status = "New",
-                    isSelected = selectedItem == "New",
-                    onClick = { selectedItem = "New" }
-                )
-                ReportStatusBox(
-                    status = "Pending",
-                    isSelected = selectedItem == "Pending",
-                    onClick = { selectedItem = "Pending" }
-                )
-                ReportStatusBox(
-                    status = "Resolved",
-                    isSelected = selectedItem == "Resolved",
-                    onClick = { selectedItem = "Resolved" }
-                )
-                ReportStatusBox(
-                    status = "Rejected",
-                    isSelected = selectedItem == "Rejected",
-                    onClick = { selectedItem = "Rejected" }
-                )
+                statuses.forEach { status ->
+                    ReportStatusBox(
+                        status = status,
+                        isSelected = selectedStatus == status,
+                        onClick = { onStatusSelected(status) }
+                    )
+                }
             }
         }
     }
@@ -234,7 +248,11 @@ fun ReportStatusBox(
                 color = if (isSelected) Color(0xFF0049AD) else Color.Transparent,
                 shape = RoundedCornerShape(5.dp)
             )
-            .border(2.dp, if (isSelected) Color(0xFF0049AD) else Color.Gray, RoundedCornerShape(5.dp)),
+            .border(
+                2.dp,
+                if (isSelected) Color(0xFF0049AD) else Color.Gray,
+                RoundedCornerShape(5.dp)
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -279,6 +297,7 @@ fun UsersImageContainer(imageUrl: String) {
 @Composable
 fun SingleItemCard(
     title: String,
+    status: String,
     userName: String,
     date: String,
     imageUrl: String,
@@ -295,6 +314,7 @@ fun SingleItemCard(
                 ambientColor = Color.Gray,
                 spotColor = Color.Black
             )
+            .clickable { onClick() }
             .padding(vertical = 4.dp)
     ) {
         ElevatedCard(
@@ -350,32 +370,50 @@ fun SingleItemCard(
                         )
                     }
                     Spacer(modifier = Modifier.weight(1f))
+                    when (status) {
+                        "Pending" -> {
+                            IconButton(onClick = onDeleteClick) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.cross),
+                                    contentDescription = "Delete Icon",
+                                    modifier = Modifier.size(45.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
 
-                    IconButton(
-                        onClick = onDeleteClick
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.cross),
-                            contentDescription = "Delete Icon",
-                            modifier = Modifier.size(45.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF2568ef))
+                            ) {
+                                IconButton(onClick = onCheckClick) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.checklist),
+                                        contentDescription = "Check Icon",
+                                        modifier = Modifier.size(42.dp)
+                                    )
+                                }
+                            }
+                        }
 
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2568ef))
-                    ) {
-                        IconButton(
-                            onClick = onCheckClick
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.checklist),
-                                contentDescription = "Check Icon",
-                                modifier = Modifier.size(42.dp)
-                            )
+                        "Approve" -> {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF2568ef))
+                            ) {
+                                IconButton(onClick = onCheckClick) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.checklist),
+                                        contentDescription = "Check Icon",
+                                        modifier = Modifier.size(42.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+
                         }
                     }
                 }
@@ -402,10 +440,3 @@ fun PlaceholderImage() {
             .background(Color(0xFF0049AD)),
     )
 }
-
-data class ReportListItem(
-    val title: String,
-    val userName: String,
-    val date: String,
-    val imageUrl: String
-)

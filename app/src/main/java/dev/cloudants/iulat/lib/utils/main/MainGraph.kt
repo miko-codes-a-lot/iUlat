@@ -1,27 +1,34 @@
 package dev.cloudants.iulat.lib.utils.main
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
-import dev.cloudants.iulat.lib.services_impl.VehicleCrashServicelmpl
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.ui.user.Account
-import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
+import dev.cloudants.iulat.lib.ui.dashboard.AdminDashboard
 import dev.cloudants.iulat.lib.ui.Login
 import dev.cloudants.iulat.lib.ui.Menu
 import dev.cloudants.iulat.lib.ui.report.AdminReportList
 import dev.cloudants.iulat.lib.ui.SplashScreen
 import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
 import dev.cloudants.iulat.lib.ui.email.ForgotPassword
+import dev.cloudants.iulat.lib.ui.email.ResetPassword
+import dev.cloudants.iulat.lib.ui.email.TokenVerification
+import dev.cloudants.iulat.lib.ui.map.MapUI
 import dev.cloudants.iulat.lib.ui.message.ChatDirect
 import dev.cloudants.iulat.lib.ui.message.ChatLobby
-import dev.cloudants.iulat.lib.ui.message.MessageDto
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.CreateReport
 import dev.cloudants.iulat.lib.ui.report.EditReport
+import dev.cloudants.iulat.lib.ui.report.ViewReport
 import dev.cloudants.iulat.lib.ui.report.residence_report.BrokenLightList
 import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
 import dev.cloudants.iulat.lib.ui.report.residence_report.NoWaterSupplyList
@@ -35,7 +42,10 @@ import dev.cloudants.iulat.lib.ui.user.CreateAccount
 import dev.cloudants.iulat.lib.ui.user.EditAccount
 import dev.cloudants.iulat.lib.ui.user.UserEdit
 import dev.cloudants.iulat.lib.ui.user.UsersList
+import dev.cloudants.iulat.lib.viewmodels.AddressViewModel
+import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
 import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
+import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
@@ -58,6 +68,21 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
             val loginViewModel: LoginViewModel = hiltViewModel()
             Login(navController, loginViewModel)
         }
+
+        composable<MainNav.TokenVerification> {
+            val args = it.toRoute<MainNav.TokenVerification>()
+            val userViewModel: UserViewModel = hiltViewModel()
+            val userDto = userViewModel.fetchByEmail(args.email)
+            if (userDto != null) {
+                TokenVerification(email = userDto.email!!, navController = navController)
+            }
+        }
+
+        composable<MainNav.ResetPassword> {
+            val args = it.toRoute<MainNav.ResetPassword>()
+                ResetPassword(email = args.email!!, token = args.passwordToken!!, navController = navController)
+        }
+
         composable<MainNav.Menu> {
             Guard(navController = navController) { currentUser ->
                 val viewModel: MenuViewModel = hiltViewModel()
@@ -66,24 +91,38 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
         composable<MainNav.Dashboard> {
             Guard(navController = navController) { currentUser ->
-                Dashboard()
+
+                AdminDashboard(
+                    navController = navController,
+                    currentUser
+                )
             }
         }
         composable<MainNav.ChatDirect> {
+            val args = it.toRoute<MainNav.ChatDirect>()
             Guard(navController = navController) { currentUser ->
-                val args = it.toRoute<MainNav.ChatDirect>()
-                val userId = args.userId
+                val chatViewModel: ChatViewModel = hiltViewModel()
+                val isChatReady = remember { mutableStateOf(false) }
+                val userViewModel: UserViewModel = hiltViewModel()
+                val receiver = userViewModel.fetchUser(args.userId)
 
-                val sampleMessages = listOf(
-                    MessageDto("1", userId, "2025-10-30T10:00:00.000Z"),
-                    MessageDto("2", "me", "2025-10-30T10:05:00.000Z")
-                )
-
+                LaunchedEffect(key1 = "message") {
+                chatViewModel.findOneChatOrCreate(currentUser, receiver)
+                    isChatReady.value = true
+                }
+                val messages = if (isChatReady.value) {
+                    chatViewModel.fetchDirectMessages(currentUser, receiver)
+                        .collectAsStateWithLifecycle(
+                            initialValue = emptyList()
+                        ).value
+                } else {
+                    emptyList()
+                }
                 ChatDirect(
-                    messages = sampleMessages,
-                    currentUserId = "me",
-                    onSendMessage = { content ->
-                        println("Send message to $userId: $content")
+                    messages = messages,
+                    currentUserId = currentUser.id!!,
+                    onSendMessage = { message ->
+                        chatViewModel.sendMessage(currentUser, receiver, message)
                     }
                 )
             }
@@ -101,12 +140,15 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
         composable<MainNav.AdminReportList> {
             Guard(navController = navController) { currentUser ->
-                AdminReportList()
+                AdminReportList(navController = navController)
             }
         }
         composable<MainNav.ChatLobby> {
             Guard(navController = navController) { currentUser ->
-                ChatLobby(navController)
+                ChatLobby(
+                    navController = navController,
+                    currentUser.id!!
+                )
             }
         }
         composable<MainNav.ResidenceDashboard> {
@@ -283,5 +325,52 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
 
             }
         }
+
+        composable<MainNav.Map> {
+            val args = it.toRoute<MainNav.Map>()
+            val addressViewModel: AddressViewModel = hiltViewModel()
+            LaunchedEffect(args.addressId) {
+                addressViewModel.fetchAddress(args.addressId)
+            }
+            val addressDto = addressViewModel.selectedAddress.value
+            Guard(navController = navController) {
+                MapUI(addressDto = addressDto)
+            }
+        }
+
+        composable<MainNav.ViewReport> {
+            Guard(navController) { currentUser ->
+                val args = it.toRoute<MainNav.ViewReport>()
+                val title = args.title
+                val reportId = args.reportId
+                val viewModel : ReportViewModel = hiltViewModel()
+                val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                val publicDisturbanceViewModel : PublicDisturbanceViewModel = hiltViewModel()
+                val robberiesViewModel : RobberiesViewModel = hiltViewModel()
+                val brokenStreetLightViewModel : BrokenStreetLightViewModel = hiltViewModel()
+                val vehicleCrashViewModel : VehicleCrashViewModel = hiltViewModel()
+                val roadRepairViewModel : RoadRepairViewModel = hiltViewModel()
+                val noWaterSupplyViewModel : NoWaterSupplyViewModel = hiltViewModel()
+                val othersViewModel : OthersViewModel = hiltViewModel()
+                val adminViewModel: AdminReportViewModel = hiltViewModel()
+                ViewReport(
+                    navController = navController,
+                    reportTitle = title,
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    garbageDisposalViewModel = garbageDisposalViewModel,
+                    publicDisturbanceViewModel = publicDisturbanceViewModel,
+                    robberiesViewModel = robberiesViewModel,
+                    brokenStreetLightViewModel = brokenStreetLightViewModel,
+                    vehicleCrashViewModel = vehicleCrashViewModel,
+                    roadRepairViewModel = roadRepairViewModel,
+                    noWaterSupplyViewModel = noWaterSupplyViewModel,
+                    othersViewModel = othersViewModel,
+                    reportId = reportId,
+                    adminViewModel = adminViewModel
+                )
+            }
+        }
+
     }
 }

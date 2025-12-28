@@ -33,6 +33,17 @@ class RoadRepairViewModel @Inject constructor(
         }
     }
 
+    fun fetchAllRoadRepair() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            val reports = roadRepairService.getAll()
+            _state.value = _state.value.copy(
+                items = reports.sortedByDescending { it.createdAt },
+                isLoading = false
+            )
+        }
+    }
+
     fun createRoadRepairReport(dto: RoadRepairDto) {
         viewModelScope.launch {
             try {

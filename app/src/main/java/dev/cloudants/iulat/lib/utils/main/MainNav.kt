@@ -10,6 +10,12 @@ object MainNav {
     @Serializable
     object Login
 
+    @Serializable
+    data class TokenVerification(val email: String)
+
+    @Serializable
+    data class ResetPassword(val email: String, val passwordToken: String)
+
     //      ------- recompose this line -------
     @Serializable
     object Menu
@@ -80,5 +86,11 @@ object MainNav {
 
     @Serializable
     data class EditUser(val userId: String)
+
+    @Serializable
+    data class Map(var addressId: String)
+
+    @Serializable
+    data class ViewReport (var title: String = "", var reportId: String)
 
 }

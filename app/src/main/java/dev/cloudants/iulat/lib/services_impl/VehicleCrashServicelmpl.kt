@@ -25,12 +25,33 @@ class VehicleCrashServicelmpl @Inject constructor(
         return try {
             val id = vehicleCrashDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
-            val others = vehicleCrashDto.copy(id = id,createdAt = now,lastUpdatedAt = now)
-            val jsonString = Json.encodeToString(VehicleCrashDto.serializer(), others)
-            val doc = MutableDocument(id).apply { setJSON(jsonString) }
+            val status = vehicleCrashDto.status.takeIf { it.isNotBlank() } ?: "Pending"
+
+            val vehicleToSave = vehicleCrashDto.copy(
+                id = id,
+                createdAt = now,
+                lastUpdatedAt = now,
+                status = status
+            )
+
+            val doc = MutableDocument(id).apply {
+                setString("id", vehicleToSave.id)
+                setString("userId", vehicleToSave.userId)
+                setString("reportDetails", vehicleToSave.reportDetails)
+                setString("reportImage", vehicleToSave.reportImage)
+                setString("status", vehicleToSave.status)
+                setString("createdAt", vehicleToSave.createdAt)
+                setString("lastUpdatedAt", vehicleToSave.lastUpdatedAt)
+                setString("createdById", vehicleToSave.createdById)
+                setString("reviewById", vehicleToSave.reviewById)
+                setString("lastUpdatedById", vehicleToSave.lastUpdatedById)
+                setString("deletedById", vehicleToSave.deletedById)
+                setString("deletedAt", vehicleToSave.deletedAt)
+            }
+
             collection.save(doc)
-            Log.d("VehicleCrashServiceImpl", "Created vehicle crash report: $others")
-            others
+            Log.d("VehicleCrashServiceImpl", "Created vehicle crash report: $vehicleToSave")
+            vehicleToSave
         } catch (e: Exception) {
             Log.e("VehicleCrashServiceImpl", "Failed to create vehicle crash report: ${e.message}", e)
             throw e

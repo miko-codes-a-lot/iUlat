@@ -7,7 +7,6 @@ import com.couchbase.lite.Database
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
-import dev.cloudants.iulat.lib.models.entities.BrokenStreetlightsDto
 import dev.cloudants.iulat.lib.models.entities.NoWaterSupplyDto
 import dev.cloudants.iulat.lib.services.NoWaterSupplyService
 import kotlinx.serialization.json.Json
@@ -26,17 +25,39 @@ class NoWaterSupplyServicelmpl @Inject constructor(
         return try {
             val id = noWaterSupplyDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
-            val noWaterSupply = noWaterSupplyDto.copy(id = id,createdAt = now,lastUpdatedAt = now)
-            val jsonString = Json.encodeToString(NoWaterSupplyDto.serializer(), noWaterSupply)
-            val doc = MutableDocument(id).apply { setJSON(jsonString) }
+            val status = noWaterSupplyDto.status.takeIf { it.isNotBlank() } ?: "Pending"
+
+            val noWaterToSave = noWaterSupplyDto.copy(
+                id = id,
+                createdAt = now,
+                lastUpdatedAt = now,
+                status = status
+            )
+
+            val doc = MutableDocument(id).apply {
+                setString("id", noWaterToSave.id)
+                setString("userId", noWaterToSave.userId)
+                setString("reportDetails", noWaterToSave.reportDetails)
+                setString("reportImage", noWaterToSave.reportImage)
+                setString("status", noWaterToSave.status)
+                setString("createdAt", noWaterToSave.createdAt)
+                setString("lastUpdatedAt", noWaterToSave.lastUpdatedAt)
+                setString("createdById", noWaterToSave.createdById)
+                setString("reviewById", noWaterToSave.reviewById)
+                setString("lastUpdatedById", noWaterToSave.lastUpdatedById)
+                setString("deletedById", noWaterToSave.deletedById)
+                setString("deletedAt", noWaterToSave.deletedAt)
+            }
+
             collection.save(doc)
-            Log.d("NoWaterSupplyServiceImpl", "Created no water supply report: $noWaterSupply")
-            noWaterSupply
+            Log.d("NoWaterSupplyServiceImpl", "Created no water supply report: $noWaterToSave")
+            noWaterToSave
         } catch (e: Exception) {
             Log.e("NoWaterSupplyServiceImpl", "Failed to create no water supply report: ${e.message}", e)
             throw e
         }
     }
+
 
     override suspend fun getAll(userId: String?): List<NoWaterSupplyDto> {
         return try {

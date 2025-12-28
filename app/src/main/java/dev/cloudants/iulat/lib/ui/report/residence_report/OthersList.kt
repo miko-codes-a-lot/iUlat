@@ -47,7 +47,17 @@ import dev.cloudants.iulat.lib.models.entities.PublicDisturbanceDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.OthersViewModel
-import dev.cloudants.iulat.lib.viewmodels.PublicDisturbanceViewModel
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.ui.res.painterResource
+import dev.cloudants.iulat.R
+import android.os.Build
+import androidx.compose.ui.platform.LocalContext
+import dev.cloudants.iulat.MainActivity
+import dev.cloudants.iulat.lib.components.context.PrintableRowImpl
+import dev.cloudants.iulat.lib.components.print.Print
+import dev.cloudants.iulat.lib.components.print.exportDynamicPDF
+import dev.cloudants.iulat.lib.models.entities.NoWaterSupplyDto
 
 @Composable
 fun OthersList(
@@ -56,16 +66,25 @@ fun OthersList(
 ) {
     val othersViewModel: OthersViewModel = hiltViewModel()
     val state by othersViewModel.state.collectAsState()
-
+    val context = LocalContext.current
     LaunchedEffect(Unit) {
-        othersViewModel.fetchAll(currentUser.id!!)
+        if(currentUser.isResidence) {
+            othersViewModel.fetchAll(currentUser.id!!)
+        } else {
+            othersViewModel.fetchAllOthers()
+        }
     }
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
         floatingActionButton = {
-            FloatingOthersRecordIcon(navController)
+            FloatingOthersRecordIcon(
+                navController,
+                currentUser,
+                context,
+                items = state.items
+            )
         }
     ) { padding ->
         Column(
@@ -124,7 +143,11 @@ private fun OthersButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                navController.navigate(MainNav.EditReport("Others", id!!))
+                if (report.status == "Rejected") {
+                    navController.navigate(MainNav.EditReport("Others", id))
+                } else {
+                    navController.navigate(MainNav.ViewReport("Others", id))
+                }
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(
@@ -170,27 +193,70 @@ private fun OthersButton(
 @Composable
 fun FloatingOthersRecordIcon(
     navController: NavController,
+    currentUser: UserDto,
+    context: Context,
+    items: List<OthersDto>
 ) {
+    val activity = context as? MainActivity
     Column(
         modifier = Modifier.background(Color.Transparent),
         horizontalAlignment = Alignment.End
     ) {
-        FloatingActionButton(
-            onClick = {
-                navController.navigate(MainNav.CreateReport("Others"))
-            },
-            containerColor = Color(0xFF0049AD),
-            contentColor = Color(0xFFFFFFFF),
-            shape = CircleShape,
-            modifier = Modifier
-                .size(75.dp)
-                .offset(x = (-5).dp, y = (-7).dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = "Add",
-                modifier = Modifier.size(30.dp)
-            )
+        if (currentUser.isAdmin) {
+            FloatingActionButton(
+                onClick = {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P && activity != null) {
+                        activity.requestStoragePermission()
+                    }
+                    val pdfRows = items.map { report ->
+                        PrintableRowImpl(
+                            listOf(
+                                formatterDate(report.createdAt),
+                                report.status
+                            )
+                        )
+                    }
+                    exportDynamicPDF(
+                        context = context,
+                        title = "Others",
+                        headers = listOf("No", "Date Created", "Status"),
+                        data = pdfRows,
+                        onFinish = { Print.openFile(context, it) },
+                        onError = { Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show() }
+                    )
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.printer),
+                    contentDescription = "Export",
+                    modifier = Modifier.size(30.dp),
+                    tint = Color.White
+                )
+            }
+        } else {
+            FloatingActionButton(
+                onClick = {
+                    navController.navigate(MainNav.CreateReport("Others"))
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Add",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
     }
 }

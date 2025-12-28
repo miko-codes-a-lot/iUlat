@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import dev.cloudants.iulat.lib.components.print.Print
+import dev.cloudants.iulat.lib.components.print.exportDynamicPDF
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import dev.cloudants.iulat.lib.components.context.PrintableRowImpl
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,12 +29,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.ui.res.painterResource
+import dev.cloudants.iulat.R
+import android.os.Build
+import android.os.Environment
+import android.content.Intent
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import dev.cloudants.iulat.MainActivity
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.formatterDate
 import dev.cloudants.iulat.lib.components.header.CustomHeader
@@ -57,16 +69,25 @@ fun PublicDisturbanceList(
 ) {
     val publicDisturbanceViewModel: PublicDisturbanceViewModel = hiltViewModel()
     val state by publicDisturbanceViewModel.state.collectAsState()
-
+    val context = LocalContext.current
     LaunchedEffect(Unit) {
-        publicDisturbanceViewModel.fetchAll(currentUser.id!!)
+        if(currentUser.isResidence) {
+            publicDisturbanceViewModel.fetchAll(currentUser.id!!)
+        } else {
+            publicDisturbanceViewModel.fetchAllPublicDisturbance()
+        }
     }
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
         floatingActionButton = {
-            FloatingPublicDisturbanceRecordIcon(navController)
+            FloatingPublicDisturbanceRecordIcon(
+                navController,
+                currentUser,
+                context,
+                items = state.items
+            )
         }
     ) { padding ->
         Column(
@@ -125,7 +146,11 @@ private fun PublicDisturbanceButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                navController.navigate(MainNav.EditReport("Public Disturbance", id!!))
+                if (report.status == "Rejected") {
+                    navController.navigate(MainNav.EditReport("Public Disturbance", id))
+                } else {
+                    navController.navigate(MainNav.ViewReport("Public Disturbance", id))
+                }
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(
@@ -171,27 +196,70 @@ private fun PublicDisturbanceButton(
 @Composable
 fun FloatingPublicDisturbanceRecordIcon(
     navController: NavController,
+    currentUser: UserDto,
+    context: Context,
+    items: List<PublicDisturbanceDto>
 ) {
+    val activity = context as? MainActivity
     Column(
         modifier = Modifier.background(Color.Transparent),
         horizontalAlignment = Alignment.End
     ) {
-        FloatingActionButton(
-            onClick = {
-                navController.navigate(MainNav.CreateReport("Public Disturbance"))
-            },
-            containerColor = Color(0xFF0049AD),
-            contentColor = Color(0xFFFFFFFF),
-            shape = CircleShape,
-            modifier = Modifier
-                .size(75.dp)
-                .offset(x = (-5).dp, y = (-7).dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = "Add",
-                modifier = Modifier.size(30.dp)
-            )
+        if (currentUser.isAdmin) {
+            FloatingActionButton(
+                onClick = {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P && activity != null) {
+                        activity.requestStoragePermission()
+                    }
+                    val pdfRows = items.map { report ->
+                        PrintableRowImpl(
+                            listOf(
+                                formatterDate(report.createdAt),
+                                report.status
+                            )
+                        )
+                    }
+                    exportDynamicPDF(
+                        context = context,
+                        title = "Public Disturbance",
+                        headers = listOf("No", "Date Created", "Status"),
+                        data = pdfRows,
+                        onFinish = { Print.openFile(context, it) },
+                        onError = { Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show() }
+                    )
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.printer),
+                    contentDescription = "Export",
+                    modifier = Modifier.size(30.dp),
+                    tint = Color.White
+                )
+            }
+        } else {
+            FloatingActionButton(
+                onClick = {
+                    navController.navigate(MainNav.CreateReport("Public Disturbance"))
+                },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color(0xFFFFFFFF),
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(75.dp)
+                    .offset(x = (-5).dp, y = (-7).dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Add",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
     }
 }

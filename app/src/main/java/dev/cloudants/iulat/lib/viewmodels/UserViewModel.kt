@@ -11,6 +11,7 @@ import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.services.AddressService
 import dev.cloudants.iulat.lib.services.UserService
 import dev.cloudants.iulat.lib.state.UserState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -24,6 +25,15 @@ class UserViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(UserState())
     val uiState: StateFlow<UserState> = _uiState
+    private val _users = MutableStateFlow<List<UserDto>>(emptyList())
+    val users: StateFlow<List<UserDto>> = _users
+
+    fun loadUsers() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = userService.findAll()
+            _users.value = result
+        }
+    }
 
     fun onIntent(intent: UserIntent) {
         when (intent) {
@@ -63,6 +73,14 @@ class UserViewModel @Inject constructor(
         return this.userService.findOne(userId)
     }
 
+    fun fetchByEmail(email: String): UserDto? {
+        return userService.findByEmail(email)
+    }
+
+    fun fetchUserByEmailAndToken(email: String, token: String): UserDto? {
+        return userService.fetchEmailAndToken(email, token)
+    }
+
     fun updateUser(userDto: UserDto): Result<UserDto> {
         return try {
             if (userDto.id?.isBlank()!!) {
@@ -79,7 +97,23 @@ class UserViewModel @Inject constructor(
     fun saveZonesToDatabase(zones: List<AddressDto>) {
         viewModelScope.launch {
             try {
-                zones.forEachIndexed { index, address ->
+                val uniqueZones = zones.distinctBy { "${it.province}-${it.municipality}-${it.barangay}-${it.zone}" }
+
+                val zonesToSave = uniqueZones.filter { address ->
+                    !userService.isZoneExisting(
+                        province = address.province,
+                        municipality = address.municipality,
+                        barangay = address.barangay,
+                        zone = address.zone
+                    )
+                }
+
+                if (zonesToSave.isEmpty()) {
+                    Log.e("UserViewModel", "⚠️ No new zones to save.")
+                    return@launch
+                }
+
+                zonesToSave.forEachIndexed { index, address ->
                     Log.d(
                         "UserViewModel",
                         """
@@ -94,19 +128,20 @@ class UserViewModel @Inject constructor(
                     )
                 }
 
-                val isSaved = userService.saveZonesToDatabase(zones)
+                val isSaved = userService.saveZonesToDatabase(zonesToSave)
 
                 if (isSaved) {
-                    Log.e("UserViewModel", "✅ Zones successfully saved to database.")
+                    Log.e("UserViewModel", " Zones successfully saved to database.")
                 } else {
-                    Log.e("UserViewModel", "❌ Failed to save zones.")
+                    Log.e("UserViewModel", " Failed to save zones.")
                 }
 
             } catch (e: Exception) {
-                Log.e("UserViewModel", "⚠️ Failed to save zones: ${e.message}")
+                Log.e("UserViewModel", "Failed to save zones: ${e.message}")
             }
         }
     }
+
 
     fun createAdmin() {
         viewModelScope.launch {

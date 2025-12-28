@@ -132,12 +132,12 @@ class LoginViewModel @Inject constructor(
     fun request(email: String, callback: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             try {
-//                val success = authService.requestOTP(email)
-//                if (success) {
-//                    callback(true, "OTP successfully generated and saved to the database.")
-//                } else {
-//                    callback(false, "Failed to generate OTP.")
-//                }
+                val success = authServiceImpl.requestOTP(email)
+                if (success) {
+                    callback(true, "OTP successfully generated and saved to the database.")
+                } else {
+                    callback(false, "Failed to generate OTP.")
+                }
             } catch (e: Exception) {
                 callback(false, e.message)
             }
@@ -149,32 +149,55 @@ class LoginViewModel @Inject constructor(
             callback(false, "Email and token cannot be blank.")
             return
         }
-
+        _uiState.value = _uiState.value.copy(isLoading = true)
         viewModelScope.launch {
             try {
-//                val isTokenValid = authService.verifyResetToken(email, token)
-//                if (isTokenValid) {
-//                    callback(true, null)
-//                }
+                val isTokenValid = authServiceImpl.verifyResetToken(email, token)
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                if (isTokenValid) {
+                    callback(true, null)
+                } else {
+                    callback(false, "Invalid token. Please try again.")
+                }
             } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false)
                 callback(false, "Invalid token. Please try again.")
             }
         }
     }
 
-    fun resetPassword(email: String, token: String, newPassword: String, callback: (Boolean, String?) -> Unit) {
+    fun resetPassword(email: String, token: String, newPassword: String) {
+        _uiState.value = _uiState.value.copy(isLoading = true)
         viewModelScope.launch {
             try {
-//                val success = userService.saveNewPassword(email, token, newPassword)
-//                if (success) {
-//                    callback(true, null)
-//                } else {
-//                    callback(false, "Failed to reset password. Invalid token or email.")
-//                }
+                val success = userService.saveNewPassword(email, token, newPassword)
+                if (success) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isLoginSuccessful = true,
+                        isDialogShow = true,
+                        errorMessage = "Your password has been successfully reset."
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isLoginSuccessful = false,
+                        isDialogShow = true,
+                        errorMessage = "Failed to reset password. User not found."
+                    )
+                }
             } catch (e: Exception) {
-                callback(false, "Error resetting password: ${e.localizedMessage}")
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isLoginSuccessful = false,
+                    isDialogShow = true,
+                    errorMessage = "Error: ${e.localizedMessage}"
+                )
             }
         }
     }
 
+    fun closeDialog() {
+        _uiState.value = _uiState.value.copy(isDialogShow = false)
+    }
 }

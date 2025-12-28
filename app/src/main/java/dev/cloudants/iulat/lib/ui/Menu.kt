@@ -1,10 +1,12 @@
 package dev.cloudants.iulat.lib.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,31 +22,30 @@ import dev.cloudants.iulat.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.NavItem
 import dev.cloudants.iulat.lib.components.context.UserSession
 import dev.cloudants.iulat.lib.models.entities.UserDto
-import dev.cloudants.iulat.lib.ui.dashboard.Dashboard
+import dev.cloudants.iulat.lib.ui.dashboard.AdminDashboard
 import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
-import dev.cloudants.iulat.lib.ui.message.ChatDirect
 import dev.cloudants.iulat.lib.ui.message.ChatLobby
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.AdminReportList
 import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
 import dev.cloudants.iulat.lib.ui.user.Account
-import dev.cloudants.iulat.lib.ui.user.UserDetails
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,10 +58,13 @@ fun Menu(
     val context = LocalContext.current
     val currentUserState = remember { mutableStateOf<UserDto?>(currentUser) }
 
-    val routeName by viewModel.routeName
+    val routeName by rememberSaveable { viewModel.routeName }
+    val initialRouteSet = rememberSaveable { mutableStateOf(false) }
+
     val topBarTitle by viewModel.topBarTitle
     val navItems = currentUserState.value?.let { getNavItems(navController, it) } ?: emptyList()
-
+    val isLoggingOut = remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(currentUserState.value) {
         val user = currentUserState.value
         if (user == null) {
@@ -68,10 +72,13 @@ fun Menu(
                 popUpTo(0)
             }
         } else {
-            if (user.isResidence) {
-                viewModel.updateRoute(MODULE.RESIDENCEDASHBOARD)
-            } else {
-                viewModel.updateRoute(MODULE.DASHBOARD)
+            if (!initialRouteSet.value) {
+                if (user.isResidence) {
+                    viewModel.updateRoute(MODULE.RESIDENCEDASHBOARD)
+                } else {
+                    viewModel.updateRoute(MODULE.DASHBOARD)
+                }
+                initialRouteSet.value = true
             }
         }
     }
@@ -100,12 +107,16 @@ fun Menu(
                     IconButton(
                         onClick = {
                             if (routeName == MODULE.ACCOUNT) {
-                                UserSession.clearSession(context)
-                                currentUserState.value = null
-                                navController.navigate(MainNav.Login) {
-                                    popUpTo(0)
+                                isLoggingOut.value = true
+                                coroutineScope.launch {
+                                    kotlinx.coroutines.delay(600)
+                                    UserSession.clearSession(context)
+                                    currentUserState.value = null
+                                    navController.navigate(MainNav.Login) { popUpTo(0) }
+                                    isLoggingOut.value = false
                                 }
                             } else {
+//                                navController.navigate(MainNav.ChatDirect(currentUser.id!!))
                                 navController.navigate(MainNav.NotificationList)
                             }
                     }) {
@@ -154,18 +165,34 @@ fun Menu(
                 .padding(paddingValues)
         ) {
             when (routeName) {
-                MODULE.DASHBOARD -> Dashboard()
-                MODULE.CHATLOBBY -> ChatLobby(navController)
-                MODULE.CHATDIRECT -> ChatDirect(navController)
+                MODULE.DASHBOARD -> AdminDashboard(navController, currentUser)
+                MODULE.CHATLOBBY -> ChatLobby(navController, currentUser.id!!)
+//                MODULE.CHATDIRECT -> ChatDirect(currentUser )
                 MODULE.ACCOUNT -> Account(navController)
                 MODULE.USERLIST -> UsersList(navController)
-                MODULE.ADMINREPORTLIST -> AdminReportList()
+                MODULE.ADMINREPORTLIST -> AdminReportList(navController)
                 MODULE.RESIDENCEDASHBOARD -> ResidenceDashboard(navController)
                 MODULE.NOTIFICATIONLIST -> NotificationList(navController)
                 MODULE.RESIDENCEREPORTLIST -> GarbageDisposalList(navController,currentUser)
             }
         }
     }
+    if (isLoggingOut.value) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0x88000000)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color.White, strokeWidth = 4.dp)
+            Text(
+                text = "Logging out...",
+                color = Color.White,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+
 }
 
 @Composable
@@ -180,7 +207,8 @@ fun getNavItems(navController: NavController, userDto: UserDto): List<NavItem> {
         )
         userDto.isResidence -> listOf(
             NavItem(painterResource(R.drawable.home), MODULE.RESIDENCEDASHBOARD, navController),
-            NavItem(painterResource(R.drawable.message), MODULE.CHATDIRECT, navController),
+//            NavItem(painterResource(R.drawable.message), MODULE.CHATDIRECT, navController),
+            NavItem(painterResource(R.drawable.message), MODULE.CHATLOBBY, navController),
             NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
         )
         else -> listOf()

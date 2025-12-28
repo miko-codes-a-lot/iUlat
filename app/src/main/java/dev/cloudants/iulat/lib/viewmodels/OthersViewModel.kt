@@ -32,6 +32,17 @@ class OthersViewModel @Inject constructor(
         }
     }
 
+    fun fetchAllOthers() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            val reports = othersService.getAll()
+            _state.value = _state.value.copy(
+                items = reports.sortedByDescending { it.createdAt },
+                isLoading = false
+            )
+        }
+    }
+
     fun createOthersReport(dto: OthersDto) {
         viewModelScope.launch {
             try {

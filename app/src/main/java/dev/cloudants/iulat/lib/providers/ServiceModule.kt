@@ -5,10 +5,15 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.cloudants.iulat.lib.services.AddressService
+import dev.cloudants.iulat.lib.services.AdminReportService
 import dev.cloudants.iulat.lib.services.AuthService
 import dev.cloudants.iulat.lib.services.BrokenStreetLightsService
+import dev.cloudants.iulat.lib.services.ChatService
+import dev.cloudants.iulat.lib.services.EmailService
 import dev.cloudants.iulat.lib.services.GarbageDisposalService
+import dev.cloudants.iulat.lib.services.MyLogsService
 import dev.cloudants.iulat.lib.services.NoWaterSupplyService
+import dev.cloudants.iulat.lib.services.NotificationService
 import dev.cloudants.iulat.lib.services.OthersService
 import dev.cloudants.iulat.lib.services.PublicDisturbanceService
 import dev.cloudants.iulat.lib.services.RoadRepairService
@@ -16,10 +21,15 @@ import dev.cloudants.iulat.lib.services.RobberiesService
 import dev.cloudants.iulat.lib.services.UserService
 import dev.cloudants.iulat.lib.services.VehicleCrashService
 import dev.cloudants.iulat.lib.services_impl.AddressServiceImpl
+import dev.cloudants.iulat.lib.services_impl.AdminReportServicelmpl
 import dev.cloudants.iulat.lib.services_impl.AuthServiceImpl
 import dev.cloudants.iulat.lib.services_impl.BrokenStreetLightServicelmpl
+import dev.cloudants.iulat.lib.services_impl.ChatServiceImpl
+import dev.cloudants.iulat.lib.services_impl.EmailServiceImpl
 import dev.cloudants.iulat.lib.services_impl.GarbageDisposalServiceImpl
+import dev.cloudants.iulat.lib.services_impl.MyLogsServiceImpl
 import dev.cloudants.iulat.lib.services_impl.NoWaterSupplyServicelmpl
+import dev.cloudants.iulat.lib.services_impl.NotificationServiceImpl
 import dev.cloudants.iulat.lib.services_impl.OthersServicelmpl
 import dev.cloudants.iulat.lib.services_impl.PublicDisturbanceServicelmpl
 import dev.cloudants.iulat.lib.services_impl.RoadRepairServicelmpl
@@ -34,6 +44,14 @@ abstract class ServiceModule {
     @Binds
     @Singleton
     abstract fun bindUserService(userServiceImpl: UserServiceImpl): UserService
+
+    @Binds
+    @Singleton
+    abstract fun bindChatService(chatServiceImpl: ChatServiceImpl): ChatService
+
+    @Binds
+    @Singleton
+    abstract fun bindMyLogsService(myLogsServiceImpl: MyLogsServiceImpl): MyLogsService
 
     @Binds
     @Singleton
@@ -74,4 +92,16 @@ abstract class ServiceModule {
     @Binds
     @Singleton
     abstract fun bindVehicleCrashService(vehicleCrashServicelmpl: VehicleCrashServicelmpl): VehicleCrashService
+
+    @Binds
+    @Singleton
+    abstract fun bindAdminReportService(adminReportServicelmpl: AdminReportServicelmpl): AdminReportService
+
+    @Binds
+    @Singleton
+    abstract fun bindEmailService(emailServiceImpl: EmailServiceImpl): EmailService
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationService(notificationServiceImpl: NotificationServiceImpl): NotificationService
 }

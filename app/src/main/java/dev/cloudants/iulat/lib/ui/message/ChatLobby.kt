@@ -1,8 +1,10 @@
 package dev.cloudants.iulat.lib.ui.message
 
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,9 +29,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
 import kotlinx.coroutines.delay
 
 data class ChatUser(
@@ -42,41 +46,66 @@ data class ChatUser(
     val isRead: Boolean
 )
 
-private val sampleChats = listOf(
-    ChatUser("1", "Jericho", "T.", "Me", null, "Hello! How are you?", false),
-    ChatUser("2", "Maria", null, "Santos", null, "Let's meet tomorrow.", true),
-    ChatUser("3", "John", "D.", "Smith", null, "Please send the report ASAP.", false),
-    ChatUser("4", "Elena", "R.", "Cruz", null, "Thank you!", true),
-)
-
+@SuppressLint("UnrememberedMutableState")
 @Composable
-fun ChatLobby(navController: NavController) {
-    var searchQuery by remember { mutableStateOf("") }
-    var debouncedQuery by remember { mutableStateOf("") }
+fun ChatLobby(
+    navController: NavController,
+    currentUserId: String
+) {
+    val viewModel: ChatViewModel = hiltViewModel()
+    val users by viewModel.users.collectAsState()
 
-    LaunchedEffect(searchQuery) {
-        delay(400L)
-        debouncedQuery = searchQuery
+    LaunchedEffect(currentUserId) {
+        viewModel.fetchUsers(currentUserId)
     }
 
-    val filteredChats = remember(debouncedQuery) {
-        if (debouncedQuery.isEmpty()) {
-            sampleChats
-        } else {
-            sampleChats.filter { chat ->
-                val fullName = "${chat.firstName} ${chat.middleName.orEmpty()} ${chat.lastName}"
-                fullName.contains(debouncedQuery, ignoreCase = true)
-            }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val currentUserWithType by derivedStateOf {
+        val currentUser = users.find { it.userDto.id == currentUserId }
+        val type = when {
+            currentUser?.userDto?.isAdmin == true -> "admin"
+            currentUser?.userDto?.isResidence == true -> "residence"
+            else -> null
+        }
+        currentUser to type
+    }
+    currentUserWithType.first
+    val currentUserType = currentUserWithType.second
+
+    users.forEach { user ->
+        val type = when {
+            user.userDto.isAdmin -> "admin"
+            user.userDto.isResidence -> "residence"
+            else -> "unknown"
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    val filteredUsers by remember(users, searchQuery) {
+        derivedStateOf {
+            if (currentUserType == null) {
+                users
+            } else {
+                users.filter { user ->
+                    val typeFilter = when (currentUserType) {
+                        "admin" -> !user.userDto.isAdmin
+                        "residence" -> user.userDto.isAdmin
+                        else -> true
+                    }
+                    val hasName = user.userDto.firstName.isNotBlank() || user.userDto.lastName.isNotBlank()
+                    val matchesSearch = if (searchQuery.isBlank()) true
+                    else {
+                        val fullName = "${user.userDto.firstName} ${user.userDto.middleName.orEmpty()} ${user.userDto.lastName}"
+                        fullName.contains(searchQuery, ignoreCase = true)
+                    }
+                    val include = typeFilter && hasName && matchesSearch
+                    if (include) Log.d("CHAT", "Including user in list: ${user.userDto.firstName} ${user.userDto.lastName}")
+                    include
+                }
+            }
+        }
+    }
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         SearchMessageIcon(
             searchQuery = searchQuery,
             onSearchQueryChanged = { searchQuery = it }
@@ -85,13 +114,20 @@ fun ChatLobby(navController: NavController) {
         Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(filteredChats) { chat ->
+            items(filteredUsers) { userChat ->
                 ChatCard(
                     navController = navController,
-                    chatUser = chat,
+                    chatUser = ChatUser(
+                        id = userChat.userDto.id!!,
+                        firstName = userChat.userDto.firstName,
+                        middleName = userChat.userDto.middleName,
+                        lastName = userChat.userDto.lastName,
+                        userProfile = userChat.userDto.userProfile,
+                        lastMessage = userChat.chatDto.lastMessage,
+                        isRead = userChat.chatDto.isRead
+                    )
                 )
             }
         }

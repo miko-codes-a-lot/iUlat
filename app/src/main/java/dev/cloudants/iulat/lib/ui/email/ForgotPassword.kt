@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.LoginViewModel
 
 @Composable
@@ -83,7 +84,7 @@ fun ForgotPassword(
                             isLoading = false
                             message = responseMessage
                             if (success) {
-//                                navController.navigate(IntroNav.TokenVerification(email))
+                                navController.navigate(MainNav.TokenVerification(email))
                             }
                         }
                     }

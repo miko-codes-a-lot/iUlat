@@ -1,5 +1,7 @@
 package dev.cloudants.iulat.lib.ui.dashboard
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -78,7 +81,7 @@ fun CropsCategory(navController: NavController) {
         ResidenceReportItems(R.drawable.ic_public_disturbance, navController, "Public Disturbance",MODULE.PUBLIC_DISTURBANCE),
         ResidenceReportItems(R.drawable.ic_robberies, navController, "Robberies",MODULE.ROBBERIES),
         ResidenceReportItems(R.drawable.streetlight, navController, "Broken Streetlights",MODULE.BROKEN_STREETLIGHTS),
-        ResidenceReportItems(R.drawable.ic_vehicle_crashes, navController, "Vehicle Crashes", MODULE.VEHICLE_CRASHES),
+        ResidenceReportItems(R.drawable.ic_vehicle_crashes, navController, "Vehicle Crashes", MODULE.VEHICLE_CRASH),
         ResidenceReportItems(R.drawable.road_work, navController, "Road Repair", MODULE.ROAD_REPAIR),
         ResidenceReportItems(R.drawable.no_water, navController, "No Water Supply", MODULE.NO_WATER_SUPPLY),
         ResidenceReportItems(R.drawable.ic_others, navController, "Others",MODULE.OTHERS),
@@ -100,7 +103,7 @@ fun CropsCategory(navController: NavController) {
                                 MODULE.PUBLIC_DISTURBANCE -> navController.navigate(MainNav.PublicDisturbanceList)
                                 MODULE.ROBBERIES -> navController.navigate(MainNav.RobberiesList)
                                 MODULE.BROKEN_STREETLIGHTS -> navController.navigate(MainNav.BrokenLightList)
-                                MODULE.VEHICLE_CRASHES -> navController.navigate(MainNav.VehicleCrashesList)
+                                MODULE.VEHICLE_CRASH -> navController.navigate(MainNav.VehicleCrashesList)
                                 MODULE.ROAD_REPAIR -> navController.navigate(MainNav.RoadRepairList)
                                 MODULE.NO_WATER_SUPPLY -> navController.navigate(MainNav.NoWaterSupplyList)
                                 MODULE.OTHERS -> navController.navigate(MainNav.OthersList)
@@ -124,7 +127,7 @@ fun ReportCard(
     Column(
         modifier = Modifier
             .padding(8.dp)
-            .width(80.dp)
+            .width(70.dp)
             .clickable { onClick() },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -138,7 +141,7 @@ fun ReportCard(
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = "Report Icon",
-                modifier = Modifier.size(30.dp),
+                modifier = Modifier.size(25.dp),
                 colorFilter = ColorFilter.tint(Color.White)
             )
         }
@@ -159,11 +162,12 @@ fun ReportCard(
 
 @Composable
 fun EmergencyContactSection(navController: NavController) {
+    val context = LocalContext.current
     val emergencyItems = listOf(
-        ResidenceReportItem(R.drawable.ic_police, "police", "Rizal, Municipal Police Station (Rizal MPS)"),
-        ResidenceReportItem(R.drawable.mdrrmo, "mddrmo", "Municipal Risk Reduction and Management Office Rizal"),
-        ResidenceReportItem(R.drawable.ic_bfp, "bfp", "Bureau Fire Protection Rizal"),
-        ResidenceReportItem(R.drawable.ic_coast_guard, "coast_guard", "Philippine Coast Guard")
+        EmergencyContact(R.drawable.ic_police, "09985985841", "Rizal, Municipal Police Station (Rizal MPS)"),
+        EmergencyContact(R.drawable.mdrrmo, "09916648564", "Municipal Risk Reduction and Management Office"),
+        EmergencyContact(R.drawable.ic_bfp, "09317701811", "Bureau Fire Protection Rizal"),
+        EmergencyContact(R.drawable.ic_coast_guard, "09452662085", "Philippine Coast Guard")
     )
 
     LazyRow(
@@ -174,7 +178,12 @@ fun EmergencyContactSection(navController: NavController) {
             EmergencyContactCard(
                 iconRes = item.iconRes,
                 title = item.title,
-                onClick = { navController.navigate(item.route) }
+                onClick = {
+                    val intent = Intent(Intent.ACTION_DIAL).apply {
+                        data = Uri.parse("tel:${item.phoneNumber}")
+                    }
+                    context.startActivity(intent)
+                }
             )
         }
     }
@@ -192,7 +201,8 @@ fun EmergencyContactCard(
             .height(200.dp)
             .clickable { onClick() },
         shape = RectangleShape,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF2568ef)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF)),
+//        colors = CardDefaults.cardColors(containerColor = Color(0xFF2568ef)),
         elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Column(
@@ -210,7 +220,8 @@ fun EmergencyContactCard(
             Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = title,
-                color = Color.White,
+                color = Color.Black,
+//                color = Color.White,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 10.sp,
                 textAlign = TextAlign.Center
@@ -218,3 +229,9 @@ fun EmergencyContactCard(
         }
     }
 }
+
+data class EmergencyContact(
+    val iconRes: Int,
+    val phoneNumber: String,
+    val title: String
+)

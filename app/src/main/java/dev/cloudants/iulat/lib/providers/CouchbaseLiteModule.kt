@@ -3,7 +3,6 @@ package dev.cloudants.iulat.lib.providers
 import android.content.Context
 import android.util.Log
 import com.couchbase.lite.BasicAuthenticator
-import com.couchbase.lite.Collection
 import com.couchbase.lite.CollectionConfiguration
 import com.couchbase.lite.CouchbaseLite
 import com.couchbase.lite.CouchbaseLiteException
@@ -32,6 +31,8 @@ object CouchbaseLiteModule {
         CouchbaseLite.init(context)
         val db = Database("iulat")
         val userCollection = db.createCollection("users")
+        val chatCollection = db.createCollection("chats")
+        val messageCollection = db.createCollection("messages")
         val addressCollection = db.createCollection("address")
         val garbageDisposalCollection = db.createCollection("garbage_disposal")
         val brokenStreetLightsCollection = db.createCollection("broken_streetlights")
@@ -41,9 +42,13 @@ object CouchbaseLiteModule {
         val roadRepairCollection = db.createCollection("road_repair")
         val robberiesCollection = db.createCollection("robberies")
         val vehicleCrashCollection = db.createCollection("vehicle_crash")
+        val timelineEventsCollection = db.createCollection("timeline_events")
+        val notificationsCollection = db.createCollection("notifications")
 
         val collections = mutableListOf(
             userCollection,
+            chatCollection,
+            messageCollection,
             addressCollection,
             garbageDisposalCollection,
             brokenStreetLightsCollection,
@@ -52,7 +57,9 @@ object CouchbaseLiteModule {
             publicDisturbanceCollection,
             roadRepairCollection,
             robberiesCollection,
-            vehicleCrashCollection
+            vehicleCrashCollection,
+            timelineEventsCollection,
+            notificationsCollection
         )
 
         val repl = Replicator(
@@ -80,11 +87,5 @@ object CouchbaseLiteModule {
 
 
         return db
-    }
-
-    @Provides
-    @Singleton
-    fun provideUserCollection(db: Database): Collection {
-        return db.getCollection("users") ?: db.createCollection("users")
     }
 }

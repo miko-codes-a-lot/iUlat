@@ -9,6 +9,7 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.9.4"
 activityCompose = "1.11.0"
 composeBom = "2024.09.00"
+loggingInterceptor = "5.3.2"
 navigationRuntimeKtx = "2.7.7"
 navigationCompose = "2.8.0-alpha08"
 kotlinx-coroutines-android = "1.7.3"
@@ -22,6 +23,7 @@ mapsCompose = "6.1.0"
 converterGson = "2.9.0"
 playServicesMaps = "19.0.0"
 hilt-navigation-compose = "1.2.0"
+itextpdf = "5.5.13.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +46,8 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines-core" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinx-coroutines-android" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "converterGson" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "mapsCompose" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
@@ -52,6 +56,7 @@ coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose"
 jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "jbcrypt" }
 mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpandroidchart" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt-navigation-compose" }
+itextpdf = { module = "com.itextpdf:itextpdf", version.ref = "itextpdf" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
