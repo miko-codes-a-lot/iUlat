@@ -43,6 +43,7 @@ object CouchbaseLiteModule {
         val robberiesCollection = db.createCollection("robberies")
         val vehicleCrashCollection = db.createCollection("vehicle_crash")
         val timelineEventsCollection = db.createCollection("timeline_events")
+        val notificationsCollection = db.createCollection("notifications")
 
         val collections = mutableListOf(
             userCollection,
@@ -57,7 +58,8 @@ object CouchbaseLiteModule {
             roadRepairCollection,
             robberiesCollection,
             vehicleCrashCollection,
-            timelineEventsCollection
+            timelineEventsCollection,
+            notificationsCollection
         )
 
         val repl = Replicator(

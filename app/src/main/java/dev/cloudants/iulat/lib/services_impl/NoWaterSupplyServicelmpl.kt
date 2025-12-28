@@ -7,7 +7,6 @@ import com.couchbase.lite.Database
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
-import dev.cloudants.iulat.lib.models.entities.BrokenStreetlightsDto
 import dev.cloudants.iulat.lib.models.entities.NoWaterSupplyDto
 import dev.cloudants.iulat.lib.services.NoWaterSupplyService
 import kotlinx.serialization.json.Json

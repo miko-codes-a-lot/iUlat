@@ -1,17 +1,13 @@
 package dev.cloudants.iulat.shared.api
 
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
-import dev.cloudants.iulat.shared.KotlinJson
 import dev.cloudants.iulat.shared.api_service.ApiService
-import kotlinx.serialization.ExperimentalSerializationApi
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private const val BASE_URL = "https://51be7f757cff.ngrok-free.app"
+    private const val BASE_URL = "https://79bacf5c14e8.ngrok-free.app/"
 //    private const val BASE_URL = "http://192.168.1.10:4000/"
 
     private val okHttpClient = OkHttpClient.Builder()

@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.ui.dashboard
 
+import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -40,7 +41,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -55,10 +55,11 @@ import dev.cloudants.iulat.ui.theme.Purple500
 import dev.cloudants.iulat.ui.theme.Teal200
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.context.AdminReportItems
-import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.context.formatterDate
+import dev.cloudants.iulat.lib.models.entities.DashboardReportItemDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
-import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
+import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
 import dev.cloudants.iulat.ui.theme.Purple700
 import dev.cloudants.iulat.ui.theme.PurpleGrey40
 
@@ -72,72 +73,93 @@ import dev.cloudants.iulat.ui.theme.PurpleGrey40
 @Composable
 fun AdminDashboard(
      navController: NavController,
-     currentUser: UserDto
+     currentUser: UserDto,
 ) {
+    val viewModel: AdminReportViewModel = hiltViewModel()
+    val percentages by viewModel.reportPercentages.collectAsState()
+    val pieChartData by viewModel.pieChartData.collectAsState()
+    val isDataEmpty = pieChartData.isEmpty() || pieChartData.values.sum() == 0
+    val recentReports by viewModel.recentReports.collectAsState()
+    val finalData = if (isDataEmpty) mapOf("No Reports" to 1) else pieChartData
+    val finalColors = if (isDataEmpty) {
+        listOf(Color.LightGray)
+    } else {
+        listOf(Purple200, Purple500, Teal200, Blue, Purple700, PurpleGrey40)
+    }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .background(Color.White)
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        PieChart(
-            data = mapOf(
-                Pair("Garbage Disposal", 150),
-                Pair("Public Disturbance", 120),
-                Pair("Robberies", 110),
-                Pair("Broken Streetlights", 170),
-                Pair("Vehicle Crashes", 120),
-                Pair("Road Repair", 120),
-                Pair("No Water Supply", 120),
-                Pair("Others", 120),
+        item {
+            PieChart(
+                data = finalData,
+                colors = finalColors
             )
-        )
+        }
 
-        Spacer(modifier = Modifier.height(8.dp))
-        ReportList()
-        Spacer(modifier = Modifier.height(8.dp))
-        DashboardMenu(
-            navController = navController
-        )
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        item {
+            ReportList(reports = recentReports)
+        }
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+            DashboardMenu(
+                navController = navController,
+                percentages = percentages
+            )
+        }
     }
 }
 
 @Composable
-fun ReportList() {
-    val reportItems = listOf(
-        ReportItem("1", "Title 1", "2025-10-01", "Active", "Location 1"),
-        ReportItem("2", "Title 2", "2025-10-02", "Inactive", "Location 2"),
-        ReportItem("3", "Title 3", "2025-10-03", "Pending", "Location 3"),
-        ReportItem("4", "Title 4", "2025-10-04", "Active", "Location 4"),
-        ReportItem("5", "Title 5", "2025-10-05", "Inactive", "Location 5")
-    )
+fun ReportList(
+    reports: List<DashboardReportItemDto>
+) {
 
     Column(modifier = Modifier.padding(top = 8.dp, end = 8.dp )) {
         TableHeader()
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            items(reportItems) { item ->
+            if (reports.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .shadow(
-                            elevation = 8.dp,
-                            shape = RoundedCornerShape(16.dp),
-                            ambientColor = Color.Gray,
-                            spotColor = Color.Black
-                        )
-                        .padding(vertical = 4.dp)
-                        .background(Color.White, shape = RoundedCornerShape(16.dp))
+                        .fillMaxWidth()
+                        .padding(vertical = 70.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    ElevatedCard(
+                    Text(
+                        text = "No recent reports available",
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                reports.forEach { item ->
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White)
+                            .shadow(
+                                elevation = 8.dp,
+                                shape = RoundedCornerShape(16.dp),
+                                ambientColor = Color.Gray,
+                                spotColor = Color.Black
+                            )
+                            .padding(vertical = 4.dp)
+                            .background(Color.White, shape = RoundedCornerShape(16.dp))
                     ) {
-                        TableRow(item = item)
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White)
+                        ) {
+                            TableRow(item = item)
+                        }
                     }
                 }
             }
@@ -169,7 +191,7 @@ fun TableHeader() {
 }
 
 @Composable
-fun TableRow(item: ReportItem) {
+fun TableRow(item: DashboardReportItemDto) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -177,11 +199,12 @@ fun TableRow(item: ReportItem) {
             .padding(8.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = item.id, fontSize = 12.sp, modifier = Modifier.weight(1f))
-        Text(text = item.title, fontSize = 12.sp, modifier = Modifier.weight(2f))
-        Text(text = item.date, fontSize = 12.sp, modifier = Modifier.weight(2f))
-        Text(text = item.status, fontSize = 12.sp, modifier = Modifier.weight(2f))
-        Text(text = item.location, fontSize = 12.sp, modifier = Modifier.weight(2f))
+        Text(text = item.reportId.takeLast(4),fontSize = 11.sp,modifier = Modifier.weight(2f))
+//        Text(text = item.reportId, fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Text(text = item.reportType, fontSize = 11.sp, modifier = Modifier.weight(2f))
+        Text(text = formatterDate(item.reportDate), fontSize = 11.sp, modifier = Modifier.weight(2f))
+        Text(text = item.status, fontSize = 11.sp, modifier = Modifier.weight(2f))
+        Text(text = item.addressId, fontSize = 11.sp, modifier = Modifier.weight(2f), maxLines = 1)
     }
 }
 
@@ -189,6 +212,7 @@ fun TableRow(item: ReportItem) {
 @Composable
 fun PieChart(
     data: Map<String, Int>,
+    colors: List<Color>,
     radiusOuter: Dp = 80.dp,
     chartBarWidth: Dp = 16.dp,
     animDuration: Int = 500,
@@ -197,18 +221,10 @@ fun PieChart(
     val totalSum = data.values.sum()
     val floatValue = mutableListOf<Float>()
 
+    val finalSum = if (totalSum == 0) 1 else totalSum
     data.values.forEachIndexed { index, values ->
-        floatValue.add(index, 360 * values.toFloat() / totalSum.toFloat())
+        floatValue.add(index, 360 * values.toFloat() / finalSum.toFloat())
     }
-
-    val colors = listOf(
-        Purple200,
-        Purple500,
-        Teal200,
-        Blue,
-        Purple700,
-        PurpleGrey40
-    )
 
     var animationPlayed by remember { mutableStateOf(false) }
     var lastValue = 0f
@@ -287,7 +303,8 @@ fun PieChart(
                 ) {
                     DetailsPieChart(
                         data = data,
-                        colors = colors
+                        colors = colors,
+                        totalSum = totalSum
                     )
                 }
             }
@@ -298,7 +315,8 @@ fun PieChart(
 @Composable
 fun DetailsPieChart(
     data: Map<String, Int>,
-    colors: List<Color>
+    colors: List<Color>,
+    totalSum: Int
 ) {
     LazyColumn(
         modifier = Modifier
@@ -309,7 +327,8 @@ fun DetailsPieChart(
         items(data.entries.toList().size) { index ->
             DetailsPieChartItem(
                 data = data.entries.elementAt(index).toPair(),
-                color = colors[index % colors.size]
+                color = colors[index % colors.size],
+                totalSum = totalSum
             )
         }
     }
@@ -318,9 +337,12 @@ fun DetailsPieChart(
 @Composable
 fun DetailsPieChartItem(
     data: Pair<String, Int>,
+    totalSum: Int,
     height: Dp = 20.dp,
     color: Color
 ) {
+    val percentage = if(totalSum > 0) (data.second.toFloat() / totalSum * 100).toInt() else 0
+    val displayCount = if (totalSum == 0) 0 else data.second
 
     Surface(
         modifier = Modifier
@@ -352,7 +374,7 @@ fun DetailsPieChartItem(
                 )
                 Text(
                     modifier = Modifier.padding(start = 15.dp),
-                    text = data.second.toString(),
+                    text = "$displayCount ($percentage%)",
                     fontWeight = FontWeight.Medium,
                     fontSize = 12.sp,
                     color = Color.Gray
@@ -364,22 +386,28 @@ fun DetailsPieChartItem(
 
 @Composable
 fun DashboardMenu(
-    navController: NavController
+    navController: NavController,
+    percentages: Map<String, Float>
 ) {
-    val reportItems = listOf(
-        AdminReportItems(R.drawable.trash_can, "Garbage Disposal", 15f),
-        AdminReportItems(R.drawable.ic_public_disturbance, "Public Disturbance", 20f),
-        AdminReportItems(R.drawable.ic_robberies, "Robberies", 10f),
-        AdminReportItems(R.drawable.streetlight, "Broken Streetlights", 25f),
-        AdminReportItems(R.drawable.ic_vehicle_crashes, "Vehicle Crashes", 5f),
-        AdminReportItems(R.drawable.road_work, "Road Repair", 18f),
-        AdminReportItems(R.drawable.no_water, "No Water Supply", 12f),
-        AdminReportItems(R.drawable.ic_others, "Others", 30f)
+    val baseItems = listOf(
+        AdminReportItems(R.drawable.trash_can, "Garbage Disposal", 0f),
+        AdminReportItems(R.drawable.ic_public_disturbance, "Public Disturbance", 0f),
+        AdminReportItems(R.drawable.ic_robberies, "Robberies", 0f),
+        AdminReportItems(R.drawable.streetlight, "Broken Streetlights", 0f),
+        AdminReportItems(R.drawable.ic_vehicle_crashes, "Vehicle Crashes", 0f),
+        AdminReportItems(R.drawable.road_work, "Road Repair", 0f),
+        AdminReportItems(R.drawable.no_water, "No Water Supply", 0f),
+        AdminReportItems(R.drawable.ic_others, "Others", 0f)
     )
-
+    val reportItems = remember(percentages) {
+        baseItems.map { item ->
+            val realPercentage = percentages[item.title] ?: 0f
+            item.copy(percentage = realPercentage)
+        }
+    }
     LazyColumn(
         modifier = Modifier
-            .height(168.dp),
+            .height(300.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.mpandroidchart)
     implementation(libs.jbcrypt)
     implementation(libs.play.services.maps)
+    implementation ("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
 
     // Retrofit
     implementation (libs.retrofit)

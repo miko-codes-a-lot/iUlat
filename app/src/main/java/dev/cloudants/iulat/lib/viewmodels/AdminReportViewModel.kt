@@ -21,10 +21,22 @@ class AdminReportViewModel @Inject constructor(
     private val _reports = MutableStateFlow<List<DashboardReportItemDto>>(emptyList())
     val reports: StateFlow<List<DashboardReportItemDto>> = _reports
 
+    private val _recent_reports = MutableStateFlow<List<DashboardReportItemDto>>(emptyList())
+    val recentReports: StateFlow<List<DashboardReportItemDto>> = _recent_reports
+
     private val _timeline = MutableStateFlow<List<TimelineEventDto>>(emptyList())
     val timeline: StateFlow<List<TimelineEventDto>> = _timeline
+
+    private val _reportPercentages = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val reportPercentages: StateFlow<Map<String, Float>> = _reportPercentages
+
+    private val _pieChartData = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val pieChartData: StateFlow<Map<String, Int>> = _pieChartData
+
     init {
         loadReports()
+        loadDashboardStats()
+        loadRecentReports()
     }
 
     fun loadReportsByStatus(status: String, search: String) {
@@ -46,6 +58,17 @@ class AdminReportViewModel @Inject constructor(
             }
         }
     }
+
+    fun loadRecentReports() {
+        viewModelScope.launch {
+            val allReports = reportService.getAllReports()
+            _recent_reports.value = allReports.take(4)
+            allReports.take(5).forEach { report ->
+                Log.d("RECENT_REPORT", "${report.reportType} - ${report.reportDate}")
+            }
+        }
+    }
+
 
     fun updateReportStatus(report: DashboardReportItemDto, newStatus: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -102,4 +125,23 @@ class AdminReportViewModel @Inject constructor(
         }
     }
 
+    fun loadDashboardStats() {
+        viewModelScope.launch {
+            val counts = reportService.getReportCounts()
+            _pieChartData.value = counts
+
+            val totalReports = counts.values.sum().toFloat()
+            val percentages = mutableMapOf<String, Float>()
+
+            if (totalReports > 0) {
+                for ((key, value) in counts) {
+                    percentages[key] = (value.toFloat() / totalReports) * 100f
+                }
+            } else {
+                counts.keys.forEach { key -> percentages[key] = 0f }
+            }
+
+            _reportPercentages.value = percentages
+        }
+    }
 }

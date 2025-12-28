@@ -12,10 +12,13 @@ import jakarta.inject.Inject
 import com.couchbase.lite.Meta
 import com.couchbase.lite.MutableDocument
 import dev.cloudants.iulat.lib.models.entities.TimelineEventDto
+import com.couchbase.lite.Function
+import com.couchbase.lite.Ordering
 
 class AdminReportServicelmpl @Inject constructor(
     private val db: Database
 ) : AdminReportService {
+
     override suspend fun getAllReports(): List<DashboardReportItemDto> {
         val finalList = mutableListOf<DashboardReportItemDto>()
 
@@ -42,13 +45,15 @@ class AdminReportServicelmpl @Inject constructor(
             val name = "$firstName$middleName $lastName".trim()
             val email = row.getString("email") ?: "No Email"
             val addressDict = row.getDictionary("address")
-            val province = addressDict?.getString("province") ?: ""
-            val municipality = addressDict?.getString("municipality") ?: ""
-            val barangay = addressDict?.getString("barangay") ?: ""
-            val latitude = addressDict?.getDouble("latitude") ?: 0.0
-            val longitude = addressDict?.getDouble("longitude") ?: 0.0
-            val address = "$barangay, $municipality, $province"
-            usersMap[id] = Triple(name, email, "$latitude,$longitude")
+            val zone = addressDict?.getString("zone") ?: ""
+//            val province = addressDict?.getString("province") ?: ""
+//            val municipality = addressDict?.getString("municipality") ?: ""
+//            val barangay = addressDict?.getString("barangay") ?: ""
+//            val latitude = addressDict?.getDouble("latitude") ?: 0.0
+//            val longitude = addressDict?.getDouble("longitude") ?: 0.0
+//            val address = "$barangay, $municipality, $province"
+//            usersMap[id] = Triple(name, email, "$latitude,$longitude")
+            usersMap[id] = Triple(name, email, zone)
         }
 
         fun queryCollection(collectionName: String, type: String): List<DashboardReportItemDto> {
@@ -71,11 +76,13 @@ class AdminReportServicelmpl @Inject constructor(
             for (row in result) {
                 val userId = row.getString("userId") ?: ""
                 val userInfo = usersMap[userId] ?: Triple("Unknown User", "No Email", "No Location")
-
+                val docId = row.getString("docId")!!
+                val fetchedReportId = row.getString("reportId")
+                val finalReportId = if (fetchedReportId.isNullOrEmpty()) docId else fetchedReportId
                 list.add(
                     DashboardReportItemDto(
                         docId = row.getString("docId")!!,
-                        reportId = row.getString("reportId") ?: "",
+                        reportId = finalReportId,
                         reportType = type,
                         reportDetails = row.getString("reportDetails") ?: "",
                         reportDate = row.getString("createdAt") ?: "",
@@ -335,7 +342,7 @@ class AdminReportServicelmpl @Inject constructor(
             )
             .from(DataSource.collection(col))
             .where(Expression.property("reportId").equalTo(Expression.string(reportId)))
-
+            .orderBy(Ordering.property("createdAt").ascending())
         val result = query.execute()
         val list = mutableListOf<TimelineEventDto>()
 
@@ -353,7 +360,7 @@ class AdminReportServicelmpl @Inject constructor(
             )
         }
 
-        return list.sortedBy { it.date + it.time }
+        return list
     }
 
     override suspend fun saveTimelineMessage(timelineEvent: TimelineEventDto) {
@@ -366,7 +373,7 @@ class AdminReportServicelmpl @Inject constructor(
         mutableDoc.setString("time", timelineEvent.time)
         mutableDoc.setString("date", timelineEvent.date)
         mutableDoc.setString("message", timelineEvent.message)
-
+        mutableDoc.setString("createdAt", java.time.Instant.now().toString())
         try {
             col.save(mutableDoc)
             Log.d("AdminReportService", "Timeline message saved successfully")
@@ -413,7 +420,88 @@ class AdminReportServicelmpl @Inject constructor(
         }
     }
 
+    override suspend fun getReportPercentages(): Map<String, Float> {
+        val collections = mapOf(
+            "garbage_disposal" to "Garbage Disposal",
+            "broken_streetlights" to "Broken Streetlights",
+            "no_water_supply" to "No Water Supply",
+            "others" to "Others",
+            "public_disturbance" to "Public Disturbance",
+            "road_repair" to "Road Repair",
+            "robberies" to "Robberies",
+            "vehicle_crash" to "Vehicle Crashes"
+        )
 
+        val counts = mutableMapOf<String, Long>()
+        var totalReports = 0L
+
+        for ((colName, label) in collections) {
+            val col = db.getCollection(colName) ?: continue
+            val query = QueryBuilder
+                .select(SelectResult.expression(Function.count(Expression.all())))
+                .from(DataSource.collection(col))
+
+            try {
+                val result = query.execute().allResults()
+                if (result.isNotEmpty()) {
+                    val count = result[0].getInt(0).toLong()
+                    counts[label] = count
+                    totalReports += count
+                }
+            } catch (e: Exception) {
+                Log.e("AdminReportService", "Error counting $colName: ${e.message}")
+                counts[label] = 0
+            }
+        }
+
+        val percentages = mutableMapOf<String, Float>()
+        if (totalReports > 0) {
+            for ((label, count) in counts) {
+                val percentage = (count.toFloat() / totalReports.toFloat()) * 100f
+                percentages[label] = percentage
+            }
+        } else {
+            for ((_, label) in collections) {
+                percentages[label] = 0f
+            }
+        }
+        return percentages
+    }
+
+    override suspend fun getReportCounts(): Map<String, Int> {
+        val collections = mapOf(
+            "garbage_disposal" to "Garbage Disposal",
+            "broken_streetlights" to "Broken Streetlights",
+            "no_water_supply" to "No Water Supply",
+            "others" to "Others",
+            "public_disturbance" to "Public Disturbance",
+            "road_repair" to "Road Repair",
+            "robberies" to "Robberies",
+            "vehicle_crash" to "Vehicle Crashes"
+        )
+
+        val counts = mutableMapOf<String, Int>()
+        for ((colName, label) in collections) {
+            val col = db.getCollection(colName) ?: continue
+            val query = QueryBuilder
+                .select(SelectResult.expression(Function.count(Expression.all())))
+                .from(DataSource.collection(col))
+
+            try {
+                val result = query.execute().allResults()
+                if (result.isNotEmpty()) {
+                    val count = result[0].getInt(0)
+                    counts[label] = count
+                } else {
+                    counts[label] = 0
+                }
+            } catch (e: Exception) {
+                Log.e("AdminReportService", "Error counting $colName: ${e.message}")
+                counts[label] = 0
+            }
+        }
+        return counts
+    }
 
 }
 

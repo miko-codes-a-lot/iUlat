@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.services
 
+import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.models.entities.DashboardReportItemDto
 import dev.cloudants.iulat.lib.models.entities.TimelineEventDto
 
@@ -11,5 +12,6 @@ interface AdminReportService {
     suspend fun getTimelineEvents(reportId: String): List<TimelineEventDto>
     suspend fun saveTimelineMessage(timelineEvent: TimelineEventDto)
     suspend fun deleteReportsWithNoStatus()
-
+    suspend fun getReportPercentages(): Map<String, Float>
+    suspend fun getReportCounts(): Map<String, Int>
 }
