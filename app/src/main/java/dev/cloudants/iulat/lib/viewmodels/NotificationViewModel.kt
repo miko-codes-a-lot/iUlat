@@ -31,9 +31,8 @@ class NotificationViewModel @Inject constructor(
 //                started = SharingStarted.WhileSubscribed(5000),
 //                initialValue = emptyList()
 //            )
-    private val userId = "current_user_id"
     val notificationUiState: StateFlow<List<NotificationItem>> =
-        notificationService.getNotificationsStream("currentUser123")
+        notificationService.getNotificationsStream("975baea2-df19-459d-a687-1254f5d5157f")
             .map { notifyDtos ->
                 notifyDtos.map { it.toNotificationItem() }
             }

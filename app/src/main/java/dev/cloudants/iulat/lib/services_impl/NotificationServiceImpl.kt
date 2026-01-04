@@ -32,9 +32,9 @@ class NotificationServiceImpl @Inject constructor(
             .from(DataSource.collection(notificationCollection))
             .where(
                 Expression.property("type").equalTo(Expression.string("NotifyDto"))
-                    .and(Expression.property("receiver").equalTo(Expression.string(userId)))
+//      comment this line for testing             .and(Expression.property("receiver").equalTo(Expression.string(userId)))
             )
-            .orderBy(Ordering.property("createdAt").descending())
+//      comment this line for testing      .orderBy(Ordering.property("createdAt").descending())
 
         val listenerToken = query.addChangeListener { change ->
             val notificationList = change.results
@@ -48,6 +48,9 @@ class NotificationServiceImpl @Inject constructor(
             if (change.error != null) {
                 Log.e("CouchbaseQuery", "Query failed: ${change.error}")
             }
+            // add new rows
+            val rows = change.results?.allResults()?.size ?: 0
+            Log.d("NotificationDebug", "Found $rows notifications in DB")
         }
 
         awaitClose {
@@ -74,6 +77,8 @@ class NotificationServiceImpl @Inject constructor(
 
     private fun mapResultToNotifyDto(result: Result): NotifyDto {
         val data = result.getDictionary(notificationCollectionName)
+            ?: result.getDictionary(0)
+            ?: result
         return NotifyDto(
             id = data?.getString("id"),
             sender = data?.getString("sender") ?: "",

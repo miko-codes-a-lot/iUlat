@@ -38,19 +38,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.viewmodels.NotificationViewModel
 
-data class NotificationItem(
-    val id: Int,
-    val message: String,
-    val read: Boolean
-)
-
-private val sampleNotifications = listOf(
-    NotificationItem(1, "Garbage not collected", false),
-    NotificationItem(2, "Water supply restored", true),
-    NotificationItem(3, "Maintenance scheduled tomorrow", false),
-    NotificationItem(4, "Public disturbance reported", true)
-)
-
 @Composable
 fun NotificationList(navController: NavController) {
     val viewModel: NotificationViewModel = hiltViewModel()
@@ -109,7 +96,7 @@ fun Notifications(
         items(notifyList) { item ->
             NotificationButton(
                 notify = item,
-                onClick = { onNotifClick(item.id.toString()) }
+                onClick = { onNotifClick(item.id) }
             )
         }
     }
