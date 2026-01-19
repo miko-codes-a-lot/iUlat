@@ -6,6 +6,9 @@ import kotlinx.serialization.Serializable
 data class OthersDto(
     var id: String? = null,
     var userId: String = "",
+    val addressId: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     var reportDetails: String = "",
     var reportImage: String? = null,
     var status: String = "Pending",

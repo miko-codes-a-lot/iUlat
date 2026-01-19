@@ -1,5 +1,6 @@
 package dev.cloudants.iulat.lib.ui.notification
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +22,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,13 +39,20 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.components.context.formatterDate
+import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
 import dev.cloudants.iulat.lib.viewmodels.NotificationViewModel
 
 @Composable
 fun NotificationList(navController: NavController) {
     val viewModel: NotificationViewModel = hiltViewModel()
     val notifications by viewModel.notificationUiState.collectAsStateWithLifecycle()
-
+    val adminReportViewModel: AdminReportViewModel = hiltViewModel()
+    val reports by adminReportViewModel.reports.collectAsState()
+    LaunchedEffect(Unit) {
+        adminReportViewModel.loadReports()
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -79,7 +89,20 @@ fun NotificationList(navController: NavController) {
         Spacer(modifier = Modifier.height(10.dp))
         Notifications(
             notifyList = notifications,
-            onNotifClick = { id -> viewModel.onNotificationClicked(id) }
+            onNotifClick = { item ->
+                viewModel.onNotificationClicked(item.id)
+                val report = reports.find { it.docId == item.reportId }
+                if (report != null) {
+                    navController.navigate(
+                        MainNav.NotificationReportVIew(
+                            title = report.reportType,
+                            reportId = report.docId
+                        )
+                    )
+                } else {
+                    Log.e("NotifNav", "Report not found in current list for ID: ${item.reportId}")
+                }
+            }
         )
     }
 }
@@ -87,7 +110,7 @@ fun NotificationList(navController: NavController) {
 @Composable
 fun Notifications(
     notifyList: List<NotificationItem>,
-    onNotifClick: (String) -> Unit
+    onNotifClick: (NotificationItem) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -96,7 +119,7 @@ fun Notifications(
         items(notifyList) { item ->
             NotificationButton(
                 notify = item,
-                onClick = { onNotifClick(item.id) }
+                onClick = { onNotifClick(item) }
             )
         }
     }
@@ -132,30 +155,31 @@ private fun NotificationButton(
             if (!notify.isRead) {
                 Box(
                     modifier = Modifier
-                        .background(
-                            color = Color.Red,
-                            shape = CircleShape
-                        )
+                        .background(color = Color.Red, shape = CircleShape)
                         .size(13.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color.Red,
-                            shape = CircleShape
-                        )
+                        .border(width = 1.dp, color = Color.Red, shape = CircleShape)
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
-            val displayMessage = if (notify.message.length > 25)
-                notify.message.take(25) + "..."
-            else
-                notify.message
 
             Text(
-                text = displayMessage,
+                text = if (notify.message.length > 25) notify.message.take(25) + "..." else notify.message,
                 fontSize = 15.sp,
                 textAlign = TextAlign.Start,
                 fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.SansSerif
+                fontFamily = FontFamily.SansSerif,
+                modifier = Modifier.weight(1f),
+                maxLines = 1
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = formatterDate(notify.createdAt.toString()),
+                fontSize = 11.sp,
+                textAlign = TextAlign.End,
+                color = Color.Gray,
+                fontFamily = FontFamily.SansSerif,
+                maxLines = 1
             )
         }
     }

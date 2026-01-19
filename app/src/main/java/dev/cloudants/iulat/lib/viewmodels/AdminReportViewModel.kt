@@ -54,7 +54,7 @@ class AdminReportViewModel @Inject constructor(
             val result: List<DashboardReportItemDto> = reportService.getAllReports()
             _reports.value = result
             result.forEach { report ->
-                Log.d("0", "Report: ${report.reportType}, Status: ${report.status}, User: ${report.userName}, Address: ${report.addressId} ")
+                Log.d("DATA_LOAD", "Report: ${report.reportType}, Status: ${report.status}, User: ${report.userName}, Address: ${report.addressId} ")
             }
         }
     }
@@ -78,7 +78,7 @@ class AdminReportViewModel @Inject constructor(
                     "Broken Streetlights" -> "broken_streetlights"
                     "No Water Supply" -> "no_water_supply"
                     "Others" -> "others"
-                    "Public Disturbance" -> "public_dvgisturbance"
+                    "Public Disturbance" -> "public_disturbance"
                     "Road Repair" -> "road_repair"
                     "Robberies" -> "robberies"
                     "Vehicle Crash" -> "vehicle_crash"

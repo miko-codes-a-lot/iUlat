@@ -25,7 +25,7 @@ class GarbageDisposalViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = garbageService.getAll(currentUserId)
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports,
                 isLoading = false
             )
             Log.e("REP ::", reports.size.toString())
@@ -37,10 +37,9 @@ class GarbageDisposalViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = garbageService.getAll()
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports ,
                 isLoading = false
             )
-            Log.e("ALL REP ::", reports.size.toString())
         }
     }
 

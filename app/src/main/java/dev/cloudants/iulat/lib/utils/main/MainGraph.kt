@@ -1,17 +1,17 @@
 package dev.cloudants.iulat.lib.utils.main
 
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
-import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.components.context.MapReportData
 import dev.cloudants.iulat.lib.ui.user.Account
 import dev.cloudants.iulat.lib.ui.dashboard.AdminDashboard
 import dev.cloudants.iulat.lib.ui.Login
@@ -28,6 +28,7 @@ import dev.cloudants.iulat.lib.ui.message.ChatLobby
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.CreateReport
 import dev.cloudants.iulat.lib.ui.report.EditReport
+import dev.cloudants.iulat.lib.ui.report.NotificationReportVIew
 import dev.cloudants.iulat.lib.ui.report.ViewReport
 import dev.cloudants.iulat.lib.ui.report.residence_report.BrokenLightList
 import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
@@ -42,7 +43,6 @@ import dev.cloudants.iulat.lib.ui.user.CreateAccount
 import dev.cloudants.iulat.lib.ui.user.EditAccount
 import dev.cloudants.iulat.lib.ui.user.UserEdit
 import dev.cloudants.iulat.lib.ui.user.UsersList
-import dev.cloudants.iulat.lib.viewmodels.AddressViewModel
 import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
 import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
 import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
@@ -80,7 +80,7 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
 
         composable<MainNav.ResetPassword> {
             val args = it.toRoute<MainNav.ResetPassword>()
-                ResetPassword(email = args.email!!, token = args.passwordToken!!, navController = navController)
+            ResetPassword(email = args.email!!, token = args.passwordToken!!, navController = navController)
         }
 
         composable<MainNav.Menu> {
@@ -107,7 +107,7 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 val receiver = userViewModel.fetchUser(args.userId)
 
                 LaunchedEffect(key1 = "message") {
-                chatViewModel.findOneChatOrCreate(currentUser, receiver)
+                    chatViewModel.findOneChatOrCreate(currentUser, receiver)
                     isChatReady.value = true
                 }
                 val messages = if (isChatReady.value) {
@@ -328,13 +328,70 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
 
         composable<MainNav.Map> {
             val args = it.toRoute<MainNav.Map>()
-            val addressViewModel: AddressViewModel = hiltViewModel()
-            LaunchedEffect(args.addressId) {
-                addressViewModel.fetchAddress(args.addressId)
+            val publicDisturbanceViewModel: PublicDisturbanceViewModel = hiltViewModel()
+            val garbageViewModel: GarbageDisposalViewModel = hiltViewModel()
+            val robberyViewModel: RobberiesViewModel = hiltViewModel()
+            val streetLightViewModel: BrokenStreetLightViewModel = hiltViewModel()
+            val vehicleViewModel: VehicleCrashViewModel = hiltViewModel()
+            val roadViewModel: RoadRepairViewModel = hiltViewModel()
+            val waterViewModel: NoWaterSupplyViewModel = hiltViewModel()
+            val othersViewModel: OthersViewModel = hiltViewModel()
+
+            LaunchedEffect(args.reportType) {
+                when (args.reportType) {
+                    "Public Disturbance" -> publicDisturbanceViewModel.fetchAllPublicDisturbance()
+                    "Garbage Disposal" -> garbageViewModel.fetchAllGarbageReports()
+                    "Robberies" -> robberyViewModel.fetchAllRobberies()
+                    "Broken Streetlights" -> streetLightViewModel.fetchAllBrokenStreet()
+                    "Vehicle Crashes" -> vehicleViewModel.fetchAllVehicleCrash()
+                    "Road Repair" -> roadViewModel.fetchAllRoadRepair()
+                    "No Water Supply" -> waterViewModel.fetchAllNoWater()
+                    else -> othersViewModel.fetchAllOthers()
+                }
             }
-            val addressDto = addressViewModel.selectedAddress.value
+
+            val selectedReport = when (args.reportType) {
+                "Public Disturbance" -> {
+                    publicDisturbanceViewModel.state.collectAsState().value.items
+                        .find { it.id == args.addressId }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                }
+                "Garbage Disposal" -> {
+                    garbageViewModel.state.collectAsState().value.items
+                        .find { it.id == args.addressId }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                }
+                "Robberies" -> {
+                    robberyViewModel.state.collectAsState().value.items
+                        .find { it.id == args.addressId }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                }
+                "Broken Streetlights" -> {
+                    streetLightViewModel.state.collectAsState().value.items
+                        .find { it.id == args.addressId }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                }
+                "Vehicle Crashes" -> {
+                    vehicleViewModel.state.collectAsState().value.items
+                        .find { it.id == args.addressId }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                } "Road Repair" -> {
+                    roadViewModel.state.collectAsState().value.items
+                        .find { it.id == args.addressId }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                } "No Water Supply" -> {
+                    waterViewModel.state.collectAsState().value.items
+                        .find { it.id == args.addressId }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                }
+                else -> {
+                    othersViewModel.state.collectAsState().value.items
+                        .find { it.id == args.addressId }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                }
+            }
             Guard(navController = navController) {
-                MapUI(addressDto = addressDto)
+                MapUI(reportData = selectedReport)
             }
         }
 
@@ -368,6 +425,40 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                     othersViewModel = othersViewModel,
                     reportId = reportId,
                     adminViewModel = adminViewModel
+                )
+            }
+        }
+
+        composable<MainNav.NotificationReportVIew> {
+            Guard(navController) { currentUser ->
+                val args = it.toRoute<MainNav.ViewReport>()
+                val title = args.title
+                val reportId = args.reportId
+                val viewModel : ReportViewModel = hiltViewModel()
+                val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                val publicDisturbanceViewModel : PublicDisturbanceViewModel = hiltViewModel()
+                val robberiesViewModel : RobberiesViewModel = hiltViewModel()
+                val brokenStreetLightViewModel : BrokenStreetLightViewModel = hiltViewModel()
+                val vehicleCrashViewModel : VehicleCrashViewModel = hiltViewModel()
+                val roadRepairViewModel : RoadRepairViewModel = hiltViewModel()
+                val noWaterSupplyViewModel : NoWaterSupplyViewModel = hiltViewModel()
+                val othersViewModel : OthersViewModel = hiltViewModel()
+                val adminViewModel: AdminReportViewModel = hiltViewModel()
+                NotificationReportVIew(
+                    navController = navController,
+                    reportTitle = title,
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    garbageDisposalViewModel = garbageDisposalViewModel,
+                    publicDisturbanceViewModel = publicDisturbanceViewModel,
+                    robberiesViewModel = robberiesViewModel,
+                    brokenStreetLightViewModel = brokenStreetLightViewModel,
+                    vehicleCrashViewModel = vehicleCrashViewModel,
+                    roadRepairViewModel = roadRepairViewModel,
+                    noWaterSupplyViewModel = noWaterSupplyViewModel,
+                    othersViewModel = othersViewModel,
+                    reportId = reportId,
+                    adminViewModel = adminViewModel,
                 )
             }
         }

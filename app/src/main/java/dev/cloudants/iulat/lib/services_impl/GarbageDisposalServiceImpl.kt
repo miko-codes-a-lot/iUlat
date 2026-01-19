@@ -8,20 +8,30 @@ import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
 import com.couchbase.lite.DataSource
 import com.couchbase.lite.Collection
+import dev.cloudants.iulat.lib.components.context.parseToSortableDate
+import dev.cloudants.iulat.lib.models.entities.NotifyDto
+import dev.cloudants.iulat.lib.services.NotificationService
+import dev.cloudants.iulat.shared.SessionManager
 import jakarta.inject.Inject
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
 import java.util.Date
 import java.util.UUID
 import kotlinx.serialization.json.Json
 
 class GarbageDisposalServiceImpl @Inject constructor(
-    private val db: Database
+    private val db: Database,
+    private val notificationService: NotificationService,
+    private val sessionManager: SessionManager,
 ) : GarbageDisposalService {
     private val collection: Collection by lazy {
         db.getCollection("garbage_disposal")
             ?: throw IllegalStateException("Collection 'garbage_disposal' not found.")
     }
+    private val ADMIN_ID = "SYSTEM_ADMIN_001"
     override suspend fun create(garbage: GarbageDisposalDto): GarbageDisposalDto {
         return try {
+            val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = garbage.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
             val status = garbage.status?.takeIf { it.isNotBlank() } ?: "Pending"
@@ -29,7 +39,12 @@ class GarbageDisposalServiceImpl @Inject constructor(
 
             val doc = MutableDocument(id).apply {
                 setString("id", garbageToSave.id)
+                val lat = garbageToSave.latitude ?: 0.0
+                val lng = garbageToSave.longitude ?: 0.0
                 setString("userId", garbageToSave.userId)
+                setString("addressId", garbageToSave.addressId)
+                setDouble("latitude", lat)
+                setDouble("longitude", lng)
                 setString("email", garbageToSave.email)
                 setString("mobileNumber", garbageToSave.mobileNumber)
                 setString("reportDetails", garbageToSave.reportDetails)
@@ -45,6 +60,21 @@ class GarbageDisposalServiceImpl @Inject constructor(
             }
 
             collection.save(doc)
+            val details = garbageToSave.reportDetails
+            val previewText = if (details.length > 15) {
+                "${details.take(15)}..."
+            } else {
+                details
+            }
+            val adminNotification = NotifyDto(
+                sender = garbageToSave.userId,
+                receiver = targetAdminId,
+                documentId = garbageToSave.id,
+                documentType = "GarbageDisposal",
+                message = "New Garbage Disposal Report: $previewText",
+                createdAt = Clock.System.now()
+            )
+            notificationService.sendNotification(adminNotification)
             Log.d("GarbageServiceImpl", "Created garbage report: $garbageToSave")
             garbageToSave
         } catch (e: Exception) {
@@ -73,6 +103,7 @@ class GarbageDisposalServiceImpl @Inject constructor(
                     }
                 }
             }
+            .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }
         } catch (e: Exception) {
             Log.e("GarbageServiceImpl", "Failed to fetch garbage reports: ${e.message}")
             emptyList()

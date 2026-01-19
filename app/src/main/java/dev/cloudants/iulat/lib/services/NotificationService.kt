@@ -5,4 +5,5 @@ import kotlinx.coroutines.flow.Flow
 interface NotificationService {
     fun getNotificationsStream(userId: String): Flow<List<NotifyDto>>
     suspend fun markAsRead(notificationId: String)
+    suspend fun sendNotification(notification: NotifyDto)
 }

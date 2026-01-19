@@ -1,6 +1,7 @@
 package dev.cloudants.iulat.lib.ui.report
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,8 +33,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -160,105 +163,154 @@ fun ViewReport(
             }
         }
     }
+    val currentStatus = timelineDto.lastOrNull()?.status ?: "Pending"
 
+    val timelineEventsMapped = timelineDto.mapIndexed { index, dto ->
+        TimelineEvent(dto.time, dto.date, dto.message, isCurrent = index == timelineDto.lastIndex)
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 50.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(Color(0xFFF7F9FC))
+            .padding(top = 40.dp)
     ) {
-//        Spacer(modifier = Modifier.weight(1f))
-        Text(
-            text = "View Report ($reportTitle)",
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            textAlign = TextAlign.Start,
-            color = Color.Black
-        )
-        UploadImageUI(
-            title = "Evidence",
-            existingBase64 = selectedReport,
-            onImageSelected = { uri -> imageUri = uri }
-        )
-        Column(
-            modifier = Modifier.padding(8.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            OutlinedTextField(
-                value = textValue,
-                onValueChange = { textValue = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 100.dp, max = 100.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
+            Column {
+                Text(
+                    text = reportTitle,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp,
+                    color = Color(0xFF1A1C1E)
                 )
-            )
+                Text(text = "Report Case ID: ${reportId.take(8)}...", color = Color.Gray, fontSize = 12.sp)
+            }
+            StatusChip(status = currentStatus)
         }
 
-        HorizontalDivider(
+        LazyColumn(
             modifier = Modifier
-                .padding(top = 10.dp, bottom = 10.dp)
-                .fillMaxWidth(),
-            thickness = 1.dp,
-            color = Color.Black
-        )
-        val timelineEventsMapped = timelineDto.mapIndexed { index, dto ->
-            TimelineEvent(dto.time, dto.date, dto.message, isCurrent = index == timelineDto.lastIndex)
-        }
-
-        if (timelineEventsMapped.size >= 3) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxWidth().weight(1f)
-            ) {
-                itemsIndexed(timelineEventsMapped) { index, event ->
-                    TimelineItem(event = event, isLast = index == timelineEventsMapped.lastIndex)
-                }
-            }
-        }
-
-        LaunchedEffect(timelineEventsMapped.size) {
-            if (timelineEventsMapped.isNotEmpty()) {
-                listState.scrollToItem(timelineEventsMapped.lastIndex)
-            }
-        }
-
-        if(!currentUser.isResidence && timelineEventsMapped.size < 3) {
-            OutlinedTextField(
-                value = newMessage,
-                onValueChange = { newMessage = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp)
-                    .heightIn(min = 80.dp),
-                placeholder = { Text("Add a new message") }
-            )
-
-            CustomButton(
-                text = "Send",
-                onClick = {
-                    if (newMessage.isNotBlank() && timelineEventsMapped.size < 3) {
-                        adminViewModel.createTimelineMessage(
-                            reportId = reportId,
-                            userId = currentUser.id!!,
-                            status = "Approve",
-                            message = newMessage
+                .weight(1f)
+                .padding(horizontal = 16.dp),
+            state = listState
+        ) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 20.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        UploadImageUI(
+                            title = "Evidence Image",
+                            existingBase64 = selectedReport,
+                            onImageSelected = { }
                         )
-                        newMessage = ""
-                        adminViewModel.loadTimeline(reportId)
+
+                        Text(
+                            text = "Report Details",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                            color = Color(0xFF007ACC)
+                        )
+
+                        Text(
+                            text = textValue.ifBlank { "No additional details provided." },
+                            fontSize = 15.sp,
+                            color = Color.DarkGray,
+                            lineHeight = 20.sp
+                        )
                     }
                 }
-             )
+            }
+
+            item {
+                Text(
+                    text = "Updates & History",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
+
+            itemsIndexed(timelineEventsMapped) { index, event ->
+                TimelineItem(event = event, isLast = index ==  timelineEventsMapped.lastIndex)
+            }
+
+
+        val shouldShowInput = !currentUser.isResidence &&
+                timelineEventsMapped.size < 3 &&
+                currentStatus != "Rejected"
+
+        if (shouldShowInput) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        OutlinedTextField(
+                            value = newMessage,
+                            onValueChange = { newMessage = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Write a message...") },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF1F3F4),
+                                unfocusedContainerColor = Color(0xFFF1F3F4),
+                                focusedBorderColor = Color(0xFF007ACC)
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        CustomButton(
+                            text = "Send Update",
+                            onClick = {
+                                if (newMessage.isNotBlank()) {
+                                    adminViewModel.createTimelineMessage(
+                                        reportId = reportId,
+                                        userId = currentUser.id!!,
+                                        status = "Approve",
+                                        message = newMessage
+                                    )
+                                    newMessage = ""
+                                    adminViewModel.loadTimeline(reportId)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
-//        Spacer(modifier = Modifier.weight(1f))
+        item { Spacer(modifier = Modifier.height(30.dp)) }
+        }
+    }
+}
+
+@Composable
+fun StatusChip(status: String) {
+    val color = when(status) {
+        "Rejected" -> Color(0xFFE53935)
+        "Approve", "Resolved" -> Color(0xFF43A047)
+        else -> Color(0xFFFB8C00)
+    }
+    Box(
+        modifier = Modifier
+            .background(color.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+            .border(1.dp, color.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(text = status, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -303,12 +355,19 @@ fun TimelineItem(event: TimelineEvent, isLast: Boolean = false) {
         }
 
         Card(
-            modifier = Modifier.weight(1f).padding(start = 8.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)),
-            border = BorderStroke(width = 1.dp, color = if (event.isCurrent) Color(0xFF007ACC) else Color.LightGray)
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F3F4).copy(alpha = 0.5f)),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Text(text = event.message, modifier = Modifier.padding(10.dp), fontSize = 14.sp, color = Color.Black)
+            Text(
+                text = event.message,
+                modifier = Modifier.padding(12.dp),
+                fontSize = 14.sp,
+                color = Color.Black,
+                lineHeight = 18.sp
+            )
         }
     }
 }

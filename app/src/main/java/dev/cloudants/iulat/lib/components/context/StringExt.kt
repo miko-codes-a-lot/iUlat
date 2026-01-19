@@ -66,3 +66,19 @@ fun base64ToBitmap(base64: String): Bitmap? {
     }
 }
 
+fun parseToSortableDate(dateString: String?): Long {
+    if (dateString.isNullOrEmpty()) return 0L
+    val formats = listOf(
+        "EEE MMM dd HH:mm:ss zzz yyyy",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+        "yyyy-MM-dd HH:mm:ss"
+    )
+    for (format in formats) {
+        try {
+            val sdf = SimpleDateFormat(format, Locale.ENGLISH)
+            return sdf.parse(dateString)?.time ?: 0L
+        } catch (e: Exception) { continue }
+    }
+    return 0L
+}
+

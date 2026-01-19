@@ -7,22 +7,32 @@ import com.couchbase.lite.Database
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
+import dev.cloudants.iulat.lib.components.context.parseToSortableDate
+import dev.cloudants.iulat.lib.models.entities.NotifyDto
 import dev.cloudants.iulat.lib.models.entities.VehicleCrashDto
+import dev.cloudants.iulat.lib.services.NotificationService
 import dev.cloudants.iulat.lib.services.VehicleCrashService
+import dev.cloudants.iulat.shared.SessionManager
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 
 class VehicleCrashServicelmpl @Inject constructor(
-    private val db: Database
+    private val db: Database,
+    private val notificationService: NotificationService,
+    private val sessionManager: SessionManager,
 ) : VehicleCrashService {
     private val collection: Collection by lazy {
         db.getCollection("vehicle_crash")
             ?: throw IllegalStateException("Collection 'vehicle_crash' not found.")
     }
+    private val ADMIN_ID = "SYSTEM_ADMIN_001"
     override suspend fun create(vehicleCrashDto: VehicleCrashDto): VehicleCrashDto {
         return try {
+            val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = vehicleCrashDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
             val status = vehicleCrashDto.status.takeIf { it.isNotBlank() } ?: "Pending"
@@ -37,6 +47,11 @@ class VehicleCrashServicelmpl @Inject constructor(
             val doc = MutableDocument(id).apply {
                 setString("id", vehicleToSave.id)
                 setString("userId", vehicleToSave.userId)
+                val lat = vehicleToSave.latitude ?: 0.0
+                val lng = vehicleToSave.longitude ?: 0.0
+                setString("addressId", vehicleToSave.addressId)
+                setDouble("latitude", lat)
+                setDouble("longitude", lng)
                 setString("reportDetails", vehicleToSave.reportDetails)
                 setString("reportImage", vehicleToSave.reportImage)
                 setString("status", vehicleToSave.status)
@@ -50,6 +65,21 @@ class VehicleCrashServicelmpl @Inject constructor(
             }
 
             collection.save(doc)
+            val details = vehicleToSave.reportDetails
+            val previewText = if (details.length > 15) {
+                "${details.take(15)}..."
+            } else {
+                details
+            }
+            val adminNotification = NotifyDto(
+                sender = vehicleToSave.userId,
+                receiver = targetAdminId,
+                documentId = vehicleToSave.id,
+                documentType = "VehicleCrashes",
+                message = "New Vehicle Crashes Report: $previewText",
+                createdAt = Clock.System.now()
+            )
+            notificationService.sendNotification(adminNotification)
             Log.d("VehicleCrashServiceImpl", "Created vehicle crash report: $vehicleToSave")
             vehicleToSave
         } catch (e: Exception) {
@@ -77,6 +107,7 @@ class VehicleCrashServicelmpl @Inject constructor(
                     }
                 }
             }
+            .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }
         } catch (e: Exception) {
             Log.e("VehicleCrashServiceImpl", "Failed to fetch vehicle crash reports: ${e.message}")
             emptyList()

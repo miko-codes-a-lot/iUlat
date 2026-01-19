@@ -127,7 +127,12 @@ fun AdminReportList(navController: NavController) {
                     onClick = {
                         Log.e("Address :: ", reportItem.addressId)
                          when(reportItem.status) {
-                            "Pending" -> navController.navigate(MainNav.Map(reportItem.addressId))
+                             "Pending" -> {
+                                 navController.navigate(MainNav.Map(addressId = reportItem.docId, reportType = reportItem.reportType))
+                             }
+                             "Rejected" -> {
+                                 navController.navigate(MainNav.NotificationReportVIew(reportItem.reportType, reportItem.docId))
+                             }
                              else -> navController.navigate(MainNav.ViewReport(reportItem.reportType, reportItem.docId))
                         }
                     },

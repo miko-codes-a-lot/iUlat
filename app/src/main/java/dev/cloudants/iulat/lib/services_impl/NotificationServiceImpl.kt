@@ -20,74 +20,55 @@ import kotlinx.coroutines.flow.callbackFlow
 class NotificationServiceImpl @Inject constructor(
     private val db: Database,
 ) : NotificationService {
-    private val notificationCollectionName = "notifications"
     private val notificationCollection: Collection by lazy {
-        db.getCollection(notificationCollectionName)
-            ?: throw IllegalStateException("Collection 'notifications' not found.")
+        db.getCollection("notifications") ?: db.createCollection("notifications")
     }
 
     override fun getNotificationsStream(userId: String): Flow<List<NotifyDto>> = callbackFlow {
-        val query = QueryBuilder
-            .select(SelectResult.all())
+        val query = QueryBuilder.select(SelectResult.all(), SelectResult.expression(Meta.id))
             .from(DataSource.collection(notificationCollection))
-            .where(
-                Expression.property("type").equalTo(Expression.string("NotifyDto"))
-//      comment this line for testing             .and(Expression.property("receiver").equalTo(Expression.string(userId)))
-            )
-//      comment this line for testing      .orderBy(Ordering.property("createdAt").descending())
+            .where(Expression.property("receiver").equalTo(Expression.string(userId)))
 
-        val listenerToken = query.addChangeListener { change ->
-            val notificationList = change.results
-                ?.allResults()
-                ?.map { result ->
-                    mapResultToNotifyDto(result)
+        val listener = query.addChangeListener { change ->
+            val list = change.results?.mapNotNull { result ->
+                val dict = result.getDictionary("notifications")
+                dict?.let {
+                    NotifyDto(
+                        id = result.getString("id"),
+                        sender = it.getString("sender") ?: "",
+                        receiver = it.getString("receiver") ?: "",
+                        message = it.getString("message") ?: "",
+                        documentId = it.getString("documentId"),
+                        documentType = it.getString("documentType"),
+                        read = it.getBoolean("read"),
+                        createdAt = it.getString("createdAt")?.let { dateStr ->
+                            try { Instant.parse(dateStr) } catch (e: Exception) { null }
+                        }
+                    )
                 }
-                ?: emptyList()
-
-            trySend(notificationList)
-            if (change.error != null) {
-                Log.e("CouchbaseQuery", "Query failed: ${change.error}")
             }
-            // add new rows
-            val rows = change.results?.allResults()?.size ?: 0
-            Log.d("NotificationDebug", "Found $rows notifications in DB")
+            trySend(list?.sortedByDescending { it.createdAt } ?: emptyList())
         }
-
-        awaitClose {
-            query.removeChangeListener(listenerToken)
-        }
+        awaitClose { query.removeChangeListener(listener) }
     }
 
-    override suspend fun markAsRead(notificationId: String) {
-        withContext(Dispatchers.IO) {
-            try {
-                val document = notificationCollection.getDocument(notificationId)
-                if (document != null) {
-                    val mutableDoc = document.toMutable()
-                    mutableDoc.setBoolean("read", true)
-
-                    notificationCollection.save(mutableDoc)
-                }
-            } catch (e: CouchbaseLiteException) {
-                Log.e("Couchbase", "Failed to mark notification $notificationId as read", e)
-                throw e
-            }
-        }
+    override suspend fun sendNotification(notification: NotifyDto) = withContext(Dispatchers.IO) {
+        val mutableDoc = MutableDocument()
+        mutableDoc.setString("type", "NotifyDto")
+        mutableDoc.setString("sender", notification.sender)
+        mutableDoc.setString("receiver", notification.receiver)
+        mutableDoc.setString("documentId", notification.documentId)
+        mutableDoc.setString("documentType", notification.documentType)
+        mutableDoc.setString("message", notification.message)
+        mutableDoc.setBoolean("read", false)
+        mutableDoc.setString("createdAt", kotlinx.datetime.Clock.System.now().toString())
+        notificationCollection.save(mutableDoc)
     }
 
-    private fun mapResultToNotifyDto(result: Result): NotifyDto {
-        val data = result.getDictionary(notificationCollectionName)
-            ?: result.getDictionary(0)
-            ?: result
-        return NotifyDto(
-            id = data?.getString("id"),
-            sender = data?.getString("sender") ?: "",
-            receiver = data?.getString("receiver") ?: "",
-            documentId = data?.getString("documentId"),
-            documentType = data?.getString("documentType"),
-            message = data?.getString("message") ?: "",
-            read = data?.getBoolean("read") ?: false,
-            createdAt = data?.getString("createdAt")?.let { Instant.parse(it) }
-        )
+    override suspend fun markAsRead(notificationId: String): Unit = withContext(Dispatchers.IO) {
+        notificationCollection.getDocument(notificationId)?.toMutable()?.let {
+            it.setBoolean("read", true)
+            notificationCollection.save(it)
+        }
     }
 }

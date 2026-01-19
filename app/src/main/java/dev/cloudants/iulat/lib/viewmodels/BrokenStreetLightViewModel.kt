@@ -25,7 +25,7 @@ class BrokenStreetLightViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = brokenStreetLightsService.getAll(currentUserId)
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports,
                 isLoading = false
             )
         }
@@ -36,7 +36,7 @@ class BrokenStreetLightViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = brokenStreetLightsService.getAll()
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports,
                 isLoading = false
             )
         }

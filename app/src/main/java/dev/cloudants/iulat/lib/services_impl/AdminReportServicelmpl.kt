@@ -14,9 +14,16 @@ import com.couchbase.lite.MutableDocument
 import dev.cloudants.iulat.lib.models.entities.TimelineEventDto
 import com.couchbase.lite.Function
 import com.couchbase.lite.Ordering
+import dev.cloudants.iulat.lib.models.entities.NotifyDto
+import dev.cloudants.iulat.lib.services.NotificationService
+import dev.cloudants.iulat.shared.SessionManager
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
 
 class AdminReportServicelmpl @Inject constructor(
-    private val db: Database
+    private val db: Database,
+    private val notificationService: NotificationService,
+    private val sessionManager: SessionManager
 ) : AdminReportService {
 
     override suspend fun getAllReports(): List<DashboardReportItemDto> {
@@ -117,19 +124,34 @@ class AdminReportServicelmpl @Inject constructor(
 
     override suspend fun updateReportStatus(docId: String, collectionName: String, newStatus: String) {
         val col = db.getCollection(collectionName) ?: return
+        val doc = col.getDocument(docId) ?: return
+        val mutableDoc = doc.toMutable()
 
-        val mutableDoc = col.getDocument(docId)?.toMutable()
-        if (mutableDoc == null) {
-            Log.e("AdminReportService", "Document $docId NOT FOUND")
-            return
-        }
+        val receiverUserId = doc.getString("userId") ?: ""
+        val adminId = sessionManager.userIdFlow.firstOrNull() ?: "SYSTEM_ADMIN_001"
 
         mutableDoc.setString("status", newStatus)
+        mutableDoc.setString("lastUpdatedById", adminId)
+        mutableDoc.setString("lastUpdatedAt", java.time.Instant.now().toString())
+
         try {
             col.save(mutableDoc)
             Log.d("AdminReportService", "SUCCESS: Status saved for $docId")
+            if (receiverUserId.isNotEmpty()) {
+                val userNotification = NotifyDto(
+                    sender = adminId,
+                    receiver = receiverUserId,
+                    documentId = docId,
+                    documentType = collectionName.split("_")
+                        .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } },
+                    message = "Your report status has been updated to: $newStatus",
+                    createdAt = Clock.System.now()
+                )
+                notificationService.sendNotification(userNotification)
+                Log.d("AdminReportService", "Notification sent to user: $receiverUserId")
+            }
         } catch (e: Exception) {
-            Log.e("AdminReportService", "ERROR saving status: ${e.message}")
+            Log.e("AdminReportService", "ERROR: ${e.message}")
         }
 
     }
@@ -324,7 +346,15 @@ class AdminReportServicelmpl @Inject constructor(
             finalList += queryFiltered(collectionName, type)
         }
 
-        return finalList.sortedByDescending { it.reportDate }
+        val sdf = java.text.SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", java.util.Locale.ENGLISH)
+
+        return finalList.sortedByDescending {
+            try {
+                sdf.parse(it.reportDate)?.time ?: 0L
+            } catch (e: Exception) {
+                0L
+            }
+        }
     }
 
     override suspend fun getTimelineEvents(reportId: String): List<TimelineEventDto> {

@@ -14,6 +14,7 @@ import dev.cloudants.iulat.lib.services_impl.AuthServiceImpl
 import dev.cloudants.iulat.lib.services_impl.UserServiceImpl
 import dev.cloudants.iulat.lib.state.LoginState
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.shared.SessionManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,7 @@ import javax.inject.Inject
 class LoginViewModel @Inject constructor(
     private val authServiceImpl: AuthServiceImpl,
     private val userService: UserServiceImpl,
+    private val sessionManager: SessionManager,
     application: Application
 ) : ViewModel() {
     private val sharedPreferences: SharedPreferences =
@@ -62,6 +64,10 @@ class LoginViewModel @Inject constructor(
                         putBoolean("is_admin", user.isAdmin)
                         putBoolean("is_residence", user.isResidence)
                         apply()
+                    }
+                    sessionManager.saveUserSession(user.id ?: "", user.isAdmin)
+                    if (user.isAdmin) {
+                        sessionManager.saveGlobalAdminId(user.id ?: "")
                     }
                     delay(500)
 

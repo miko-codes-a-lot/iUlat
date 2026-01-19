@@ -88,9 +88,12 @@ object MainNav {
     data class EditUser(val userId: String)
 
     @Serializable
-    data class Map(var addressId: String)
+    data class Map(val addressId: String, val reportType: String)
 
     @Serializable
     data class ViewReport (var title: String = "", var reportId: String)
+
+    @Serializable
+    data class NotificationReportVIew (var title: String = "", var reportId: String)
 
 }

@@ -26,7 +26,7 @@ class OthersViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = othersService.getAll(currentUserId)
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports,
                 isLoading = false
             )
         }
@@ -37,7 +37,7 @@ class OthersViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = othersService.getAll()
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports,
                 isLoading = false
             )
         }

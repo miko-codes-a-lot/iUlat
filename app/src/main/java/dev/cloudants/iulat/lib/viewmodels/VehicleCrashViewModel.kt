@@ -25,7 +25,7 @@ class VehicleCrashViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = vehicleCrashService.getAll(currentUserId)
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports,
                 isLoading = false
             )
         }
@@ -36,7 +36,7 @@ class VehicleCrashViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = vehicleCrashService.getAll()
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports,
                 isLoading = false
             )
         }

@@ -27,7 +27,7 @@ class RoadRepairViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = roadRepairService.getAll(currentUserId)
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports,
                 isLoading = false
             )
         }
@@ -38,7 +38,7 @@ class RoadRepairViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             val reports = roadRepairService.getAll()
             _state.value = _state.value.copy(
-                items = reports.sortedByDescending { it.createdAt },
+                items = reports,
                 isLoading = false
             )
         }

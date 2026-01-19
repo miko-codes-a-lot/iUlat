@@ -7,23 +7,32 @@ import com.couchbase.lite.Database
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
+import dev.cloudants.iulat.lib.components.context.parseToSortableDate
 import dev.cloudants.iulat.lib.models.entities.BrokenStreetlightsDto
+import dev.cloudants.iulat.lib.models.entities.NotifyDto
 import dev.cloudants.iulat.lib.services.BrokenStreetLightsService
+import dev.cloudants.iulat.lib.services.NotificationService
+import dev.cloudants.iulat.shared.SessionManager
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 
 class BrokenStreetLightServicelmpl @Inject constructor(
-    private val db: Database
+    private val db: Database,
+    private val notificationService: NotificationService,
+    private val sessionManager: SessionManager,
 ) : BrokenStreetLightsService {
     private val collection: Collection by lazy {
         db.getCollection("broken_streetlights")
             ?: throw IllegalStateException("Collection 'broken_streetlights' not found.")
     }
-
+    private val ADMIN_ID = "SYSTEM_ADMIN_001"
     override suspend fun create(brokenStreetlightsDto: BrokenStreetlightsDto): BrokenStreetlightsDto {
         return try {
+            val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = brokenStreetlightsDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
             val status = brokenStreetlightsDto.status.takeIf { it.isNotBlank() } ?: "Pending"
@@ -37,6 +46,11 @@ class BrokenStreetLightServicelmpl @Inject constructor(
             val doc = MutableDocument(id).apply {
                 setString("id", brokenStreetToSave.id)
                 setString("userId", brokenStreetToSave.userId)
+                val lat = brokenStreetToSave.latitude ?: 0.0
+                val lng = brokenStreetToSave.longitude ?: 0.0
+                setString("addressId", brokenStreetToSave.addressId)
+                setDouble("latitude", lat)
+                setDouble("longitude", lng)
                 setString("reportDetails", brokenStreetToSave.reportDetails)
                 setString("reportImage", brokenStreetToSave.reportImage)
                 setString("status", brokenStreetToSave.status)
@@ -50,6 +64,21 @@ class BrokenStreetLightServicelmpl @Inject constructor(
             }
 
             collection.save(doc)
+            val details = brokenStreetToSave.reportDetails
+            val previewText = if (details.length > 15) {
+                "${details.take(15)}..."
+            } else {
+                details
+            }
+            val adminNotification = NotifyDto(
+                sender = brokenStreetToSave.userId,
+                receiver = targetAdminId,
+                documentId = brokenStreetToSave.id,
+                documentType = "BrokenStreetlights",
+                message = "New Broken Streetlights Report: $previewText",
+                createdAt = Clock.System.now()
+            )
+            notificationService.sendNotification(adminNotification)
             Log.d("BrokenStreetLightsServiceImpl", "Created broken street light report: $brokenStreetToSave")
             brokenStreetToSave
         } catch (e: Exception) {
@@ -78,6 +107,7 @@ class BrokenStreetLightServicelmpl @Inject constructor(
                     }
                 }
             }
+            .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }
         } catch (e: Exception) {
             Log.e("BrokenStreetLightsServiceImpl", "Failed to fetch broken light reports: ${e.message}")
             emptyList()

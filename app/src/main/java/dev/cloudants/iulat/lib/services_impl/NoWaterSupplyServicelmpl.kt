@@ -7,22 +7,32 @@ import com.couchbase.lite.Database
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
+import dev.cloudants.iulat.lib.components.context.parseToSortableDate
 import dev.cloudants.iulat.lib.models.entities.NoWaterSupplyDto
+import dev.cloudants.iulat.lib.models.entities.NotifyDto
 import dev.cloudants.iulat.lib.services.NoWaterSupplyService
+import dev.cloudants.iulat.lib.services.NotificationService
+import dev.cloudants.iulat.shared.SessionManager
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 
 class NoWaterSupplyServicelmpl @Inject constructor(
-    private val db: Database
+    private val db: Database,
+    private val notificationService: NotificationService,
+    private val sessionManager: SessionManager,
 ) : NoWaterSupplyService {
     private val collection: Collection by lazy {
         db.getCollection("no_water_supply")
             ?: throw IllegalStateException("Collection 'no_water_supply' not found.")
     }
+    private val ADMIN_ID = "SYSTEM_ADMIN_001"
     override suspend fun create(noWaterSupplyDto: NoWaterSupplyDto): NoWaterSupplyDto {
         return try {
+            val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = noWaterSupplyDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
             val status = noWaterSupplyDto.status.takeIf { it.isNotBlank() } ?: "Pending"
@@ -37,6 +47,11 @@ class NoWaterSupplyServicelmpl @Inject constructor(
             val doc = MutableDocument(id).apply {
                 setString("id", noWaterToSave.id)
                 setString("userId", noWaterToSave.userId)
+                val lat = noWaterToSave.latitude ?: 0.0
+                val lng = noWaterToSave.longitude ?: 0.0
+                setString("addressId", noWaterToSave.addressId)
+                setDouble("latitude", lat)
+                setDouble("longitude", lng)
                 setString("reportDetails", noWaterToSave.reportDetails)
                 setString("reportImage", noWaterToSave.reportImage)
                 setString("status", noWaterToSave.status)
@@ -50,6 +65,21 @@ class NoWaterSupplyServicelmpl @Inject constructor(
             }
 
             collection.save(doc)
+            val details = noWaterToSave.reportDetails
+            val previewText = if (details.length > 15) {
+                "${details.take(15)}..."
+            } else {
+                details
+            }
+            val adminNotification = NotifyDto(
+                sender = noWaterToSave.userId,
+                receiver = targetAdminId,
+                documentId = noWaterToSave.id,
+                documentType = "NoWaterSupply",
+                message = "New No Water Supply Report: $previewText",
+                createdAt = Clock.System.now()
+            )
+            notificationService.sendNotification(adminNotification)
             Log.d("NoWaterSupplyServiceImpl", "Created no water supply report: $noWaterToSave")
             noWaterToSave
         } catch (e: Exception) {
@@ -78,6 +108,7 @@ class NoWaterSupplyServicelmpl @Inject constructor(
                     }
                 }
             }
+            .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }
         } catch (e: Exception) {
             Log.e("NoWaterSupplyServiceImpl", "Failed to fetch no water supply reports: ${e.message}")
             emptyList()

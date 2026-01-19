@@ -1,11 +1,13 @@
 package dev.cloudants.iulat.lib.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.NavItem
@@ -37,6 +41,7 @@ import dev.cloudants.iulat.lib.components.context.UserSession
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.ui.dashboard.AdminDashboard
 import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
+import dev.cloudants.iulat.lib.ui.message.ChatDirect
 import dev.cloudants.iulat.lib.ui.message.ChatLobby
 import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.AdminReportList
@@ -44,7 +49,9 @@ import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
 import dev.cloudants.iulat.lib.ui.user.Account
 import dev.cloudants.iulat.lib.ui.user.UsersList
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
 import dev.cloudants.iulat.lib.viewmodels.MenuViewModel
+import dev.cloudants.iulat.lib.viewmodels.NotificationViewModel
 import kotlinx.coroutines.launch
 
 
@@ -60,7 +67,8 @@ fun Menu(
 
     val routeName by rememberSaveable { viewModel.routeName }
     val initialRouteSet = rememberSaveable { mutableStateOf(false) }
-
+    val notificationViewModel: NotificationViewModel = hiltViewModel()
+    val hasUnread by notificationViewModel.hasUnreadNotifications.collectAsStateWithLifecycle()
     val topBarTitle by viewModel.topBarTitle
     val navItems = currentUserState.value?.let { getNavItems(navController, it) } ?: emptyList()
     val isLoggingOut = remember { mutableStateOf(false) }
@@ -120,17 +128,25 @@ fun Menu(
                                 navController.navigate(MainNav.NotificationList)
                             }
                     }) {
-                        val icons = if (routeName == MODULE.ACCOUNT) {
-                            R.drawable.exit
-                        } else {
-                            R.drawable.ic_notification
+                        val icons = if (routeName == MODULE.ACCOUNT) R.drawable.exit else R.drawable.ic_notification
+                        Box {
+                            Icon(
+                                painter = painterResource(id = icons),
+                                contentDescription = "Notifications",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+
+                            if (hasUnread && routeName != MODULE.ACCOUNT) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .background(Color.Red, shape = CircleShape)
+                                        .border(1.5.dp, Color(0xFF0049AD), CircleShape)
+                                        .align(Alignment.TopEnd)
+                                )
+                            }
                         }
-                        Icon(
-                            painter = painterResource(id = icons),
-                            contentDescription = "Notifications",
-                            tint = Color.White,
-                            modifier = Modifier.size(48.dp)
-                        )
                     }
                 },
             )
@@ -167,7 +183,26 @@ fun Menu(
             when (routeName) {
                 MODULE.DASHBOARD -> AdminDashboard(navController, currentUser)
                 MODULE.CHATLOBBY -> ChatLobby(navController, currentUser.id!!)
-//                MODULE.CHATDIRECT -> ChatDirect(currentUser )
+                MODULE.CHATDIRECT -> {
+                    val chatViewModel: ChatViewModel = hiltViewModel()
+                    LaunchedEffect(currentUser.id) {
+                        chatViewModel.fetchUsers(currentUser.id!!)
+                    }
+                    val users by chatViewModel.users.collectAsStateWithLifecycle()
+                    val adminChatDto = users.firstOrNull { it.userDto.isAdmin }
+                    val adminUser = adminChatDto?.userDto
+                    if (adminUser != null) {
+                        val messages by chatViewModel.fetchDirectMessages(currentUser, adminUser)
+                            .collectAsStateWithLifecycle(initialValue = emptyList())
+                        ChatDirect(
+                            messages = messages,
+                            currentUserId = currentUser.id!!,
+                            onSendMessage = { content ->
+                                chatViewModel.sendMessage(currentUser, adminUser, content)
+                            }
+                        )
+                    }
+                }
                 MODULE.ACCOUNT -> Account(navController)
                 MODULE.USERLIST -> UsersList(navController)
                 MODULE.ADMINREPORTLIST -> AdminReportList(navController)
@@ -207,8 +242,7 @@ fun getNavItems(navController: NavController, userDto: UserDto): List<NavItem> {
         )
         userDto.isResidence -> listOf(
             NavItem(painterResource(R.drawable.home), MODULE.RESIDENCEDASHBOARD, navController),
-//            NavItem(painterResource(R.drawable.message), MODULE.CHATDIRECT, navController),
-            NavItem(painterResource(R.drawable.message), MODULE.CHATLOBBY, navController),
+            NavItem(painterResource(R.drawable.message), MODULE.CHATDIRECT, navController),
             NavItem(painterResource(R.drawable.person), MODULE.ACCOUNT, navController),
         )
         else -> listOf()

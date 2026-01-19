@@ -1,7 +1,9 @@
 package dev.cloudants.iulat.lib.ui.report
 
+import android.R.attr.delay
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
@@ -23,14 +25,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.maps.model.LatLng
 import dev.cloudants.iulat.lib.components.button.CustomButton
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.uriToBase64
 import dev.cloudants.iulat.lib.components.dialog.LoginDialog
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
+import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.models.entities.BrokenStreetlightsDto
 import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
 import dev.cloudants.iulat.lib.models.entities.NoWaterSupplyDto
@@ -40,7 +45,9 @@ import dev.cloudants.iulat.lib.models.entities.RoadRepairDto
 import dev.cloudants.iulat.lib.models.entities.RobberiesDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.models.entities.VehicleCrashDto
+import dev.cloudants.iulat.lib.ui.map.LocationPickerModal
 import dev.cloudants.iulat.lib.ui.report.intent.ReportIntent
+import dev.cloudants.iulat.lib.viewmodels.AddressViewModel
 import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.lib.viewmodels.NoWaterSupplyViewModel
@@ -50,6 +57,8 @@ import dev.cloudants.iulat.lib.viewmodels.ReportViewModel
 import dev.cloudants.iulat.lib.viewmodels.RoadRepairViewModel
 import dev.cloudants.iulat.lib.viewmodels.RobberiesViewModel
 import dev.cloudants.iulat.lib.viewmodels.VehicleCrashViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
@@ -87,8 +96,32 @@ fun CreateReport(
 ) {
     val state by viewModel.state.collectAsState()
     var textValue by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current
+    var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
+    var showMapPicker by remember { mutableStateOf(false) }
+    val addressViewModel: AddressViewModel = hiltViewModel()
+    val detectedAddress by addressViewModel.selectedAddress
+
+    var userHomeAddress by remember { mutableStateOf<AddressDto?>(null) }
+
+    LaunchedEffect(currentUser.id) {
+        val addressId = currentUser.address?.id ?: ""
+        userHomeAddress = addressViewModel.getAddressById(addressId)
+    }
+
+    if (showMapPicker) {
+        LocationPickerModal(
+            initialAddress = userHomeAddress,
+            onLocationSelected = { latLng ->
+                selectedLocation = latLng
+                showMapPicker = false
+            },
+            onDismiss = { showMapPicker = false }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -158,118 +191,82 @@ fun CreateReport(
             existingBase64 = null,
             onImageSelected = { uri -> imageUri = uri }
         )
+        Text(
+            text = "Location of Incident",
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
+            color = Color.Black
+        )
+
+        CustomButton(
+            text = if (selectedLocation == null) "Pin Location on Map" else "Location Pinned ✓",
+            onClick = { showMapPicker = true }
+        )
 
         Spacer(Modifier.weight(1f))
-        Log.e("CURRENT USER ", currentUser.email)
-        Log.e("REPORT TITLE ", reportTitle)
+
         CustomButton(
             text = "Submit",
             onClick = {
-                if (textValue.isBlank()) return@CustomButton
-                val base64Image = imageUri?.let { uriToBase64(context, it) }
-                val userId = currentUser.id ?: return@CustomButton
-                var reportCreated = false
-                when (reportTitle) {
-                    MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> {
-                        garbageDisposalViewModel.createGarbageReport(
-                            GarbageDisposalDto(
-                                userId = userId,
-                                email = currentUser.email,
-                                mobileNumber = currentUser.mobileNumber,
-                                reportDetails = textValue,
-                                reportImage = base64Image,
-                                createdById = userId
-                            )
-                        )
-                        reportCreated = true
-                    }
-
-                    MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
-                        publicDisturbanceViewModel.createPublicDisturbanceReport(
-                            PublicDisturbanceDto(
-                                userId = userId,
-                                reportDetails = textValue,
-                                reportImage = base64Image,
-                                createdById = userId
-                            )
-                        )
-                        reportCreated = true
-                    }
-
-                    MODULE.ROBBERIES, "Robberies" -> {
-                        robberiesViewModel.createRobberiesReport(
-                            RobberiesDto(
-                                userId = userId,
-                                reportDetails = textValue,
-                                reportImage = base64Image,
-                                createdById = userId
-                            )
-                        )
-                        reportCreated = true
-                    }
-
-                    MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> {
-                        brokenStreetLightViewModel.createBrokenLightReport(
-                            BrokenStreetlightsDto(
-                                userId = userId,
-                                reportDetails = textValue,
-                                reportImage = base64Image,
-                                createdById = userId
-                            )
-                        )
-                        reportCreated = true
-                    }
-
-                    MODULE.VEHICLE_CRASH, "Vehicle Crashes" -> {
-                        vehicleCrashViewModel.createVehicleReport(
-                            VehicleCrashDto(
-                                userId = userId,
-                                reportDetails = textValue,
-                                reportImage = base64Image,
-                                createdById = userId
-                            )
-                        )
-                        reportCreated = true
-                    }
-
-                    MODULE.ROAD_REPAIR, "Road Repair" -> {
-                        roadRepairViewModel.createRoadRepairReport(
-                            RoadRepairDto(
-                                userId = userId,
-                                reportDetails = textValue,
-                                reportImage = base64Image,
-                                createdById = userId
-                            )
-                        )
-                        reportCreated = true
-                    }
-
-                    MODULE.NO_WATER_SUPPLY, "No Water Supply" -> {
-                        noWaterSupplyViewModel.createNoWaterSupplyReport(
-                            NoWaterSupplyDto(
-                                userId = userId,
-                                reportDetails = textValue,
-                                reportImage = base64Image,
-                                createdById = userId
-                            )
-                        )
-                        reportCreated = true
-                    }
-
-                    MODULE.OTHERS, "Others" -> {
-                        othersViewModel.createOthersReport(
-                            OthersDto(
-                                userId = userId,
-                                reportDetails = textValue,
-                                reportImage = base64Image,
-                                createdById = userId
-                            )
-                        )
-                        reportCreated = true
-                    }
+                if (selectedLocation == null) {
+                    Toast.makeText(context, "Please pin the location first!", Toast.LENGTH_SHORT).show()
+                    return@CustomButton
                 }
+                if (textValue.isBlank()) {
+                    Toast.makeText(context, "Please enter details.", Toast.LENGTH_SHORT).show()
+                    return@CustomButton
+                }
+                scope.launch {
+                    val base64Image = imageUri?.let { uriToBase64(context, it) }
+                    val userId = currentUser.id ?: return@launch
+                    val lat = selectedLocation?.latitude
+                    val lng = selectedLocation?.longitude
 
-                if (reportCreated) {
+                    when (reportTitle) {
+                        MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> {
+                            garbageDisposalViewModel.createGarbageReport(
+                                GarbageDisposalDto(userId = userId, email = currentUser.email, mobileNumber = currentUser.mobileNumber, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
+                            )
+                        }
+                        MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
+                            publicDisturbanceViewModel.createPublicDisturbanceReport(
+                                PublicDisturbanceDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, addressId = detectedAddress?.id, latitude = lat, longitude = lng)
+                            )
+                        }
+                        MODULE.ROBBERIES, "Robberies" -> {
+                            robberiesViewModel.createRobberiesReport(
+                                RobberiesDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
+                            )
+                        }
+                        MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> {
+                            brokenStreetLightViewModel.createBrokenLightReport(
+                                BrokenStreetlightsDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
+                            )
+                        }
+                        MODULE.VEHICLE_CRASH, "Vehicle Crashes" -> {
+                            vehicleCrashViewModel.createVehicleReport(
+                                VehicleCrashDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
+                            )
+                        }
+                        MODULE.ROAD_REPAIR, "Road Repair" -> {
+                            roadRepairViewModel.createRoadRepairReport(
+                                RoadRepairDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
+                            )
+                        }
+                        MODULE.NO_WATER_SUPPLY, "No Water Supply" -> {
+                            noWaterSupplyViewModel.createNoWaterSupplyReport(
+                                NoWaterSupplyDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
+                            )
+                        }
+                        MODULE.OTHERS, "Others" -> {
+                            othersViewModel.createOthersReport(
+                                OthersDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
+                            )
+                        }
+                    }
+
+                    delay(3000)
                     viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
                 }
             }

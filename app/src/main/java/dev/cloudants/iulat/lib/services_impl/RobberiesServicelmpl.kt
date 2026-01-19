@@ -7,23 +7,33 @@ import com.couchbase.lite.Database
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
+import dev.cloudants.iulat.lib.components.context.parseToSortableDate
+import dev.cloudants.iulat.lib.models.entities.NotifyDto
 import dev.cloudants.iulat.lib.models.entities.RoadRepairDto
 import dev.cloudants.iulat.lib.models.entities.RobberiesDto
+import dev.cloudants.iulat.lib.services.NotificationService
 import dev.cloudants.iulat.lib.services.RobberiesService
+import dev.cloudants.iulat.shared.SessionManager
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 
 class RobberiesServicelmpl @Inject constructor(
-    private val db: Database
+    private val db: Database,
+    private val notificationService: NotificationService,
+    private val sessionManager: SessionManager,
 ) : RobberiesService {
     private val collection: Collection by lazy {
         db.getCollection("robberies")
             ?: throw IllegalStateException("Collection 'robberies' not found.")
     }
+    private val ADMIN_ID = "SYSTEM_ADMIN_001"
     override suspend fun create(robberiesDto: RobberiesDto): RobberiesDto {
         return try {
+            val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = robberiesDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
             val status = robberiesDto.status.takeIf { it.isNotBlank() } ?: "Pending"
@@ -51,6 +61,21 @@ class RobberiesServicelmpl @Inject constructor(
             }
 
             collection.save(doc)
+            val details = robberyToSave.reportDetails
+            val previewText = if (details.length > 15) {
+                "${details.take(15)}..."
+            } else {
+                details
+            }
+            val adminNotification = NotifyDto(
+                sender = robberyToSave.userId,
+                receiver = targetAdminId,
+                documentId = robberyToSave.id,
+                documentType = "Robberies",
+                message = "New Robberies Report: $previewText",
+                createdAt = Clock.System.now()
+            )
+            notificationService.sendNotification(adminNotification)
             Log.d("RobberiesServiceImpl", "Created robberies report: $robberyToSave")
             robberyToSave
         } catch (e: Exception) {
@@ -78,6 +103,7 @@ class RobberiesServicelmpl @Inject constructor(
                     }
                 }
             }
+            .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }
         } catch (e: Exception) {
             Log.e("RobberiesServiceImpl", "Failed to fetch robberies reports: ${e.message}")
             emptyList()

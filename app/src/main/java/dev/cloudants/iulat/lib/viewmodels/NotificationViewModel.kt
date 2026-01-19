@@ -8,50 +8,30 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.cloudants.iulat.lib.models.entities.NotificationItem
 import dev.cloudants.iulat.lib.models.entities.toNotificationItem
 import dev.cloudants.iulat.lib.services.NotificationService
+import dev.cloudants.iulat.shared.SessionManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-//interface SessionManager {
-//    val currentUserId: String
-//}
-
 @HiltViewModel
 class NotificationViewModel @Inject constructor(
-    val notificationService: NotificationService,
-//    val sessionManager: SessionManager
+    private val notificationService: NotificationService,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
-//    val notificationUiState: StateFlow<List<NotificationItem>> =
-//        notificationService.getNotificationsStream(sessionManager.currentUserId)
-//            .map { notifyDtos ->
-//                notifyDtos.map { it.toNotificationItem() }
-//            }
-//            .stateIn(
-//                scope = viewModelScope,
-//                started = SharingStarted.WhileSubscribed(5000),
-//                initialValue = emptyList()
-//            )
-    val notificationUiState: StateFlow<List<NotificationItem>> =
-        notificationService.getNotificationsStream("975baea2-df19-459d-a687-1254f5d5157f")
-            .map { notifyDtos ->
-                notifyDtos.map { it.toNotificationItem() }
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
-    fun onNotificationClicked(notificationId: String) {
-        viewModelScope.launch {
-            try {
-                notificationService.markAsRead(notificationId)
-            } catch (e: Exception) {
-                Log.e("NotifVM", "Failed to mark notification $notificationId as read", e)
-            }
+    val notificationUiState: StateFlow<List<NotificationItem>> = sessionManager.userIdFlow
+        .flatMapLatest { userId ->
+            if (userId == null) flowOf(emptyList())
+            else notificationService.getNotificationsStream(userId)
         }
-    }
+        .map { list -> list.map { it.toNotificationItem() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun navigateToReport(notification: NotificationItem) {
-        Log.d("NotifVM", "Navigate to report: ${notification.reportType} with ID ${notification.reportId}")
+    val hasUnreadNotifications: StateFlow<Boolean> = notificationUiState
+        .map { notifications -> notifications.any { !it.isRead } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    fun onNotificationClicked(id: String) {
+        viewModelScope.launch {
+            notificationService.markAsRead(id)
+        }
     }
 }

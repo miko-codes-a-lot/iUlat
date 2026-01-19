@@ -7,6 +7,9 @@ import kotlinx.serialization.Serializable
 data class GarbageDisposalDto(
     var id: String? = null,
     var userId: String = "",
+    val addressId: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val email: String? = null,
     val mobileNumber: String? = null,
     var reportDetails: String = "",
