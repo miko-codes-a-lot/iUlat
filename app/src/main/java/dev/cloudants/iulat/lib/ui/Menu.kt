@@ -203,7 +203,7 @@ fun Menu(
                         )
                     }
                 }
-                MODULE.ACCOUNT -> Account(navController)
+                MODULE.ACCOUNT -> Account(navController, currentUser)
                 MODULE.USERLIST -> UsersList(navController)
                 MODULE.ADMINREPORTLIST -> AdminReportList(navController)
                 MODULE.RESIDENCEDASHBOARD -> ResidenceDashboard(navController)

@@ -129,7 +129,7 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
         composable<MainNav.Account> {
             Guard(navController = navController) { currentUser ->
-                Account(navController)
+                Account(navController, currentUser)
             }
         }
         composable("${MainNav.EditAccount}/{settingType}"){ backStackEntry ->
