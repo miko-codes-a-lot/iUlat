@@ -41,10 +41,23 @@ class AdminReportViewModel @Inject constructor(
 
     fun loadReportsByStatus(status: String, search: String) {
         viewModelScope.launch {
-            val result = reportService.getReportsByStatus(status, search)
-            _reports.value = result
-            result.forEach { report ->
-                Log.d("REPORT_STATUS 1", "Report: ${report.reportType}, Status: ${report.status}, User: ${report.userName}, Address: ${report.addressId} ")
+            try {
+                val allReportsForStatus = reportService.getReportsByStatus(status, "")
+
+                val filteredResult = if (search.isEmpty()) {
+                    allReportsForStatus
+                } else {
+                    allReportsForStatus.filter { report ->
+                        report.userName.contains(search, ignoreCase = true) ||
+                                report.reportType.contains(search, ignoreCase = true)
+                    }
+                }
+
+                _reports.value = filteredResult
+
+                Log.d("SEARCH_DEBUG", "Found ${filteredResult.size} items for status: $status and query: $search")
+            } catch (e: Exception) {
+                Log.e("LOAD_REPORTS_ERROR", e.message.toString())
             }
         }
     }
