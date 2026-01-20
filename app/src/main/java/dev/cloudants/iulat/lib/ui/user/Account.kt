@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -100,11 +101,6 @@ fun Account(navController: NavController, currentUser: UserDto) {
                     .size(145.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFFFFFFF))
-                    .clickable {
-                        photoPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
-                    }
             ) {
                 val imageSource = if (!activeUser.imageBase64.isNullOrEmpty()) {
                     val imageBytes = android.util.Base64.decode(activeUser.imageBase64, android.util.Base64.DEFAULT)
@@ -121,6 +117,34 @@ fun Account(navController: NavController, currentUser: UserDto) {
                         .fillMaxWidth()
                         .background(Color(0xFF0049AD))
                 )
+            }
+            Surface(
+                shape = CircleShape,
+                color = Color.White,
+                tonalElevation = 4.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(38.dp)
+                    .offset(x = (15).dp, y = (-25).dp)
+                    .border(1.dp, Color.LightGray, CircleShape)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.editicon),
+                        contentDescription = "Edit Profile",
+                        tint = Color(0xFF0049AD),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
 
