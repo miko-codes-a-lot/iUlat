@@ -159,7 +159,7 @@ fun UsersSingleLine(user: UserDto, onClick: () -> Unit) {
                     .border(1.dp, Color(0xFF0049AD), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                PlaceholderImage()
+                PlaceholderImage(user)
             }
 
             Spacer(modifier = Modifier.width(12.dp))

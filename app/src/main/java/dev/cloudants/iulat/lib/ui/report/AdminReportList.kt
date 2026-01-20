@@ -56,6 +56,7 @@ import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.delay
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.context.formatterDate
+import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
 
@@ -435,9 +436,15 @@ fun SingleItemCard(
 }
 
 @Composable
-fun PlaceholderImage() {
+fun PlaceholderImage(activeUser: UserDto? = null) {
+    val imageSource = if (!activeUser?.imageBase64.isNullOrEmpty()) {
+        val imageBytes = android.util.Base64.decode(activeUser.imageBase64, android.util.Base64.DEFAULT)
+        imageBytes
+    } else {
+        activeUser?.userProfile ?: "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg"
+    }
     Image(
-        painter = rememberAsyncImagePainter(model = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg"),
+        painter = rememberAsyncImagePainter(model = imageSource),
         contentDescription = "User's avatar",
         modifier = Modifier
             .size(51.dp)
