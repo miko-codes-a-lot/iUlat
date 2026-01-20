@@ -227,7 +227,7 @@ fun CardImageContainer(imageBase64: String? = null) {
 @Composable
 fun PlaceholderImage() {
     Icon(
-        painter = painterResource(id = R.drawable.email ),
+        painter = painterResource(id = R.drawable.msg),
         contentDescription = "Notifications",
         tint = Color.Gray,
         modifier = Modifier
