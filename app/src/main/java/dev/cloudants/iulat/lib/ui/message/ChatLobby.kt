@@ -231,7 +231,7 @@ fun PlaceholderImage() {
         contentDescription = "Notifications",
         tint = Color.Gray,
         modifier = Modifier
-            .size(35.dp)
+            .size(40.dp)
             .clip(CircleShape)
     )
 
