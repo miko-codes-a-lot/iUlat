@@ -1,14 +1,20 @@
 package dev.cloudants.iulat.lib.ui.user
 
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -23,6 +29,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,19 +39,48 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.cloudants.iulat.R
 import coil.compose.rememberAsyncImagePainter
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun Account(navController: NavController, currentUser: UserDto) {
+    val userViewModel: UserViewModel = hiltViewModel()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val userState by userViewModel.currentUserState.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(currentUser.id) {
+        if (currentUser.id != null) {
+            userViewModel.loadCurrentUser(currentUser.id)
+        }
+    }
+    val activeUser = userState ?: currentUser
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            uri?.let {
+                coroutineScope.launch(Dispatchers.IO) {
+                    val inputStream = context.contentResolver.openInputStream(it)
+                    val bytes = inputStream?.readBytes()
+                    if (bytes != null && activeUser.id != null) {
+                        userViewModel.updateProfileImage(activeUser.id, bytes)
+                    }
+                }
+            }
+        }
+    )
     Row(
         modifier = Modifier
             .background(Color(0xFF0049AD))
@@ -61,18 +97,29 @@ fun Account(navController: NavController, currentUser: UserDto) {
                 modifier = Modifier
                     .offset(y = (70).dp)
                     .align(Alignment.TopCenter)
-                    .height(145.dp)
-                    .width(145.dp)
+                    .size(145.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFFFFFFF))
+                    .clickable {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
             ) {
+                val imageSource = if (!activeUser.imageBase64.isNullOrEmpty()) {
+                    val imageBytes = android.util.Base64.decode(activeUser.imageBase64, android.util.Base64.DEFAULT)
+                    imageBytes
+                } else {
+                    activeUser.userProfile ?: "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg"
+                }
+
                 Image(
-                    painter = rememberAsyncImagePainter(model = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg"),
-                    contentDescription = "User's avatar",
-                    modifier = Modifier
-                        .size(145.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF0049AD)),
+                    painter = rememberAsyncImagePainter(model = imageSource),
+                    contentDescription = "Profile Picture",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                        .fillMaxWidth()
+                        .background(Color(0xFF0049AD))
                 )
             }
         }

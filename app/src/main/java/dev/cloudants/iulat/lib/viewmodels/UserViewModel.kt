@@ -27,11 +27,20 @@ class UserViewModel @Inject constructor(
     val uiState: StateFlow<UserState> = _uiState
     private val _users = MutableStateFlow<List<UserDto>>(emptyList())
     val users: StateFlow<List<UserDto>> = _users
+    private val _currentUserState = MutableStateFlow<UserDto?>(null)
+    val currentUserState: StateFlow<UserDto?> = _currentUserState
 
     fun loadUsers() {
         viewModelScope.launch(Dispatchers.IO) {
             val result = userService.findAll()
             _users.value = result
+        }
+    }
+
+    fun loadCurrentUser(userId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val user = userService.findOne(userId)
+            _currentUserState.value = user
         }
     }
 
@@ -167,6 +176,24 @@ class UserViewModel @Inject constructor(
 
             } catch (e: Exception) {
                 Log.e("UserViewModel", "Failed to create admin: ${e.message}")
+            }
+        }
+    }
+
+    fun updateProfileImage(userId: String, imageBytes: ByteArray) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val base64Image = android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT)
+
+                val currentUser = userService.findOne(userId)
+                val updatedUser = currentUser.copy(imageBase64 = base64Image)
+
+                userService.update(userId, updatedUser)
+                _currentUserState.value = updatedUser
+                loadUsers()
+                Log.d("UserViewModel", "Profile image updated successfully")
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Failed to update profile image: ${e.message}")
             }
         }
     }
