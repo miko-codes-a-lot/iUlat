@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.ChatViewModel
 import kotlinx.coroutines.delay
@@ -193,8 +195,8 @@ fun CardImageContainer(imageBase64: String? = null) {
         modifier = Modifier
             .size(51.dp)
             .clip(CircleShape)
-            .border(1.dp, Color(0xFF0049AD), CircleShape)
-            .background(Color(0xFF0049AD)),
+            .border(1.dp, Color.Gray, CircleShape)
+            .background(Color(0xFFFFFFFF)),
         contentAlignment = Alignment.Center
     ) {
         if (imageBase64 != null && imageBase64.isNotBlank()) {
@@ -224,14 +226,15 @@ fun CardImageContainer(imageBase64: String? = null) {
 
 @Composable
 fun PlaceholderImage() {
-    Image(
-        painter = rememberAsyncImagePainter(model = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg"),
-        contentDescription = "User's avatar",
+    Icon(
+        painter = painterResource(id = R.drawable.email ),
+        contentDescription = "Notifications",
+        tint = Color.Gray,
         modifier = Modifier
-            .size(51.dp)
+            .size(35.dp)
             .clip(CircleShape)
-            .background(Color(0xFF0049AD)),
     )
+
 }
 
 @Composable

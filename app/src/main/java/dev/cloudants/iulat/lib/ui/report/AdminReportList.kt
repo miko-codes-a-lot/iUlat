@@ -124,7 +124,6 @@ fun AdminReportList(navController: NavController) {
                     status = reportItem.status,
                     userName = "from : " + reportItem.userName,
                     date = formatterDate(reportItem.reportDate),
-                    imageUrl = "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3467.jpg",
                     onClick = {
                         Log.e("Address :: ", reportItem.addressId)
                          when(reportItem.status) {
@@ -271,7 +270,7 @@ fun ReportStatusBox(
 }
 
 @Composable
-fun UsersImageContainer(imageUrl: String) {
+fun UsersImageContainer() {
     Box(
         Modifier
             .size(51.dp)
@@ -280,22 +279,18 @@ fun UsersImageContainer(imageUrl: String) {
             modifier = Modifier
                 .matchParentSize()
                 .clip(CircleShape)
-                .background(Color(0xFF0049AD))
-                .border(1.dp, Color(0xFF0049AD), CircleShape),
+                .background(Color.White)
+                .border(1.dp, Color.Gray, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            if (imageUrl.isNotBlank()) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = imageUrl),
-                    contentDescription = "User's avatar",
-                    modifier = Modifier
-                        .size(51.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                PlaceholderImage()
-            }
+            Icon(
+                painter = painterResource(id = R.drawable.report ),
+                contentDescription = "Notifications",
+                tint = Color.Gray,
+                modifier = Modifier
+                    .size(35.dp)
+                    .clip(CircleShape)
+            )
         }
     }
 }
@@ -306,7 +301,6 @@ fun SingleItemCard(
     status: String,
     userName: String,
     date: String,
-    imageUrl: String,
     onClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onCheckClick: () -> Unit
@@ -345,7 +339,7 @@ fun SingleItemCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Spacer(modifier = Modifier.width(10.dp))
-                    UsersImageContainer(imageUrl = imageUrl)
+                    UsersImageContainer()
                     Column {
                         Text(
                             text = title,
