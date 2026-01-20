@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -60,6 +61,7 @@ import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 import java.util.Base64
 
 
@@ -70,8 +72,11 @@ fun GarbageDisposalList(
 ) {
     val garbageDisposalViewModel: GarbageDisposalViewModel = hiltViewModel()
     val state by garbageDisposalViewModel.state.collectAsState()
+    val userViewModel: UserViewModel = hiltViewModel()
+    val users by userViewModel.users.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(Unit) {
+        userViewModel.loadUsers()
         if(currentUser.isResidence) {
             garbageDisposalViewModel.fetchAll(currentUser.id!!)
         } else {
@@ -89,7 +94,8 @@ fun GarbageDisposalList(
                 navController,
                 currentUser,
                 context,
-                items = state.items
+                items = state.items,
+                users = users
             )
         }
     ) { padding ->
@@ -205,9 +211,13 @@ fun FloatingGarbageDisposalRecordIcon(
     navController: NavController,
     currentUser: UserDto,
     context: Context,
-    items: List<GarbageDisposalDto>
+    items: List<GarbageDisposalDto>,
+    users: List<UserDto>
 ) {
     val activity = context as? MainActivity
+    val userMap = remember(users) {
+        users.associateBy { it.id?.trim() }
+    }
     Column(
         modifier = Modifier.background(Color.Transparent),
         horizontalAlignment = Alignment.End
@@ -222,10 +232,15 @@ fun FloatingGarbageDisposalRecordIcon(
                     val pdfRows = items.map { report ->
                         Log.e("ID :: ", report.id!!)
                         Log.e("Email :: ", report.email ?: "N/A")
+                        val user = userMap[report.userId.trim()]
+                        val fullName = user?.let { "${it.firstName} ${it.lastName}" } ?: "Unknown"
+                        val email = user?.email ?: "N/A"
+                        val phone = user?.mobileNumber ?: "N/A"
                         PrintableRowImpl(
                             listOf(
-                                report.email ?: "N/A",
-                                report.mobileNumber ?: "N/A",
+                                fullName,
+                                email,
+                                phone,
                                 formatterDate(report.createdAt),
                                 report.status
                             )
@@ -235,7 +250,7 @@ fun FloatingGarbageDisposalRecordIcon(
                     exportDynamicPDF(
                         context = context,
                         title = "Garbage Disposal Report",
-                        headers = listOf("No", "Email", "Contact Info", "Date Created", "Status"),
+                        headers = listOf("No", "Resident", "Email", "Phone Number", "Date Created", "Status"),
                         data = pdfRows,
                         onFinish = { Print.openFile(context, it) },
                         onError = { Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show() }

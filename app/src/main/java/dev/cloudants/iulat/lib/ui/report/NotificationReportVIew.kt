@@ -180,7 +180,8 @@ fun NotificationReportVIew(
                     UploadImageUI(
                         title = "Evidence Photo",
                         existingBase64 = selectedReport,
-                        onImageSelected = { }
+                        onImageSelected = { },
+                        enabled = false
                     )
                 }
 

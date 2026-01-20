@@ -7,6 +7,7 @@ import com.couchbase.lite.Database
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
+import dev.cloudants.iulat.lib.components.context.parseToSortableDate
 import dev.cloudants.iulat.lib.models.entities.NotifyDto
 import dev.cloudants.iulat.lib.models.entities.RoadRepairDto
 import dev.cloudants.iulat.lib.services.NotificationService
@@ -106,6 +107,7 @@ class RoadRepairServicelmpl @Inject constructor(
                     }
                 }
             }
+            .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }
         } catch (e: Exception) {
             Log.e("RoadRepairServiceImpl", "Failed to fetch road repair reports: ${e.message}")
             emptyList()

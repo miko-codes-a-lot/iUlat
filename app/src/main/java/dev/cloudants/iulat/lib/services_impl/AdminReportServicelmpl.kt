@@ -14,6 +14,7 @@ import com.couchbase.lite.MutableDocument
 import dev.cloudants.iulat.lib.models.entities.TimelineEventDto
 import com.couchbase.lite.Function
 import com.couchbase.lite.Ordering
+import dev.cloudants.iulat.lib.components.context.parseToSortableDate
 import dev.cloudants.iulat.lib.models.entities.NotifyDto
 import dev.cloudants.iulat.lib.services.NotificationService
 import dev.cloudants.iulat.shared.SessionManager
@@ -119,7 +120,7 @@ class AdminReportServicelmpl @Inject constructor(
             finalList += queryCollection(collectionName, type)
         }
 
-        return finalList.sortedByDescending { it.reportDate }
+        return finalList.sortedByDescending { parseToSortableDate(it.reportDate) }
     }
 
     override suspend fun updateReportStatus(docId: String, collectionName: String, newStatus: String) {

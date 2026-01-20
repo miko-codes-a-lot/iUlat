@@ -55,11 +55,13 @@ import android.widget.Toast
 import androidx.compose.ui.res.painterResource
 import dev.cloudants.iulat.R
 import android.os.Build
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import dev.cloudants.iulat.MainActivity
 import dev.cloudants.iulat.lib.components.context.PrintableRowImpl
 import dev.cloudants.iulat.lib.components.print.Print
 import dev.cloudants.iulat.lib.components.print.exportDynamicPDF
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 
 @Preview(
     showBackground = true,
@@ -80,8 +82,11 @@ fun BrokenLightList(
 ) {
     val brokenStreetLightViewModel: BrokenStreetLightViewModel = hiltViewModel()
     val state by brokenStreetLightViewModel.state.collectAsState()
+    val userViewModel: UserViewModel = hiltViewModel()
+    val users by userViewModel.users.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(Unit) {
+        userViewModel.loadUsers()
         if (currentUser.isResidence) {
             brokenStreetLightViewModel.fetchAll(currentUser.id!!)
         } else {
@@ -98,7 +103,8 @@ fun BrokenLightList(
                 navController,
                 currentUser,
                 context,
-                items = state.items
+                items = state.items,
+                users = users
             )
         }
     ) { padding ->
@@ -211,9 +217,13 @@ fun FloatingBrokenLightRecordIcon(
     navController: NavController,
     currentUser: UserDto,
     context: Context,
-    items: List<BrokenStreetlightsDto>
+    items: List<BrokenStreetlightsDto>,
+    users: List<UserDto>
 ) {
     val activity = context as? MainActivity
+    val userMap = remember(users) {
+        users.associateBy { it.id?.trim() }
+    }
     Column(
         modifier = Modifier.background(Color.Transparent),
         horizontalAlignment = Alignment.End
@@ -225,8 +235,15 @@ fun FloatingBrokenLightRecordIcon(
                         activity.requestStoragePermission()
                     }
                     val pdfRows = items.map { report ->
+                        val user = userMap[report.userId.trim()]
+                        val fullName = user?.let { "${it.firstName} ${it.lastName}" } ?: "Unknown"
+                        val email = user?.email ?: "N/A"
+                        val phone = user?.mobileNumber ?: "N/A"
                         PrintableRowImpl(
                             listOf(
+                                fullName,
+                                email,
+                                phone,
                                 formatterDate(report.createdAt),
                                 report.status
                             )
@@ -235,7 +252,7 @@ fun FloatingBrokenLightRecordIcon(
                     exportDynamicPDF(
                         context = context,
                         title = "Broken Streetlights",
-                        headers = listOf("No", "Date Created", "Status"),
+                        headers = listOf("No", "Resident", "Email", "Phone Number", "Date Created", "Status"),
                         data = pdfRows,
                         onFinish = { Print.openFile(context, it) },
                         onError = { Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show() }

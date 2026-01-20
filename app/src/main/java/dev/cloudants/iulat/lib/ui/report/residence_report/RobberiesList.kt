@@ -55,11 +55,13 @@ import dev.cloudants.iulat.R
 import android.os.Build
 import android.os.Environment
 import android.content.Intent
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import dev.cloudants.iulat.MainActivity
 import dev.cloudants.iulat.lib.components.context.PrintableRowImpl
 import dev.cloudants.iulat.lib.components.print.Print
 import dev.cloudants.iulat.lib.components.print.exportDynamicPDF
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 
 @Composable
 fun RobberiesList(
@@ -68,8 +70,11 @@ fun RobberiesList(
 ) {
     val robberiesViewModel: RobberiesViewModel = hiltViewModel()
     val state by robberiesViewModel.state.collectAsState()
+    val userViewModel: UserViewModel = hiltViewModel()
+    val users by userViewModel.users.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(Unit) {
+        userViewModel.loadUsers()
         if (currentUser.isResidence) {
             robberiesViewModel.fetchAll(currentUser.id!!)
         } else {
@@ -85,7 +90,8 @@ fun RobberiesList(
                 navController,
                 currentUser,
                 context,
-                items = state.items
+                items = state.items,
+                users = users
             )
         }
     ) { padding ->
@@ -197,9 +203,13 @@ fun FloatingRobberiesRecordIcon(
     navController: NavController,
     currentUser: UserDto,
     context: Context,
-    items: List<RobberiesDto>
+    items: List<RobberiesDto>,
+    users: List<UserDto>
 ) {
     val activity = context as? MainActivity
+    val userMap = remember(users) {
+        users.associateBy { it.id?.trim() }
+    }
     Column(
         modifier = Modifier.background(Color.Transparent),
         horizontalAlignment = Alignment.End
@@ -211,8 +221,15 @@ fun FloatingRobberiesRecordIcon(
                         activity.requestStoragePermission()
                     }
                     val pdfRows = items.map { report ->
+                        val user = userMap[report.userId.trim()]
+                        val fullName = user?.let { "${it.firstName} ${it.lastName}" } ?: "Unknown"
+                        val email = user?.email ?: "N/A"
+                        val phone = user?.mobileNumber ?: "N/A"
                         PrintableRowImpl(
                             listOf(
+                                fullName,
+                                email,
+                                phone,
                                 formatterDate(report.createdAt),
                                 report.status
                             )
@@ -221,7 +238,7 @@ fun FloatingRobberiesRecordIcon(
                     exportDynamicPDF(
                         context = context,
                         title = "Robberies",
-                        headers = listOf("No", "Date Created", "Status"),
+                        headers = listOf("No", "Resident", "Email", "Phone Number", "Date Created", "Status"),
                         data = pdfRows,
                         onFinish = { Print.openFile(context, it) },
                         onError = { Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show() }

@@ -49,7 +49,8 @@ fun UploadImageUI(
     title: String = "Tap to Upload",
     existingBase64: String? = null,
     existingUrl: String? = null,
-    onImageSelected: (Uri?) -> Unit
+    onImageSelected: (Uri?) -> Unit,
+    enabled: Boolean = true,
 ) {
     var selectedUri by rememberSaveable { mutableStateOf<Uri?>(null) }
 
@@ -82,7 +83,10 @@ fun UploadImageUI(
         modifier = Modifier
             .fillMaxWidth()
             .height(220.dp)
-            .clickable { pickerLauncher.launch("image/*") },
+            .clickable(
+                enabled = enabled,
+                onClick = { pickerLauncher.launch("image/*") }
+            ),
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {

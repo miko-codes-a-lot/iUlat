@@ -189,7 +189,8 @@ fun CreateReport(
         UploadImageUI(
             title = "Tap to Upload Evidence",
             existingBase64 = null,
-            onImageSelected = { uri -> imageUri = uri }
+            onImageSelected = { uri -> imageUri = uri },
+            enabled = true
         )
         Text(
             text = "Location of Incident",

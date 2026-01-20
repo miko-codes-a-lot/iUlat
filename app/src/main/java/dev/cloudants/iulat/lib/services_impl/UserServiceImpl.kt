@@ -10,6 +10,7 @@ import com.couchbase.lite.Meta
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
+import dev.cloudants.iulat.lib.components.context.parseToSortableDate
 import dev.cloudants.iulat.lib.exceptions.NotFoundException
 import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
@@ -94,6 +95,7 @@ class UserServiceImpl @Inject constructor (
                     }
                 }
             }
+            .sortedByDescending { parseToSortableDate(it.createdAt)}
     }
 
     override fun fetchEmailAndToken(email: String, token: String): UserDto? {

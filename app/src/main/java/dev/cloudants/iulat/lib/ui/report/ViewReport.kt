@@ -212,7 +212,8 @@ fun ViewReport(
                         UploadImageUI(
                             title = "Evidence Image",
                             existingBase64 = selectedReport,
-                            onImageSelected = { }
+                            onImageSelected = { },
+                            enabled = false
                         )
 
                         Text(
