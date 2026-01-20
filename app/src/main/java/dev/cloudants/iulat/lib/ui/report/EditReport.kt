@@ -199,7 +199,8 @@ fun EditReport(
         UploadImageUI(
             title = "Tap to Upload Evidence",
             existingBase64 = selectedReport,
-            onImageSelected = { uri -> imageUri = uri }
+            onImageSelected = { uri -> imageUri = uri },
+            enabled = false
         )
 
 
