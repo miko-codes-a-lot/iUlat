@@ -113,7 +113,7 @@ class AdminReportServicelmpl @Inject constructor(
             "public_disturbance" to "Public Disturbance",
             "road_repair" to "Road Repair",
             "robberies" to "Robberies",
-            "vehicle_crash" to "Vehicle Crash"
+            "vehicle_crash" to "Vehicle Crashes"
         )
 
         for ((collectionName, type) in collections) {
@@ -235,7 +235,7 @@ class AdminReportServicelmpl @Inject constructor(
             "public_disturbance" to "Public Disturbance",
             "road_repair" to "Road Repair",
             "robberies" to "Robberies",
-            "vehicle_crash" to "Vehicle Crash"
+            "vehicle_crash" to "Vehicle Crashes"
         )
 
         for ((collectionName, type) in collections) {
@@ -340,7 +340,7 @@ class AdminReportServicelmpl @Inject constructor(
             "public_disturbance" to "Public Disturbance",
             "road_repair" to "Road Repair",
             "robberies" to "Robberies",
-            "vehicle_crash" to "Vehicle Crash"
+            "vehicle_crash" to "Vehicle Crashes"
         )
 
         for ((collectionName, type) in collections) {

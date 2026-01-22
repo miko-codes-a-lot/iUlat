@@ -71,4 +71,29 @@ class NotificationServiceImpl @Inject constructor(
             notificationCollection.save(it)
         }
     }
+
+    override suspend fun broadcastAnnouncement(senderId: String, title: String, message: String) = withContext(Dispatchers.IO) {
+        val userCollection = db.getCollection("users") ?: return@withContext
+
+        val query = QueryBuilder.select(SelectResult.expression(Meta.id))
+            .from(DataSource.collection(userCollection))
+            .where(Expression.property("id").notEqualTo(Expression.string(senderId)))
+        val results = query.execute()
+
+        results.allResults().forEach { result ->
+            val userId = result.getString("id")
+            if (userId != null) {
+                val mutableDoc = MutableDocument()
+                mutableDoc.setString("type", "NotifyDto")
+                mutableDoc.setString("sender", senderId)
+                mutableDoc.setString("receiver", userId)
+                mutableDoc.setString("documentType", title)
+                mutableDoc.setString("message", message)
+                mutableDoc.setBoolean("read", false)
+                mutableDoc.setString("createdAt", kotlinx.datetime.Clock.System.now().toString())
+
+                notificationCollection.save(mutableDoc)
+            }
+        }
+    }
 }

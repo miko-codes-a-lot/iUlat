@@ -1,15 +1,14 @@
 package dev.cloudants.iulat.lib.ui.report
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,11 +17,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -68,6 +65,7 @@ fun NotificationReportVIew(
     val waterState by noWaterSupplyViewModel.state.collectAsState()
     val othersState by othersViewModel.state.collectAsState()
     val timelineDto by adminViewModel.timeline.collectAsState()
+    val listState = rememberLazyListState()
 
     val selectedReport = when (reportTitle) {
         MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> garbageState.selectedReport?.reportImage
@@ -140,76 +138,120 @@ fun NotificationReportVIew(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 50.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(Color(0xFFF7F9FC))
+            .padding(horizontal = 20.dp)
     ) {
-//        Spacer(modifier = Modifier.weight(1f))
-        androidx.compose.material3.ElevatedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
-                containerColor = Color.White
-            ),
-            elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(4.dp)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            contentPadding = PaddingValues(top = 60.dp, bottom = 32.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            item {
+                Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                    Text(
+                        text = reportTitle,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 26.sp,
+                        color = Color(0xFF1A1C1E)
+                    )
+                    Text(
+                        text = "Report Reference: #${reportId.takeLast(6).uppercase()}",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
 
-                Text(
-                    text = "Report: $reportTitle",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 20.sp,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    textAlign = TextAlign.Center,
-                    color = Color(0xFF212121)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    contentAlignment = Alignment.Center
+            item {
+                androidx.compose.material3.ElevatedCard(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    colors = androidx.compose.material3.CardDefaults.elevatedCardColors(containerColor = Color.White),
+                    elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(2.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
                 ) {
-                    UploadImageUI(
-                        title = "Evidence Photo",
-                        existingBase64 = selectedReport,
-                        onImageSelected = { },
-                        enabled = false
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Evidence Photo",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF2568EF),
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        UploadImageUI(
+                            title = "",
+                            existingBase64 = selectedReport,
+                            onImageSelected = { },
+                            enabled = false
+                        )
+                    }
+                }
+            }
+
+            item {
+                androidx.compose.material3.ElevatedCard(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                    colors = androidx.compose.material3.CardDefaults.elevatedCardColors(containerColor = Color.White),
+                    elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(2.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Report Description",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF2568EF),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        Text(
+                            text = textValue.ifEmpty { "No additional details provided." },
+                            fontSize = 15.sp,
+                            lineHeight = 22.sp,
+                            color = Color(0xFF42474E)
+                        )
+                    }
+                }
+            }
+
+            item {
+                Text(
+                    text = "Activity Timeline",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    color = Color.Black
+                )
+            }
+
+            if (timelineDto.isEmpty()) {
+                item {
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        androidx.compose.material3.Text(
+                            text = "No updates available yet.",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                val timelineEventsMapped = timelineDto.mapIndexed { index, dto ->
+                    TimelineEvent(
+                        dto.time,
+                        dto.date,
+                        dto.message,
+                        isCurrent = index == timelineDto.lastIndex
                     )
                 }
 
-                Text(
-                    text = "Description",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Gray,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
-                )
-
-                OutlinedTextField(
-                    value = textValue,
-                    onValueChange = { textValue = it },
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 120.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF9F9F9),
-                        unfocusedContainerColor = Color(0xFFF9F9F9),
-                        focusedBorderColor = Color(0xFFE0E0E0),
-                        unfocusedBorderColor = Color(0xFFEEEEEE),
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
-                    )
-                )
+                itemsIndexed(timelineEventsMapped) { index, event ->
+                    TimelineItem(event = event, isLast = index == timelineEventsMapped.lastIndex)
+                }
             }
         }
     }

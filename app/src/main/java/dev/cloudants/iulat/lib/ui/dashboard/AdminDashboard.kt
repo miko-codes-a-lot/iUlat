@@ -1,6 +1,7 @@
 package dev.cloudants.iulat.lib.ui.dashboard
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -21,11 +22,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -75,6 +89,7 @@ fun AdminDashboard(
      navController: NavController,
      currentUser: UserDto,
 ) {
+    val context = LocalContext.current
     val viewModel: AdminReportViewModel = hiltViewModel()
     val percentages by viewModel.reportPercentages.collectAsState()
     val pieChartData by viewModel.pieChartData.collectAsState()
@@ -86,31 +101,153 @@ fun AdminDashboard(
     } else {
         listOf(Purple200, Purple500, Teal200, Blue, Purple700, PurpleGrey40)
     }
+    var showDialog by remember { mutableStateOf(false) }
+    var announcementTitle by remember { mutableStateOf("") }
+    var announcementMessage by remember { mutableStateOf("") }
 
-    LazyColumn(
-        modifier = Modifier
-            .background(Color.White)
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        item {
-            PieChart(
-                data = finalData,
-                colors = finalColors
-            )
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showDialog = true },
+                containerColor = Color(0xFF0049AD),
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Announcement")
+            }
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            LazyColumn(
+                modifier = Modifier
+                    .background(Color.White)
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                item { PieChart(data = finalData, colors = finalColors) }
+                item { Spacer(modifier = Modifier.height(8.dp)) }
+                item { ReportList(reports = recentReports) }
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    DashboardMenu(navController = navController, percentages = percentages)
+                    }
+            }
         }
 
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        item {
-            ReportList(reports = recentReports)
-        }
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-            DashboardMenu(
-                navController = navController,
-                percentages = percentages
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                shape = RoundedCornerShape(28.dp),
+                containerColor = Color.White,
+                title = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .background(Color(0xFF0049AD).copy(alpha = 0.1f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_others),
+                                contentDescription = null,
+                                tint = Color(0xFF0049AD),
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Broadcast Announcement",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0049AD),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "This will be sent to all registered users.",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                },
+                text = {
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        OutlinedTextField(
+                            value = announcementTitle,
+                            onValueChange = { announcementTitle = it },
+                            label = { Text("Announcement Title", color = Color(0xFF0049AD)) },
+                            placeholder = { Text("e.g. Barangay Assembly") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF0049AD),
+                                unfocusedBorderColor = Color(0xFF0049AD),
+                                cursorColor = Color.Gray
+                            ),
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = announcementMessage,
+                            onValueChange = { announcementMessage = it },
+                            label = { Text("Detailed Message",color = Color(0xFF0049AD))},
+                            placeholder = { Text("Enter the full details here...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 4,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF0049AD),
+                                unfocusedBorderColor = Color(0xFF0049AD),
+                                cursorColor = Color.Gray
+                            ),
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (announcementTitle.isNotBlank() && announcementMessage.isNotBlank()) {
+                                viewModel.sendAnnouncement(
+                                    announcementTitle,
+                                    announcementMessage,
+                                    currentUser.id ?: ""
+                                )
+
+                                Toast.makeText(
+                                    context,
+                                    "Announcement successfully to all resident!",
+                                    Toast.LENGTH_LONG
+                                ).show()
+
+                                showDialog = false
+                                announcementTitle = ""
+                                announcementMessage = ""
+                            } else {
+                                Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0049AD))
+                    ) {
+                        Text("Broadcast to Everyone", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showDialog = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Cancel", color = Color.Gray)
+                    }
+                }
             )
         }
     }

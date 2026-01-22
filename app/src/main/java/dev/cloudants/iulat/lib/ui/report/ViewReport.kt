@@ -236,7 +236,7 @@ fun ViewReport(
 
             item {
                 Text(
-                    text = "Updates & History",
+                    text = "Report Status",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     modifier = Modifier.padding(bottom = 12.dp)

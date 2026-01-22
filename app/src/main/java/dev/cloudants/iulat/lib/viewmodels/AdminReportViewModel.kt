@@ -7,6 +7,7 @@ import dev.cloudants.iulat.lib.models.entities.DashboardReportItemDto
 import dev.cloudants.iulat.lib.services.AdminReportService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.cloudants.iulat.lib.models.entities.TimelineEventDto
+import dev.cloudants.iulat.lib.services.NotificationService
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,8 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class AdminReportViewModel @Inject constructor(
-    private val reportService: AdminReportService
+    private val reportService: AdminReportService,
+    private val notificationService: NotificationService
 ) : ViewModel() {
 
     private val _reports = MutableStateFlow<List<DashboardReportItemDto>>(emptyList())
@@ -155,6 +157,12 @@ class AdminReportViewModel @Inject constructor(
             }
 
             _reportPercentages.value = percentages
+        }
+    }
+
+    fun sendAnnouncement(title: String, message: String, adminId: String) {
+        viewModelScope.launch {
+            notificationService.broadcastAnnouncement(adminId, title, message)
         }
     }
 }

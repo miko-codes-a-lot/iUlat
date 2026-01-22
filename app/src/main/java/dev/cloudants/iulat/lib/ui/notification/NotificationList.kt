@@ -18,13 +18,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -32,6 +42,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -50,6 +61,7 @@ fun NotificationList(navController: NavController) {
     val notifications by viewModel.notificationUiState.collectAsStateWithLifecycle()
     val adminReportViewModel: AdminReportViewModel = hiltViewModel()
     val reports by adminReportViewModel.reports.collectAsState()
+    var selectedAnnouncement by remember { mutableStateOf<NotificationItem?>(null) }
     LaunchedEffect(Unit) {
         adminReportViewModel.loadReports()
     }
@@ -91,19 +103,102 @@ fun NotificationList(navController: NavController) {
             notifyList = notifications,
             onNotifClick = { item ->
                 viewModel.onNotificationClicked(item.id)
-                val report = reports.find { it.docId == item.reportId }
-                if (report != null) {
-                    navController.navigate(
-                        MainNav.NotificationReportVIew(
-                            title = report.reportType,
-                            reportId = report.docId
-                        )
-                    )
+                if (item.reportId.isNullOrEmpty()) {
+                    selectedAnnouncement = item
                 } else {
-                    Log.e("NotifNav", "Report not found in current list for ID: ${item.reportId}")
+                    val report = reports.find { it.docId == item.reportId }
+                    if (report != null) {
+                        navController.navigate(
+                            MainNav.NotificationReportVIew(
+                                title = report.reportType,
+                                reportId = report.docId
+                            )
+                        )
+                    } else {
+                        Log.e("NotifNav", "Reference report not found for ID: ${item.reportId}")
+                    }
                 }
             }
         )
+        if (selectedAnnouncement != null) {
+            AlertDialog(
+                onDismissRequest = { selectedAnnouncement = null },
+                shape = RoundedCornerShape(24.dp),
+                containerColor = Color.White,
+                title = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(60.dp)
+                                .background(Color(0xFF0049AD).copy(alpha = 0.1f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = Color(0xFF0049AD),
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = selectedAnnouncement?.reportType ?: "Barangay Announcement",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF0049AD),
+                            fontFamily = FontFamily.SansSerif
+                        )
+                    }
+                },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            thickness = 1.dp,
+                            color = Color.LightGray.copy(alpha = 0.5f)
+                        )
+
+                        Text(
+                            text = selectedAnnouncement?.message ?: "",
+                            fontSize = 16.sp,
+                            color = Color(0xFF42474E),
+                            lineHeight = 24.sp,
+                            textAlign = TextAlign.Center,
+                            fontFamily = FontFamily.SansSerif,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "Posted on ${formatterDate(selectedAnnouncement?.createdAt.toString())}",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            fontStyle = FontStyle.Italic
+                        )
+                    }
+                },
+                confirmButton = {
+                    ElevatedButton(
+                        onClick = { selectedAnnouncement = null },
+                        colors = ButtonDefaults.elevatedButtonColors(
+                            containerColor = Color(0xFF0049AD),
+                            contentColor = Color.White
+                        ),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Understood", fontWeight = FontWeight.Bold)
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -163,11 +258,13 @@ private fun NotificationButton(
             Spacer(modifier = Modifier.width(10.dp))
 
             Text(
-                text = if (notify.message.length > 25) notify.message.take(25) + "..." else notify.message,
+                text = if (!notify.reportId.isNullOrEmpty()) {
+                    if (notify.message.length > 25) notify.message.take(25) + "..." else notify.message
+                } else {
+                    notify.reportType ?: "New Announcement"
+                },
                 fontSize = 15.sp,
-                textAlign = TextAlign.Start,
                 fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.SansSerif,
                 modifier = Modifier.weight(1f),
                 maxLines = 1
             )

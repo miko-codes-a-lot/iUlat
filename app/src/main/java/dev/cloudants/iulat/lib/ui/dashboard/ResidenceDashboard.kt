@@ -88,6 +88,16 @@ fun CropsCategory(navController: NavController) {
     )
 
     Column {
+        Text(
+            text = "Select Report Type",
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            textAlign = TextAlign.Start,
+            color = Color.Black
+        )
         for (i in reportItems.chunked(4)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
