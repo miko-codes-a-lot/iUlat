@@ -55,6 +55,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Blue
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
@@ -129,9 +130,9 @@ fun AdminDashboard(
                     )
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.location_finder),
+                        painter = painterResource(id = R.drawable.map_global),
                         contentDescription = "View Map Reports",
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(34.dp)
                     )
                 }
 
@@ -147,9 +148,9 @@ fun AdminDashboard(
                     )
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.report),
+                        painter = painterResource(id = R.drawable.announcement),
                         contentDescription = "Add Announcement",
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(34.dp)
                     )
                 }
             }
@@ -188,11 +189,11 @@ fun AdminDashboard(
                                 .background(Color(0xFF0049AD).copy(alpha = 0.1f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_others),
-                                contentDescription = null,
-                                tint = Color(0xFF0049AD),
-                                modifier = Modifier.size(32.dp)
+                            Image(
+                                painter = painterResource(id = R.drawable.broadcast),
+                                contentDescription = "Add Announcement",
+                                modifier = Modifier.size(45.dp),
+                                colorFilter = ColorFilter.tint(Color(0xFF0049AD))
                             )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
