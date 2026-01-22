@@ -4,5 +4,6 @@ data class MapReportData(
     val id: String?,
     val latitude: Double?,
     val longitude: Double?,
-    val reportDetails: String?
+    val reportDetails: String?,
+    val reportType: String?
 )

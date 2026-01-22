@@ -2,6 +2,7 @@ package dev.cloudants.iulat.lib.utils.main
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
@@ -22,6 +23,7 @@ import dev.cloudants.iulat.lib.ui.dashboard.ResidenceDashboard
 import dev.cloudants.iulat.lib.ui.email.ForgotPassword
 import dev.cloudants.iulat.lib.ui.email.ResetPassword
 import dev.cloudants.iulat.lib.ui.email.TokenVerification
+import dev.cloudants.iulat.lib.ui.map.GlobalMapUI
 import dev.cloudants.iulat.lib.ui.map.MapUI
 import dev.cloudants.iulat.lib.ui.message.ChatDirect
 import dev.cloudants.iulat.lib.ui.message.ChatLobby
@@ -354,40 +356,40 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 "Public Disturbance" -> {
                     publicDisturbanceViewModel.state.collectAsState().value.items
                         .find { it.id == args.addressId }
-                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Public Disturbance") }
                 }
                 "Garbage Disposal" -> {
                     garbageViewModel.state.collectAsState().value.items
                         .find { it.id == args.addressId }
-                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Garbage Disposal") }
                 }
                 "Robberies" -> {
                     robberyViewModel.state.collectAsState().value.items
                         .find { it.id == args.addressId }
-                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Robberies") }
                 }
                 "Broken Streetlights" -> {
                     streetLightViewModel.state.collectAsState().value.items
                         .find { it.id == args.addressId }
-                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Broken Streetlights") }
                 }
                 "Vehicle Crashes" -> {
                     vehicleViewModel.state.collectAsState().value.items
                         .find { it.id == args.addressId }
-                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Vehicle Crashes") }
                 } "Road Repair" -> {
                     roadViewModel.state.collectAsState().value.items
                         .find { it.id == args.addressId }
-                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Road Repair") }
                 } "No Water Supply" -> {
                     waterViewModel.state.collectAsState().value.items
                         .find { it.id == args.addressId }
-                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "No Water Supply") }
                 }
                 else -> {
                     othersViewModel.state.collectAsState().value.items
                         .find { it.id == args.addressId }
-                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails) }
+                        ?.let { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Others") }
                 }
             }
             Guard(navController = navController) {
@@ -463,5 +465,59 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
             }
         }
 
+        composable<MainNav.MapReports> {
+            Guard(navController) { currentUser ->
+                val publicDisturbanceViewModel: PublicDisturbanceViewModel = hiltViewModel()
+                val garbageViewModel: GarbageDisposalViewModel = hiltViewModel()
+                val robberyViewModel: RobberiesViewModel = hiltViewModel()
+                val streetLightViewModel: BrokenStreetLightViewModel = hiltViewModel()
+                val vehicleViewModel: VehicleCrashViewModel = hiltViewModel()
+                val roadViewModel: RoadRepairViewModel = hiltViewModel()
+                val waterViewModel: NoWaterSupplyViewModel = hiltViewModel()
+                val othersViewModel: OthersViewModel = hiltViewModel()
+
+                LaunchedEffect(Unit) {
+                    publicDisturbanceViewModel.fetchAllPublicDisturbance()
+                    garbageViewModel.fetchAllGarbageReports()
+                    robberyViewModel.fetchAllRobberies()
+                    streetLightViewModel.fetchAllBrokenStreet()
+                    vehicleViewModel.fetchAllVehicleCrash()
+                    roadViewModel.fetchAllRoadRepair()
+                    waterViewModel.fetchAllNoWater()
+                    othersViewModel.fetchAllOthers()
+                }
+
+                val publicState by publicDisturbanceViewModel.state.collectAsState()
+                val garbageState by garbageViewModel.state.collectAsState()
+                val robberyState by robberyViewModel.state.collectAsState()
+                val streetLightState by streetLightViewModel.state.collectAsState()
+                val vehicleState by vehicleViewModel.state.collectAsState()
+                val roadState by roadViewModel.state.collectAsState()
+                val waterState by waterViewModel.state.collectAsState()
+                val othersState by othersViewModel.state.collectAsState()
+
+                val allMapPoints = remember(
+                    publicState, garbageState, robberyState, streetLightState,
+                    vehicleState, roadState, waterState, othersState
+                ) {
+                    val combinedList = mutableListOf<MapReportData>()
+                    combinedList.addAll(publicState.items.map { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Public Disturbance") })
+                    combinedList.addAll(garbageState.items.map { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Garbage Disposal") })
+                    combinedList.addAll(robberyState.items.map { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Robberies") })
+                    combinedList.addAll(streetLightState.items.map { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Broken Streetlights") })
+                    combinedList.addAll(vehicleState.items.map { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Vehicle Crashes") })
+                    combinedList.addAll(roadState.items.map { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Road Repair") })
+                    combinedList.addAll(waterState.items.map { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "No Water Supply") })
+                    combinedList.addAll(othersState.items.map { MapReportData(it.id, it.latitude, it.longitude, it.reportDetails, "Others") })
+                    combinedList
+                }
+
+                GlobalMapUI(
+                    navController = navController,
+                    reportList = allMapPoints,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
     }
 }

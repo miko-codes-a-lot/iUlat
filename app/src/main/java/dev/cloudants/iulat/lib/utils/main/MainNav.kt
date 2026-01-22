@@ -96,4 +96,6 @@ object MainNav {
     @Serializable
     data class NotificationReportVIew (var title: String = "", var reportId: String)
 
+    @Serializable
+    object MapReports
 }
