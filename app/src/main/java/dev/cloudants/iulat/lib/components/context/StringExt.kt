@@ -82,3 +82,28 @@ fun parseToSortableDate(dateString: String?): Long {
     return 0L
 }
 
+fun formatterToFilterMonth(dateString: String?): String {
+    if (dateString.isNullOrEmpty()) return ""
+
+    val possibleFormats = listOf(
+        "EEE MMM dd HH:mm:ss z yyyy",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd"
+    )
+
+    for (format in possibleFormats) {
+        try {
+            val parser = SimpleDateFormat(format, Locale.getDefault())
+            val date = parser.parse(dateString)
+
+            if (date != null) {
+                val filterFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+                return filterFormat.format(date)
+            }
+        } catch (_: Exception) { }
+    }
+    return ""
+}

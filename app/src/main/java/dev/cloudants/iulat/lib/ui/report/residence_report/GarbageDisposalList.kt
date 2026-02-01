@@ -34,7 +34,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,11 +56,13 @@ import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.PrintableRowImpl
 import dev.cloudants.iulat.lib.components.context.formatterDate
+import dev.cloudants.iulat.lib.components.context.formatterToFilterMonth
 import dev.cloudants.iulat.lib.components.header.CustomHeader
 import dev.cloudants.iulat.lib.components.print.Print
 import dev.cloudants.iulat.lib.components.print.exportDynamicPDF
 import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.ui.report.MonthFilterCard
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
@@ -75,6 +79,14 @@ fun GarbageDisposalList(
     val userViewModel: UserViewModel = hiltViewModel()
     val users by userViewModel.users.collectAsState()
     val context = LocalContext.current
+    var selectedMonth by remember { mutableStateOf<String?>(null) }
+    val filteredItems = remember(state.items, selectedMonth) {
+        if (selectedMonth == null) {
+            state.items
+        } else {
+            state.items.filter { formatterToFilterMonth(it.createdAt) == selectedMonth }
+        }
+    }
     LaunchedEffect(Unit) {
         userViewModel.loadUsers()
         if(currentUser.isResidence) {
@@ -94,7 +106,7 @@ fun GarbageDisposalList(
                 navController,
                 currentUser,
                 context,
-                items = state.items,
+                items = filteredItems,
                 users = users
             )
         }
@@ -108,13 +120,17 @@ fun GarbageDisposalList(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             CustomHeader(MODULE.GARBAGE_DISPOSAL)
+            MonthFilterCard(
+                selectedMonth = selectedMonth,
+                onMonthSelected = { selectedMonth = it }
+            )
             if (state.isLoading) {
                 CircularProgressIndicator(color = Color(0xFF0049AD))
             }
 
             GarbageListContainer(
                 navController = navController,
-                items = state.items
+                items = filteredItems
             )
         }
     }

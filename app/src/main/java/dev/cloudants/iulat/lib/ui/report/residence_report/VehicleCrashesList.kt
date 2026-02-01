@@ -51,13 +51,18 @@ import android.widget.Toast
 import androidx.compose.ui.res.painterResource
 import dev.cloudants.iulat.R
 import android.os.Build
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import dev.cloudants.iulat.MainActivity
 import dev.cloudants.iulat.lib.components.context.PrintableRowImpl
+import dev.cloudants.iulat.lib.components.context.formatterToFilterMonth
 import dev.cloudants.iulat.lib.components.print.Print
 import dev.cloudants.iulat.lib.components.print.exportDynamicPDF
 import dev.cloudants.iulat.lib.models.entities.BrokenStreetlightsDto
+import dev.cloudants.iulat.lib.ui.report.MonthFilterCard
 import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 
 @Composable
@@ -70,6 +75,14 @@ fun VehicleCrashesList(
     val userViewModel: UserViewModel = hiltViewModel()
     val users by userViewModel.users.collectAsState()
     val context = LocalContext.current
+    var selectedMonth by remember { mutableStateOf<String?>(null) }
+    val filteredItems = remember(state.items, selectedMonth) {
+        if (selectedMonth == null) {
+            state.items
+        } else {
+            state.items.filter { formatterToFilterMonth(it.createdAt) == selectedMonth }
+        }
+    }
     LaunchedEffect(Unit) {
         userViewModel.loadUsers()
         if(currentUser.isResidence) {
@@ -87,7 +100,7 @@ fun VehicleCrashesList(
                 navController,
                 currentUser,
                 context,
-                items = state.items,
+                items = filteredItems,
                 users = users
             )
         }
@@ -101,12 +114,16 @@ fun VehicleCrashesList(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             CustomHeader(MODULE.VEHICLE_CRASH)
+            MonthFilterCard(
+                selectedMonth = selectedMonth,
+                onMonthSelected = { selectedMonth = it }
+            )
             if (state.isLoading) {
                 CircularProgressIndicator(color = Color(0xFF0049AD))
             }
             VehicleCrashesListContainer(
                 navController = navController,
-                items = state.items
+                items = filteredItems
             )
         }
     }

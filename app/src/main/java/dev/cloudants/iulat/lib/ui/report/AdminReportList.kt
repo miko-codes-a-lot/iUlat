@@ -56,6 +56,7 @@ import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.delay
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.context.formatterDate
+import dev.cloudants.iulat.lib.components.context.formatterToFilterMonth
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
@@ -74,7 +75,7 @@ fun AdminReportList(navController: NavController) {
     var selectedStatus by remember { mutableStateOf("Pending") }
     var searchQuery by remember { mutableStateOf("") }
     var debouncedQuery by remember { mutableStateOf("") }
-
+    var selectedMonth by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(searchQuery) {
         delay(500L)
         debouncedQuery = searchQuery
@@ -82,7 +83,15 @@ fun AdminReportList(navController: NavController) {
     LaunchedEffect(selectedStatus, debouncedQuery) {
         adminReportViewModel.loadReportsByStatus(selectedStatus, debouncedQuery)
     }
-
+    val filteredReports = remember(reports, selectedMonth) {
+        if (selectedMonth == null) {
+            reports
+        } else {
+            reports.filter { reportItem ->
+                formatterToFilterMonth(reportItem.reportDate) == selectedMonth
+            }
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -95,7 +104,10 @@ fun AdminReportList(navController: NavController) {
             searchQuery = searchQuery,
             onSearchQueryChanged = { searchQuery = it },
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        MonthFilterCard(
+            selectedMonth = selectedMonth,
+            onMonthSelected = { selectedMonth = it }
+        )
         ReportTableHeader(
             selectedStatus = selectedStatus,
             onStatusSelected = { selectedStatus = it }
@@ -108,7 +120,7 @@ fun AdminReportList(navController: NavController) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (reports.isEmpty()) {
+            if (filteredReports.isEmpty()) {
                 item {
                     Text(
                         text = "No Report found",
@@ -118,7 +130,7 @@ fun AdminReportList(navController: NavController) {
                     )
                 }
             }
-            items(reports) { reportItem ->
+            items(filteredReports) { reportItem ->
                 SingleItemCard(
                     title = reportItem.reportType,
                     status = reportItem.status,

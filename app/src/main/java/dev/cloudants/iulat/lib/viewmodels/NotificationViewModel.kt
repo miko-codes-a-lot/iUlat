@@ -34,4 +34,8 @@ class NotificationViewModel @Inject constructor(
             notificationService.markAsRead(id)
         }
     }
+
+    val unreadCount: StateFlow<Int> = notificationUiState
+        .map { notifications -> notifications.count { !it.isRead } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 }

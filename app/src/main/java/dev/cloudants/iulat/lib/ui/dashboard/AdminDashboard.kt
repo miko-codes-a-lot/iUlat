@@ -113,6 +113,7 @@ fun AdminDashboard(
         modifier = Modifier.background(Color.White),
         floatingActionButton = {
             Column(
+                modifier = Modifier.background(Color.White),
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {

@@ -29,6 +29,8 @@ import androidx.compose.ui.layout.ContentScale
 import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -453,8 +455,11 @@ fun TextFieldContainer(
         OutlinedTextField(
             value = textFieldValue,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(textFieldLabel, fontWeight = FontWeight.Bold) },
+            modifier = Modifier
+                .fillMaxWidth(),
+            label = {
+                Text(text = textFieldLabel, fontFamily = FontFamily.SansSerif, color = Color(0xFF0049AD))
+            },
             visualTransformation = if (isPasswordField && !isPasswordVisible) {
                 PasswordVisualTransformation()
             } else {
@@ -467,15 +472,16 @@ fun TextFieldContainer(
                             painter = painterResource(
                                 id = if (isPasswordVisible) R.drawable.visibilityon else R.drawable.visibility_off
                             ),
+                            tint = Color(0xFF0049AD),
                             contentDescription = null
                         )
                     }
                 }
             },
             textStyle = TextStyle(
-                color = Color.Black,
+                color = Color(0xFF0049AD),
                 fontSize = 16.sp,
-                fontFamily = FontFamily.SansSerif
+                fontFamily = FontFamily.SansSerif,
             ),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = Color.White,
@@ -562,7 +568,8 @@ fun DatePickerField(
         Icon(
             painter = painterResource(id = R.drawable.calendar_icon),
             contentDescription = "Calendar Icon",
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(24.dp),
+            tint = Color(0xFF0049AD)
         )
 
         Spacer(modifier = Modifier.width(10.dp))
@@ -584,7 +591,7 @@ fun DatePickerField(
                     fontFamily = FontFamily.SansSerif,
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp,
-                    color = Color.Black
+                    color = Color(0xFF0049AD)
                 )
             }
         }
@@ -667,7 +674,7 @@ fun AddressSelector(
                                 text = if (address.barangay.isNotEmpty())
                                     "${address.zone}, ${address.barangay}"
                                 else address.zone,
-                                color = Color.Black,
+                                color = Color(0xFF0049AD),
                                 fontFamily = FontFamily.SansSerif,
                                 fontSize = 16.sp,
                                 textAlign = TextAlign.Center

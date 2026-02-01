@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -31,7 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -73,6 +76,7 @@ fun Menu(
     val navItems = currentUserState.value?.let { getNavItems(navController, it) } ?: emptyList()
     val isLoggingOut = remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    val unreadCount by notificationViewModel.unreadCount.collectAsStateWithLifecycle()
     LaunchedEffect(currentUserState.value) {
         val user = currentUserState.value
         if (user == null) {
@@ -134,17 +138,25 @@ fun Menu(
                                 painter = painterResource(id = icons),
                                 contentDescription = "Notifications",
                                 tint = Color.White,
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(28.dp)
                             )
-
-                            if (hasUnread && routeName != MODULE.ACCOUNT) {
+                            if (unreadCount > 0 && routeName != MODULE.ACCOUNT) {
                                 Box(
                                     modifier = Modifier
-                                        .size(12.dp)
+                                        .size(20.dp)
+                                        .offset(x = 4.dp, y = (-4).dp)
                                         .background(Color.Red, shape = CircleShape)
-                                        .border(1.5.dp, Color(0xFF0049AD), CircleShape)
-                                        .align(Alignment.TopEnd)
-                                )
+                                        .border(1.dp, Color(0xFF0049AD), CircleShape)
+                                        .align(Alignment.TopEnd),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
