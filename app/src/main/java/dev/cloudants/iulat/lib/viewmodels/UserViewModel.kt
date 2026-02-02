@@ -198,4 +198,20 @@ class UserViewModel @Inject constructor(
         }
     }
 
+    fun saveValidId(userId: String, imageBytes: ByteArray) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = userService.saveValidId(userId, imageBytes)
+                if (result.isSuccess) {
+                    _currentUserState.value = result.getOrNull()
+                    Log.d("UserViewModel", "Valid ID saved successfully")
+                } else {
+                    Log.e("UserViewModel", "Failed to save ID: ${result.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Error in saveValidId: ${e.message}")
+            }
+        }
+    }
+
 }

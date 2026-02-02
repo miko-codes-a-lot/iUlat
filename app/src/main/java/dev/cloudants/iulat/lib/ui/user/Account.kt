@@ -5,7 +5,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -24,9 +23,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -189,7 +191,21 @@ fun Account(navController: NavController, currentUser: UserDto) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        UserDetails(navController)
+        UserDetails(
+            navController = navController,
+            activeUser = activeUser,
+            onIdSelected = { uri ->
+                uri?.let {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        val inputStream = context.contentResolver.openInputStream(it)
+                        val bytes = inputStream?.readBytes()
+                        if (bytes != null && activeUser.id != null) {
+                            userViewModel.saveValidId(activeUser.id, bytes)
+                        }
+                    }
+                }
+            }
+        )
 
         Spacer(modifier = Modifier.padding(vertical = 5.dp))
 
@@ -235,29 +251,65 @@ fun Profile(
 @Composable
 fun UserDetails(
     navController: NavController,
+    activeUser: UserDto,
+    onIdSelected: (Uri?) -> Unit
 ) {
-//    val userDetails = listOf(
-//        currentUser.firstName,
-//        currentUser.middleName,
-//        currentUser.lastName
-//    )
-//    val isShowEditIcon = rememberSaveable { mutableStateOf( !currentUser.isFarmers) }
-    Row(
-        modifier = Modifier
-            .padding(start = 16.dp)
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-//        userDetails.forEach { fullName ->
-//            if (fullName != null) {
-        Text(
-            text = "Contact Details",
-            fontSize = 28.sp,
-            fontFamily = FontFamily.SansSerif,
-            color = Color(0xFF0049AD),
-            modifier = Modifier.padding(horizontal = 3.dp)
-        )
+    var isUploadVisible by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .padding(start = 16.dp, end = 8.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Contact Details",
+                fontSize = 28.sp,
+                fontFamily = FontFamily.SansSerif,
+                color = Color(0xFF0049AD),
+                modifier = Modifier.padding(horizontal = 3.dp)
+            )
+            if(activeUser.isVerified) {
+                IconButton(
+                    onClick = { isUploadVisible = !isUploadVisible }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccountBox,
+                        contentDescription = "Toggle Upload ID",
+                        tint = if (isUploadVisible) Color.Red else Color(0xFF0049AD),
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            }
+        }
+
+        if (isUploadVisible) {
+            Box(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .background(Color(0xFFF8F9FA), RoundedCornerShape(12.dp))
+                    .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Update ID Document",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    UploadIdUI(
+                        existingImageUrl = activeUser.validId,
+                        onImageSelected = { uri ->
+                            onIdSelected(uri)
+                        }
+                    )
+                }
+            }
+        }
 //            }
 //        }
 //        if(isShowEditIcon.value) {
