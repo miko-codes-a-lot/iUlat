@@ -31,6 +31,7 @@ import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.CreateReport
 import dev.cloudants.iulat.lib.ui.report.EditReport
 import dev.cloudants.iulat.lib.ui.report.NotificationReportVIew
+import dev.cloudants.iulat.lib.ui.report.ViewRejReport
 import dev.cloudants.iulat.lib.ui.report.ViewReport
 import dev.cloudants.iulat.lib.ui.report.residence_report.BrokenLightList
 import dev.cloudants.iulat.lib.ui.report.residence_report.GarbageDisposalList
@@ -393,7 +394,7 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 }
             }
             Guard(navController = navController) {
-                MapUI(reportData = selectedReport)
+                MapUI(navController = navController, reportData = selectedReport)
             }
         }
 
@@ -516,6 +517,40 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                     navController = navController,
                     reportList = allMapPoints,
                     onBack = { navController.popBackStack() }
+                )
+            }
+        }
+
+        composable<MainNav.ViewPendingReport> {
+            Guard(navController) { currentUser ->
+                val args = it.toRoute<MainNav.ViewPendingReport>()
+                val title = args.title
+                val reportId = args.reportId
+                val viewModel : ReportViewModel = hiltViewModel()
+                val garbageDisposalViewModel : GarbageDisposalViewModel = hiltViewModel()
+                val publicDisturbanceViewModel : PublicDisturbanceViewModel = hiltViewModel()
+                val robberiesViewModel : RobberiesViewModel = hiltViewModel()
+                val brokenStreetLightViewModel : BrokenStreetLightViewModel = hiltViewModel()
+                val vehicleCrashViewModel : VehicleCrashViewModel = hiltViewModel()
+                val roadRepairViewModel : RoadRepairViewModel = hiltViewModel()
+                val noWaterSupplyViewModel : NoWaterSupplyViewModel = hiltViewModel()
+                val othersViewModel : OthersViewModel = hiltViewModel()
+                val adminViewModel: AdminReportViewModel = hiltViewModel()
+                ViewRejReport(
+                    navController = navController,
+                    reportTitle = title,
+                    viewModel = viewModel,
+                    currentUser = currentUser,
+                    garbageDisposalViewModel = garbageDisposalViewModel,
+                    publicDisturbanceViewModel = publicDisturbanceViewModel,
+                    robberiesViewModel = robberiesViewModel,
+                    brokenStreetLightViewModel = brokenStreetLightViewModel,
+                    vehicleCrashViewModel = vehicleCrashViewModel,
+                    roadRepairViewModel = roadRepairViewModel,
+                    noWaterSupplyViewModel = noWaterSupplyViewModel,
+                    othersViewModel = othersViewModel,
+                    reportId = reportId,
+                    adminViewModel = adminViewModel
                 )
             }
         }

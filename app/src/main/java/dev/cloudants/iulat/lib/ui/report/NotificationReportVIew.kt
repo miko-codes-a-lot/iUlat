@@ -1,8 +1,11 @@
 package dev.cloudants.iulat.lib.ui.report
 
+import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,11 +20,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
@@ -55,6 +60,7 @@ fun NotificationReportVIew(
     adminViewModel: AdminReportViewModel,
 ) {
     var textValue by remember { mutableStateOf("") }
+    var textStatsValues by remember { mutableStateOf("") }
     var newMessage by remember { mutableStateOf("") }
     val garbageState by garbageDisposalViewModel.state.collectAsState()
     val publicState by publicDisturbanceViewModel.state.collectAsState()
@@ -88,53 +94,60 @@ fun NotificationReportVIew(
                 garbageDisposalViewModel.fetchReportById(reportId)
                 garbageDisposalViewModel.state.collect { state ->
                     textValue = state.selectedReport?.reportDetails ?: ""
+                    textStatsValues = state.selectedReport?.status ?: ""
                 }
             }
             MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
                 publicDisturbanceViewModel.fetchReportById(reportId)
                 publicDisturbanceViewModel.state.collect { state ->
                     textValue = state.selectedReport?.reportDetails ?: ""
+                    textStatsValues = state.selectedReport?.status ?: ""
                 }
             }
             MODULE.ROBBERIES, "Robberies" -> {
                 robberiesViewModel.fetchReportById(reportId)
                 robberiesViewModel.state.collect { state ->
                     textValue = state.selectedReport?.reportDetails ?: ""
+                    textStatsValues = state.selectedReport?.status ?: ""
                 }
             }
             MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> {
                 brokenStreetLightViewModel.fetchReportById(reportId)
                 brokenStreetLightViewModel.state.collect { state ->
                     textValue = state.selectedReport?.reportDetails ?: ""
+                    textStatsValues = state.selectedReport?.status ?: ""
                 }
             }
             MODULE.VEHICLE_CRASH, "Vehicle Crashes", "Vehicle Crash" -> {
                 vehicleCrashViewModel.fetchReportById(reportId)
                 vehicleCrashViewModel.state.collect { state ->
                     textValue = state.selectedReport?.reportDetails ?: ""
+                    textStatsValues = state.selectedReport?.status ?: ""
                 }
             }
             MODULE.ROAD_REPAIR, "Road Repair" -> {
                 roadRepairViewModel.fetchReportById(reportId)
                 roadRepairViewModel.state.collect { state ->
                     textValue = state.selectedReport?.reportDetails ?: ""
+                    textStatsValues = state.selectedReport?.status ?: ""
                 }
             }
             MODULE.NO_WATER_SUPPLY, "No Water Supply" -> {
                 noWaterSupplyViewModel.fetchReportById(reportId)
                 noWaterSupplyViewModel.state.collect { state ->
                     textValue = state.selectedReport?.reportDetails ?: ""
+                    textStatsValues = state.selectedReport?.status ?: ""
                 }
             }
             MODULE.OTHERS, "Others" -> {
                 othersViewModel.fetchReportById(reportId)
                 othersViewModel.state.collect { state ->
                     textValue = state.selectedReport?.reportDetails ?: ""
+                    textStatsValues = state.selectedReport?.status ?: ""
                 }
             }
         }
     }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -147,19 +160,25 @@ fun NotificationReportVIew(
             contentPadding = PaddingValues(top = 60.dp, bottom = 32.dp)
         ) {
             item {
-                Column(modifier = Modifier.padding(bottom = 24.dp)) {
-                    Text(
-                        text = reportTitle,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 26.sp,
-                        color = Color(0xFF1A1C1E)
-                    )
-                    Text(
-                        text = "Report Reference: #${reportId.takeLast(6).uppercase()}",
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = reportTitle,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 22.sp,
+                            color = Color(0xFF1A1C1E)
+                        )
+                        Text(text = "Report Case ID: ${reportId.take(8)}...", color = Color.Gray, fontSize = 12.sp)
+                    }
+                    StatusChip(status = textStatsValues)
                 }
+
             }
 
             item {

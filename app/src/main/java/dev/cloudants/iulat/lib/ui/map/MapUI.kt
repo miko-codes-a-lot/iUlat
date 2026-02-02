@@ -26,32 +26,52 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import dev.cloudants.iulat.R
 import android.location.Geocoder
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.google.maps.android.compose.*
 import dev.cloudants.iulat.lib.components.context.MapReportData
+import dev.cloudants.iulat.lib.utils.main.MainNav
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 @Composable
-fun MapUI(reportData: MapReportData?) {
+fun MapUI(
+    navController: NavController,
+    reportData: MapReportData?
+) {
     val context = LocalContext.current
     var customIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
     var locationName by remember { mutableStateOf("Loading address...") }
-
     LaunchedEffect(reportData) {
         if (reportData?.latitude != null && reportData.longitude != null) {
             MapsInitializer.initialize(context)
             customIcon = bitmapDescriptorFromVector(context, R.drawable.location_maker)
 
-            try {
-                val geocoder = Geocoder(context, Locale.getDefault())
-                val addresses = geocoder.getFromLocation(reportData.latitude!!, reportData.longitude!!, 1)
-                locationName = addresses?.firstOrNull()?.getAddressLine(0) ?: "Unknown Location"
-            } catch (e: Exception) {
-                locationName = "Address Unavailable"
+            withContext(Dispatchers.IO) {
+                try {
+                    val geocoder = Geocoder(context, Locale.getDefault())
+                    val addresses = geocoder.getFromLocation(reportData.latitude!!, reportData.longitude!!, 1)
+                    val result = addresses?.firstOrNull()?.getAddressLine(0) ?: "Unknown Location"
+
+                    withContext(Dispatchers.Main) {
+                        locationName = result
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        locationName = "Address Unavailable"
+                    }
+                }
             }
         }
     }
@@ -94,18 +114,67 @@ fun MapUI(reportData: MapReportData?) {
                 .align(Alignment.BottomCenter)
                 .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp)
                 .fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(4.dp)
+            elevation = CardDefaults.cardElevation(12.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Reported Location",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(Color.Red, CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = reportData.reportType?.uppercase() ?: "INCIDENT",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 12.sp,
+                        color = Color.Red,
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Text(
                     text = locationName,
-                    style = MaterialTheme.typography.bodyMedium
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    lineHeight = 20.sp
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = reportData.reportDetails ?: "No additional details provided.",
+                    fontSize = 14.sp,
+                    color = Color(0xFF42474E),
+                    lineHeight = 22.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        navController.navigate(
+                            MainNav.NotificationReportVIew(
+                                title = reportData.reportType ?: "Others",
+                                reportId = reportData.id ?: ""
+                            )
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0049AD)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("View Full Report Details")
+                }
             }
         }
     }

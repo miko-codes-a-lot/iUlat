@@ -113,29 +113,29 @@ fun AdminDashboard(
         modifier = Modifier.background(Color.White),
         floatingActionButton = {
             Column(
-                modifier = Modifier.background(Color.White),
+                modifier = Modifier.background(Color.Transparent),
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                FloatingActionButton(
-                    onClick = {
-                        navController.navigate(MainNav.MapReports)
-                    },
-                    containerColor = Color.White,
-                    contentColor = Color.Gray,
-                    shape = CircleShape,
-                    modifier = Modifier.border(
-                        width = 1.dp,
-                        color = Color.LightGray,
-                        shape = CircleShape
-                    )
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.map_global),
-                        contentDescription = "View Map Reports",
-                            modifier = Modifier.size(34.dp)
-                    )
-                }
+//                FloatingActionButton(
+//                    onClick = {
+//                        navController.navigate(MainNav.MapReports)
+//                    },
+//                    containerColor = Color.White,
+//                    contentColor = Color.Gray,
+//                    shape = CircleShape,
+//                    modifier = Modifier.border(
+//                        width = 1.dp,
+//                        color = Color.LightGray,
+//                        shape = CircleShape
+//                    )
+//                ) {
+//                    Image(
+//                        painter = painterResource(id = R.drawable.map_global),
+//                        contentDescription = "View Map Reports",
+//                            modifier = Modifier.size(34.dp)
+//                    )
+//                }
 
                 FloatingActionButton(
                     onClick = { showDialog = true },

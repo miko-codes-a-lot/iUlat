@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
@@ -83,12 +83,15 @@ fun AdminReportList(navController: NavController) {
     LaunchedEffect(selectedStatus, debouncedQuery) {
         adminReportViewModel.loadReportsByStatus(selectedStatus, debouncedQuery)
     }
-    val filteredReports = remember(reports, selectedMonth) {
-        if (selectedMonth == null) {
-            reports
-        } else {
-            reports.filter { reportItem ->
-                formatterToFilterMonth(reportItem.reportDate) == selectedMonth
+
+    val filteredReports by remember(reports, selectedMonth) {
+        derivedStateOf {
+            if (selectedMonth == null) {
+                reports
+            } else {
+                reports.filter { reportItem ->
+                    formatterToFilterMonth(reportItem.reportDate) == selectedMonth
+                }
             }
         }
     }
@@ -137,22 +140,22 @@ fun AdminReportList(navController: NavController) {
                     userName = "from : " + reportItem.userName,
                     date = formatterDate(reportItem.reportDate),
                     onClick = {
-                        Log.e("Address :: ", reportItem.addressId)
                          when(reportItem.status) {
                              "Pending" -> {
-                                 navController.navigate(MainNav.Map(addressId = reportItem.docId, reportType = reportItem.reportType))
+                                 navController.navigate(MainNav.ViewPendingReport(reportItem.reportType, reportItem.docId))
                              }
                              "Rejected" -> {
-                                 navController.navigate(MainNav.NotificationReportVIew(reportItem.reportType, reportItem.docId))
+                                 Log.e("STATSSS:: ", reportItem.status)
+                                 navController.navigate(MainNav.ViewPendingReport(reportItem.reportType, reportItem.docId))
                              }
-                             else -> navController.navigate(MainNav.ViewReport(reportItem.reportType, reportItem.docId))
+                             "Approve" -> {
+                                 navController.navigate(MainNav.ViewReport(reportItem.reportType, reportItem.docId))
+                             }
+                             else -> navController.navigate(MainNav.Map(addressId = reportItem.docId, reportType = reportItem.reportType))
                         }
                     },
                     onDeleteClick = {
-                        adminReportViewModel.updateReportStatus(
-                            reportItem,
-                            "Rejected"
-                        )
+                        adminReportViewModel.updateReportStatus(reportItem, "Rejected")
                     },
                     onCheckClick = {
                         when(reportItem.status) {

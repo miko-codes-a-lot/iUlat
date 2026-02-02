@@ -88,23 +88,7 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
             onPasswordVisibilityToggle = { loginViewModel.togglePasswordVisibility() }
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White),
-            horizontalArrangement = Arrangement.End
-        ) {
-            TextButton(onClick = {
-                navController.navigate(MainNav.ForgotPassword)
-            }) {
-                Text(
-                    text = "Forgot password?",
-                    fontSize = 15.sp,
-                    fontFamily = FontFamily.Serif,
-                    color = Color.Red
-                )
-            }
-        }
+
         Spacer(modifier = Modifier.height(15.dp))
         if (!state.isLoading) {
             CustomButton(
@@ -132,8 +116,25 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
                 modifier = Modifier.padding(top = 16.dp)
             )
         }
-
         Spacer(modifier = Modifier.height(15.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            TextButton(onClick = {
+                navController.navigate(MainNav.ForgotPassword)
+            }) {
+                Text(
+                    text = "Forgot password?",
+                    fontSize = 15.sp,
+                    fontFamily = FontFamily.Serif,
+                    color = Color.Red
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(30.dp))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -213,12 +214,12 @@ fun InputField(
         value = value,
         onValueChange = onValueChange,
         label = {
-            Text(text = label, fontFamily = FontFamily.SansSerif, color = Color(0xFF0049AD))
+            Text(text = label, fontFamily = FontFamily.Serif, color = Color(0xFF0049AD))
         },
         textStyle = TextStyle(
             color = Color(0xFF0049AD),
             fontSize = 16.sp,
-            fontFamily = FontFamily.SansSerif,
+            fontFamily = FontFamily.Serif,
         ),
         leadingIcon = {
             Icon(

@@ -94,6 +94,9 @@ object MainNav {
     data class ViewReport (var title: String = "", var reportId: String)
 
     @Serializable
+    data class ViewPendingReport (var title: String = "", var reportId: String)
+
+    @Serializable
     data class NotificationReportVIew (var title: String = "", var reportId: String)
 
     @Serializable

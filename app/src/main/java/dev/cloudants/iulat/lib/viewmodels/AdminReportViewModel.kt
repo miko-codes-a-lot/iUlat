@@ -100,7 +100,14 @@ class AdminReportViewModel @Inject constructor(
                     else -> return@launch
                 }
                 reportService.updateReportStatus(report.docId, collectionName, newStatus)
-                loadReportsByStatus(report.status, "")
+                createTimelineMessage(
+                    reportId = report.docId,
+                    userId = "Admin",
+                    status = newStatus,
+                    message = "Report status updated to $newStatus"
+                )
+                loadReportsByStatus(newStatus, "")
+                loadTimeline(report.docId)
             } catch (e: Exception) {
                 Log.e("FAILED UPDATE : ", e.message.toString())
             }
