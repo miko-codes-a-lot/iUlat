@@ -2,6 +2,9 @@ package dev.cloudants.iulat.lib.ui.user
 
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -28,8 +31,10 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.content.MediaType.Companion.Image
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.painterResource
 
 @Composable
 fun UserPreview(
@@ -61,7 +66,7 @@ fun UserPreview(
         "Address" to fullAddress,
         "Mobile Number" to (user.mobileNumber ?: ""),
         "Date of Birth" to formatDate(user.dateOfBirth),
-        "Email" to user.email
+        "Email" to user.email,
     )
 
     Column(
@@ -73,19 +78,46 @@ fun UserPreview(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(50.dp))
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = if (user.isVerified) Color(0xFFE8F0FE) else Color(0xFFFFEBEE),
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (user.isVerified) Icons.Default.CheckCircle else Icons.Default.Info,
+                    contentDescription = null,
+                    tint = if (user.isVerified) Color(0xFF0049AD) else Color(0xFFD32F2F),
+                    modifier = Modifier.size(18.dp)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = if (user.isVerified) "ACCOUNT VERIFIED" else "NOT VERIFIED ACCOUNT ",
+                    color = if (user.isVerified) Color(0xFF0049AD) else Color(0xFFD32F2F),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 13.sp,
+                    letterSpacing = 0.5.sp,
+                    fontFamily = FontFamily.SansSerif
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = title,
             fontFamily = FontFamily.Serif,
             fontSize = 24.sp
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         userInfo.forEach { (label, value) ->
             InfoRow(label, value)
         }
-
         user.validId?.let { validId ->
             Spacer(modifier = Modifier.height(24.dp))
             Text(
@@ -182,14 +214,20 @@ fun UserPreview(
 
 @Composable
 fun InfoRow(label: String, value: String) {
+    val valueColor = when (value) {
+        "Verified" -> Color(0xFF0049AD)
+        "Not Verified" -> Color.Red
+        else -> Color.Black
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 10.dp)
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "$label:",
@@ -201,6 +239,7 @@ fun InfoRow(label: String, value: String) {
             Text(
                 text = value.ifBlank { "N/A" },
                 fontSize = 17.sp,
+                color = valueColor,
                 fontFamily = FontFamily.SansSerif
             )
         }

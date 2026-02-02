@@ -27,7 +27,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import android.util.Base64
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -73,16 +75,18 @@ fun UserForm(
     navController: NavController,
     addressDto: AddressDto?,
     viewModel: UserViewModel = hiltViewModel(),
-    addressViewModel: AddressViewModel = hiltViewModel()
+    addressViewModel: AddressViewModel = hiltViewModel(),
+    showUpload: Boolean = false
 ) {
     val state by viewModel.uiState.collectAsState()
+    var isVerified by remember { mutableStateOf(targetUserDto?.isVerified ?: false) }
+    val verifiedColor by animateColorAsState(if (isVerified) Color(0xFF0049AD) else Color.Transparent)
+    val notVerifiedColor by animateColorAsState(if (!isVerified) Color.Red.copy(alpha = 0.8f) else Color.Transparent)
     val (chosenRole, setChosenRole) = remember {
         mutableStateOf(
-            when {
-                targetUserDto?.isAdmin == true -> "Admin"
-                targetUserDto?.isResidence == true -> "Residence"
-                else -> "Residence"
-            }
+            if (!showUpload) "Residence"
+            else if (targetUserDto?.isAdmin == true) "Admin"
+            else "Residence"
         )
     }
     val context = LocalContext.current
@@ -93,7 +97,11 @@ fun UserForm(
         "First Name", "Middle Name", "Last Name", "Date Of Birth",
         "Address", "Mobile Number", "Email"
     )
-
+    LaunchedEffect(showUpload) {
+        if (!showUpload) {
+            setChosenRole("Residence")
+        }
+    }
     if (includePassword || targetUserDto != null) {
         listOfLabel.add("Password")
     }
@@ -136,6 +144,7 @@ fun UserForm(
             statesValue["Address"]?.value = it.address?.province ?: ""
             statesValue["Mobile Number"]?.value = it.mobileNumber ?: ""
             statesValue["Email"]?.value = it.email
+            statesValue["isVerified"]?.value = it.isVerified.toString()
 //            statesValue["Password"]?.value = it.password
             Log.d("UserForm", "Editing user: ${it.username}")
             Log.d("UserForm", "Original hashed password: ${it.password}")
@@ -161,7 +170,53 @@ fun UserForm(
                 modifier = Modifier.offset(y = (-6).dp)
             )
         }
+        if (showUpload) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .padding(vertical = 12.dp)
+                        .height(45.dp)
+                        .clip(RoundedCornerShape(25.dp))
+                        .background(Color(0xFFF2F2F2)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(25.dp))
+                            .background(if (!isVerified) notVerifiedColor else Color.Transparent)
+                            .clickable { isVerified = false },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Not Verified",
+                            color = if (!isVerified) Color.White else Color.Gray,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
 
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(25.dp))
+                            .background(if (isVerified) verifiedColor else Color.Transparent)
+                            .clickable { isVerified = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Verified",
+                            color = if (isVerified) Color.White else Color.Gray,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        }
         item {
             Column(modifier = Modifier.fillMaxWidth()) {
                 listOfLabel.forEach { label ->
@@ -228,7 +283,7 @@ fun UserForm(
                 }
             }
         }
-        if (currentUser.isAdmin) {
+        if (showUpload) {
             item {
                 Text(
                     text = "Select Role:",
@@ -242,31 +297,29 @@ fun UserForm(
                         .padding(top = 4.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    listOf("Admin", "Residence").forEach { role ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                    val roles = if (!showUpload) listOf("Residence") else listOf("Admin", "Residence")
+                    roles.forEach { role ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
                                 selected = chosenRole == role,
                                 onClick = { setChosenRole(role) },
-                                colors = RadioButtonDefaults.colors(
-                                    selectedColor = Color.Blue
-                                )
+                                colors = RadioButtonDefaults.colors(selectedColor = Color.Blue)
                             )
-                            Text(role)
+                            Text(text = role)
                         }
                     }
                 }
             }
         }
-
-        item {
-            UploadIdUI(
-                existingImageUrl = targetUserDto?.validId,
-                onImageSelected = { uri ->
-                    selectedIdUri = uri
-                }
-            )
+        if (showUpload) {
+            item {
+                UploadIdUI(
+                    existingImageUrl = targetUserDto?.validId,
+                    onImageSelected = { uri ->
+                        selectedIdUri = uri
+                    }
+                )
+            }
         }
         item { Spacer(modifier = Modifier.height(50.dp)) }
         item {
@@ -311,6 +364,7 @@ fun UserForm(
                                 latitude = statesValue["Latitude"]?.value?.toDoubleOrNull() ?: 0.0,
                                 longitude = statesValue["Longitude"]?.value?.toDoubleOrNull() ?: 0.0
                             ),
+                            isVerified = isVerified,
                             type = "user",
                             isAdmin = chosenRole == "Admin",
                             isResidence = chosenRole == "Residence",
@@ -645,9 +699,8 @@ fun AddressSelector(
                     Icon(icon, "Dropdown Icon", modifier = Modifier.clickable { expanded = !expanded })
                 },
                 textStyle = TextStyle(
-                    color = Color.Black,
+                    color = Color(0xFF0049AD),
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.White,

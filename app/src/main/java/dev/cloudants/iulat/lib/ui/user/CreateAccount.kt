@@ -5,6 +5,8 @@ import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.context.MODULE.USERLIST
 import dev.cloudants.iulat.lib.intent.UserIntent
 import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
@@ -14,12 +16,13 @@ fun CreateAccount(
     navController: NavController,
     currentUser: UserDto,
     addressDto: AddressDto? = null,
+    stringSource: String?,
     viewModel: UserViewModel = hiltViewModel()
 ) {
     var showForm by remember { mutableStateOf(true) }
     var userDetails by remember { mutableStateOf<UserDto?>(null) }
     val state by viewModel.uiState.collectAsState()
-
+    val shouldShowUpload = stringSource == USERLIST
     LaunchedEffect(state) {
         when {
             state.isLoading -> Log.d("CreateAccount", "Saving user...")
@@ -39,6 +42,7 @@ fun CreateAccount(
             },
             navController = navController,
             addressDto = addressDto,
+            showUpload = shouldShowUpload
         )
     } else {
         userDetails?.let { user ->

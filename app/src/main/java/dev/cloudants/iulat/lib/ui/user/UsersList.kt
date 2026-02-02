@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import dev.cloudants.iulat.lib.components.context.MODULE.USERLIST
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.ui.report.PlaceholderImage
 import dev.cloudants.iulat.lib.utils.main.MainNav
@@ -88,7 +89,7 @@ fun UsersList(navController: NavController) {
                     UsersSingleLine(
                         user = user,
                         onClick = {
-                            navController.navigate(MainNav.EditUser(userId = user.id!!))
+                            navController.navigate(MainNav.EditUser(userId = user.id!!, source = USERLIST))
                         }
                     )
                 }
@@ -187,7 +188,7 @@ fun UsersSingleLine(user: UserDto, onClick: () -> Unit) {
 @Composable
 fun FloatParentFloatingIcon(navController: NavController) {
     FloatingActionButton(
-        onClick = { navController.navigate(MainNav.CreateUser) },
+            onClick = { navController.navigate(MainNav.CreateUser(source = USERLIST)) },
         containerColor = Color(0xFF0049AD),
         contentColor = Color.White,
         shape = CircleShape,

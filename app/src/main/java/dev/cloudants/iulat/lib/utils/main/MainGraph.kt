@@ -171,9 +171,12 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
         composable<MainNav.CreateUser> {
             Guard(navController = navController) { currentUser ->
+                val arg = it.toRoute<MainNav.CreateUser>()
+                val stringSource = arg.source
                 CreateAccount(
                     navController = navController,
-                    currentUser
+                    currentUser,
+                    stringSource = stringSource
                 )
             }
         }
@@ -319,11 +322,13 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
             val args = it.toRoute<MainNav.EditUser>()
             val userViewModel : UserViewModel = hiltViewModel()
             val userDto = userViewModel.fetchUser(args.userId)
+            val stringSource = args.source
             Guard(navController = navController) { currentUser ->
                 UserEdit(
                     navController = navController,
                     currentUser = currentUser,
                     userDto = userDto,
+                    stringSource = stringSource
                 )
 
             }

@@ -48,7 +48,7 @@ object MainNav {
     object ForgotPassword
 
     @Serializable
-    object CreateUser
+    data class CreateUser(val source: String? = null)
 
     @Serializable
     object NotificationList
@@ -85,7 +85,7 @@ object MainNav {
     object OthersList
 
     @Serializable
-    data class EditUser(val userId: String)
+    data class EditUser(val userId: String, val source: String? = null)
 
     @Serializable
     data class Map(val addressId: String, val reportType: String)

@@ -112,7 +112,7 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
                 text = state.errorMessage,
                 color = Color.Red,
                 fontSize = 14.sp,
-                fontFamily = FontFamily.Serif,
+                fontFamily = FontFamily.SansSerif,
                 modifier = Modifier.padding(top = 16.dp)
             )
         }
@@ -129,7 +129,7 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
                 Text(
                     text = "Forgot password?",
                     fontSize = 15.sp,
-                    fontFamily = FontFamily.Serif,
+                    fontFamily = FontFamily.SansSerif,
                     color = Color.Red
                 )
             }
@@ -145,16 +145,16 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
                 text = "Already have an Account ?",
                 color = Color.Gray,
                 fontSize = 14.sp,
-                fontFamily = FontFamily.Serif,
+                fontFamily = FontFamily.SansSerif,
                 modifier = Modifier.padding(top = 14.dp)
             )
             TextButton(onClick = {
-                navController.navigate(MainNav.CreateUser)
+                navController.navigate(MainNav.CreateUser(source = "login"))
             }) {
                 Text(
                     text = "Sign in",
                     fontSize = 15.sp,
-                    fontFamily = FontFamily.Serif,
+                    fontFamily = FontFamily.SansSerif,
                     color = Color(0xFF0049AD)
                 )
             }
@@ -214,12 +214,12 @@ fun InputField(
         value = value,
         onValueChange = onValueChange,
         label = {
-            Text(text = label, fontFamily = FontFamily.Serif, color = Color(0xFF0049AD))
+            Text(text = label, fontFamily = FontFamily.SansSerif, color = Color(0xFF0049AD))
         },
         textStyle = TextStyle(
             color = Color(0xFF0049AD),
             fontSize = 16.sp,
-            fontFamily = FontFamily.Serif,
+            fontFamily = FontFamily.SansSerif,
         ),
         leadingIcon = {
             Icon(

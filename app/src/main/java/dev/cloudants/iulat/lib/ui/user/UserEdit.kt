@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.context.MODULE.USERLIST
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.services.UserService
 import dev.cloudants.iulat.lib.utils.main.MainNav
@@ -19,12 +20,13 @@ fun UserEdit(
     navController: NavController,
     currentUser : UserDto,
     userDto : UserDto,
-    userService: UserService = hiltViewModel<UserViewModel>().userService
+    userService: UserService = hiltViewModel<UserViewModel>().userService,
+    stringSource: String?,
 ) {
     val userViewModel: UserViewModel = hiltViewModel()
     var userDetails by remember { mutableStateOf(UserDto()) }
     var showForm by remember { mutableStateOf(true) }
-
+    val shouldShowUpload = stringSource == USERLIST
     if (showForm) {
         UserForm(
             title = "Edit Account",
@@ -37,6 +39,7 @@ fun UserEdit(
             navController = navController,
             includePassword = false,
             addressDto = null,
+            showUpload = shouldShowUpload
         )
     } else {
         UserPreview(
