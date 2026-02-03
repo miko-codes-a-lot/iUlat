@@ -166,11 +166,7 @@ private fun OthersButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                if (report.status == "Rejected") {
-                    navController.navigate(MainNav.EditReport("Others", id))
-                } else {
-                    navController.navigate(MainNav.ViewReport("Others", id))
-                }
+                navController.navigate(MainNav.ViewPendingReport("Others", id))
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(

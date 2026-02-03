@@ -168,11 +168,7 @@ private fun PublicDisturbanceButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                if (report.status == "Rejected") {
-                    navController.navigate(MainNav.EditReport("Public Disturbance", id))
-                } else {
-                    navController.navigate(MainNav.ViewReport("Public Disturbance", id))
-                }
+                navController.navigate(MainNav.ViewPendingReport("Public Disturbance", id))
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(

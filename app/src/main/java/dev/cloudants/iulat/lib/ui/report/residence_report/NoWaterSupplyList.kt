@@ -165,11 +165,7 @@ private fun NoWaterButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                if (report.status == "Rejected") {
-                    navController.navigate(MainNav.EditReport("No Water Supply", id))
-                } else {
-                    navController.navigate(MainNav.ViewReport("No Water Supply", id))
-                }
+                navController.navigate(MainNav.ViewPendingReport("No Water Supply", id))
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(

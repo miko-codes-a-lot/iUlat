@@ -175,11 +175,7 @@ fun GarbageDisposalItem(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                if (report.status == "Rejected") {
-                    navController.navigate(MainNav.EditReport("Garbage Disposal", id))
-                } else {
-                    navController.navigate(MainNav.ViewReport("Garbage Disposal", id))
-                }
+                navController.navigate(MainNav.ViewPendingReport("Garbage Disposal", id))
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(

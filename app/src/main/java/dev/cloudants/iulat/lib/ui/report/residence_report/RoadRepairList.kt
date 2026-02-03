@@ -167,11 +167,7 @@ private fun RoadRepairButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                if (report.status == "Rejected") {
-                    navController.navigate(MainNav.EditReport("Road Repair", id))
-                } else {
-                    navController.navigate(MainNav.ViewReport("Road Repair", id))
-                }
+                navController.navigate(MainNav.ViewPendingReport("Road Repair", id))
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(

@@ -165,11 +165,7 @@ private fun VehicleCrashesButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                if (report.status == "Rejected") {
-                    navController.navigate(MainNav.EditReport("Vehicle Crashes", id))
-                } else {
-                    navController.navigate(MainNav.ViewReport("Vehicle Crashes", id))
-                }
+                navController.navigate(MainNav.ViewPendingReport("Vehicle Crashes", id))
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(

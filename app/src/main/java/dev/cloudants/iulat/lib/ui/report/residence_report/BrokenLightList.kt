@@ -180,11 +180,7 @@ private fun BrokenLightButton(
     ElevatedButton(
         onClick = {
             report.id?.let { id ->
-                if (report.status == "Rejected") {
-                    navController.navigate(MainNav.EditReport("Broken Streetlights", id))
-                } else {
-                    navController.navigate(MainNav.ViewReport("Broken Streetlights", id))
-                }
+                navController.navigate(MainNav.ViewPendingReport("Broken Streetlights", id))
             }
         },
         colors = ButtonDefaults.elevatedButtonColors(
