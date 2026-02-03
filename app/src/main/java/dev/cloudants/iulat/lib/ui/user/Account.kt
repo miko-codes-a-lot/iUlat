@@ -1,6 +1,7 @@
 package dev.cloudants.iulat.lib.ui.user
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,12 +26,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -197,10 +203,15 @@ fun Account(navController: NavController, currentUser: UserDto) {
             onIdSelected = { uri ->
                 uri?.let {
                     coroutineScope.launch(Dispatchers.IO) {
-                        val inputStream = context.contentResolver.openInputStream(it)
-                        val bytes = inputStream?.readBytes()
-                        if (bytes != null && activeUser.id != null) {
-                            userViewModel.saveValidId(activeUser.id, bytes)
+                        try {
+                            val inputStream = context.contentResolver.openInputStream(it)
+                            val bytes = inputStream?.readBytes()
+                            if (bytes != null && activeUser.id != null) {
+                                userViewModel.saveValidId(activeUser.id, bytes)
+//                                userViewModel.loadCurrentUser(activeUser.id)
+                            }
+                        } catch (e: Exception) {
+                            Log.e("Account", "Error reading ID bytes: ${e.message}")
                         }
                     }
                 }
@@ -248,12 +259,14 @@ fun Profile(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserDetails(
     navController: NavController,
     activeUser: UserDto,
     onIdSelected: (Uri?) -> Unit
 ) {
+    val sheetState = rememberModalBottomSheetState()
     var isUploadVisible by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -286,19 +299,22 @@ fun UserDetails(
         }
 
         if (isUploadVisible) {
-            Box(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth()
-                    .background(Color(0xFFF8F9FA), RoundedCornerShape(12.dp))
-                    .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
-                    .padding(12.dp)
+            ModalBottomSheet(
+                onDismissRequest = { isUploadVisible = false },
+                sheetState = sheetState,
+                containerColor = Color.White,
+                dragHandle = { BottomSheetDefaults.DragHandle() }
             ) {
-                Column {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 32.dp, start = 16.dp, end = 16.dp, top = 8.dp)
+                ) {
                     Text(
                         text = "Update ID Document",
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        fontSize = 18.sp,
+                        color = Color(0xFF0049AD),
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
 
                     UploadIdUI(
@@ -307,32 +323,17 @@ fun UserDetails(
                             onIdSelected(uri)
                         }
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { isUploadVisible = false }
+                    ) {
+                        Text("Close", fontSize = 14.sp, color = Color(0xFF0049AD))
+                    }
                 }
             }
         }
-//            }
-//        }
-//        if(isShowEditIcon.value) {
-//            IconButton(
-//                onClick = {
-//                    navController.navigate("${MainNav.EditSettings}/fullName")
-//                },
-//                modifier = Modifier
-//                    .size(30.dp)
-//                    .padding(bottom = 3.dp)
-//                    .clip(CircleShape),
-//                colors = IconButtonDefaults.iconButtonColors(Color(0xFFFFFFFF)),
-//            ) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.editicon),
-//                    contentDescription = "Edit Details",
-//                    modifier = Modifier
-//                        .fillMaxSize()
-//                        .padding(5.dp),
-//                    tint = Color(0xFF136204)
-//                )
-//            }
-//        }
     }
 }
 

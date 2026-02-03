@@ -339,7 +339,7 @@ class UserServiceImpl @Inject constructor (
             val user = jsonParser.decodeFromString<UserDto>(userDoc.toJSON())
             if (imageUri != null) {
                 val base64Image = Base64.encodeToString(imageUri, Base64.DEFAULT)
-                val updatedUser = user.copy(imageBase64 = base64Image)
+                val updatedUser = user.copy(validId = base64Image)
 
                 val json = Json.encodeToString(updatedUser)
                 val mutableDoc = userDoc.toMutable().apply { setJSON(json) }
@@ -375,6 +375,7 @@ class UserServiceImpl @Inject constructor (
             dateOfBirth = userDict.getString("dateOfBirth") ?: "",
             userProfile = userDict.getString("userProfile") ?: "",
             gender = userDict.getString("gender") ?: "",
+            isVerified = userDict.getBoolean("isVerified"),
             validId = userDict.getString("validId") ?: "",
             type = userDict.getString("type") ?: "",
             isAdmin = userDict.getBoolean("isAdmin"),
