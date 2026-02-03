@@ -11,6 +11,7 @@ data class VehicleCrashDto(
     val longitude: Double? = null,
     var reportDetails: String = "",
     var reportImage: String? = null,
+    var reportVideo: String? = null,
     var status: String = "Pending",
     var createdById: String? = null,
     var createdAt: String? = null,

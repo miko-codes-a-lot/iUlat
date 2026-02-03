@@ -3,15 +3,21 @@ package dev.cloudants.iulat.lib.ui.report
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CardDefaults.elevatedCardColors
+import androidx.compose.material3.CardDefaults.elevatedCardElevation
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,8 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.components.VideoPlayerUI.VideoPlayerUI
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
 import dev.cloudants.iulat.lib.models.entities.UserDto
@@ -82,6 +88,17 @@ fun NotificationReportVIew(
         MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.reportImage
         MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.reportImage
         MODULE.OTHERS, "Others" -> othersState.selectedReport?.reportImage
+        else -> null
+    }
+    val selectedVideo = when (reportTitle) {
+        MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> garbageState.selectedReport?.reportVideo
+        MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> publicState.selectedReport?.reportVideo
+        MODULE.ROBBERIES, "Robberies" -> robberyState.selectedReport?.reportVideo
+        MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> brokenState.selectedReport?.reportVideo
+        MODULE.VEHICLE_CRASH, "Vehicle Crashes", "Vehicle Crash" -> crashState.selectedReport?.reportVideo
+        MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.reportVideo
+        MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.reportVideo
+        MODULE.OTHERS, "Others" -> othersState.selectedReport?.reportVideo
         else -> null
     }
     LaunchedEffect(reportId) {
@@ -182,11 +199,11 @@ fun NotificationReportVIew(
             }
 
             item {
-                androidx.compose.material3.ElevatedCard(
+                ElevatedCard(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                    colors = androidx.compose.material3.CardDefaults.elevatedCardColors(containerColor = Color.White),
-                    elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(2.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                    colors = elevatedCardColors(containerColor = Color.White),
+                    elevation = elevatedCardElevation(2.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -207,11 +224,47 @@ fun NotificationReportVIew(
             }
 
             item {
-                androidx.compose.material3.ElevatedCard(
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    colors = elevatedCardColors(containerColor = Color.White),
+                    elevation = elevatedCardElevation(2.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Evidence Video",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF2568EF),
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        if (!selectedVideo.isNullOrEmpty()) {
+                            VideoPlayerUI(videoUrl = selectedVideo)
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(150.dp)
+                                    .background(Color(0xFFF1F3F4), RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No video evidence attached.",
+                                    color = Color.Gray,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                ElevatedCard(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                    colors = androidx.compose.material3.CardDefaults.elevatedCardColors(containerColor = Color.White),
-                    elevation = androidx.compose.material3.CardDefaults.elevatedCardElevation(2.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                    colors = elevatedCardColors(containerColor = Color.White),
+                    elevation = elevatedCardElevation(2.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(

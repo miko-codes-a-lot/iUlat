@@ -8,6 +8,7 @@ import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
 import dev.cloudants.iulat.lib.components.context.parseToSortableDate
+import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
 import dev.cloudants.iulat.lib.models.entities.NotifyDto
 import dev.cloudants.iulat.lib.models.entities.PublicDisturbanceDto
 import dev.cloudants.iulat.lib.services.NotificationService
@@ -54,6 +55,7 @@ class PublicDisturbanceServicelmpl @Inject constructor(
                 setString("userId", publicToSave.userId)
                 setString("reportDetails", publicToSave.reportDetails)
                 setString("reportImage", publicToSave.reportImage)
+                setString("reportVideo", publicToSave.reportVideo)
                 setString("status", publicToSave.status)
                 setString("createdAt", publicToSave.createdAt)
                 setString("lastUpdatedAt", publicToSave.lastUpdatedAt)
@@ -98,13 +100,15 @@ class PublicDisturbanceServicelmpl @Inject constructor(
             results.mapNotNull { result ->
                 val dict = result.getDictionary(collection.name)
                 dict?.let {
-                    try {
-                        val dto = Json { ignoreUnknownKeys = true }.decodeFromString<PublicDisturbanceDto>(it.toJSON())
-                        if (userId == null || dto.userId == userId) dto else null
-                    } catch (e: Exception) {
-                        Log.e("PublicDisturbanceServiceImpl", "Error decoding others: ${e.message}")
-                        null
-                    }
+                    PublicDisturbanceDto(
+                        id = it.getString("id"),
+                        userId = it.getString("userId") ?: "",
+                        status = it.getString("status") ?: "Pending",
+                        createdAt = it.getString("createdAt"),
+                        reportDetails = it.getString("reportDetails") ?: "",
+                        reportImage = null,
+                        reportVideo = null
+                    )
                 }
             }
             .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }

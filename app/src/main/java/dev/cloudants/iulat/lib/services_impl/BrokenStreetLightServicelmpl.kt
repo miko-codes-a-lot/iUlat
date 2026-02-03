@@ -9,6 +9,7 @@ import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
 import dev.cloudants.iulat.lib.components.context.parseToSortableDate
 import dev.cloudants.iulat.lib.models.entities.BrokenStreetlightsDto
+import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
 import dev.cloudants.iulat.lib.models.entities.NotifyDto
 import dev.cloudants.iulat.lib.services.BrokenStreetLightsService
 import dev.cloudants.iulat.lib.services.NotificationService
@@ -53,6 +54,7 @@ class BrokenStreetLightServicelmpl @Inject constructor(
                 setDouble("longitude", lng)
                 setString("reportDetails", brokenStreetToSave.reportDetails)
                 setString("reportImage", brokenStreetToSave.reportImage)
+                setString("reportVideo", brokenStreetToSave.reportVideo)
                 setString("status", brokenStreetToSave.status)
                 setString("createdAt", brokenStreetToSave.createdAt)
                 setString("lastUpdatedAt", brokenStreetToSave.lastUpdatedAt)
@@ -98,13 +100,15 @@ class BrokenStreetLightServicelmpl @Inject constructor(
             results.mapNotNull { result ->
                 val dict = result.getDictionary(collection.name)
                 dict?.let {
-                    try {
-                        val dto = Json { ignoreUnknownKeys = true }.decodeFromString<BrokenStreetlightsDto>(it.toJSON())
-                        if (userId == null || dto.userId == userId) dto else null
-                    } catch (e: Exception) {
-                        Log.e("BrokenStreetLightsServiceImpl", "Error decoding BrokenStreetlightsDto: ${e.message}")
-                        null
-                    }
+                    BrokenStreetlightsDto(
+                        id = it.getString("id"),
+                        userId = it.getString("userId") ?: "",
+                        status = it.getString("status") ?: "Pending",
+                        createdAt = it.getString("createdAt"),
+                        reportDetails = it.getString("reportDetails") ?: "",
+                        reportImage = null,
+                        reportVideo = null
+                    )
                 }
             }
             .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }

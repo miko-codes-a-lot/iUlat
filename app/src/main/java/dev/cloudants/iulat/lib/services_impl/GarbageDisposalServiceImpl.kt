@@ -49,6 +49,7 @@ class GarbageDisposalServiceImpl @Inject constructor(
                 setString("mobileNumber", garbageToSave.mobileNumber)
                 setString("reportDetails", garbageToSave.reportDetails)
                 setString("reportImage", garbageToSave.reportImage)
+                setString("reportVideo", garbageToSave.reportVideo)
                 setString("status", garbageToSave.status)
                 setString("createdAt", garbageToSave.createdAt)
                 setString("lastUpdatedAt", garbageToSave.lastUpdatedAt)
@@ -94,13 +95,15 @@ class GarbageDisposalServiceImpl @Inject constructor(
             results.mapNotNull { result ->
                 val dict = result.getDictionary(collection.name)
                 dict?.let {
-                    try {
-                        val dto = Json { ignoreUnknownKeys = true }.decodeFromString<GarbageDisposalDto>(it.toJSON())
-                        if (userId == null || dto.userId == userId) dto else null
-                    } catch (e: Exception) {
-                        Log.e("GarbageServiceImpl", "Error decoding GarbageDisposalDto: ${e.message}")
-                        null
-                    }
+                    GarbageDisposalDto(
+                        id = it.getString("id"),
+                        userId = it.getString("userId") ?: "",
+                        status = it.getString("status") ?: "Pending",
+                        createdAt = it.getString("createdAt"),
+                        reportDetails = it.getString("reportDetails") ?: "",
+                        reportImage = null,
+                        reportVideo = null
+                    )
                 }
             }
             .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }

@@ -1,17 +1,24 @@
 package dev.cloudants.iulat.lib.ui.report
 
-import android.R.attr.delay
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
+import dev.cloudants.iulat.R
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardDefaults.elevatedCardColors
+import androidx.compose.material3.CardDefaults.elevatedCardElevation
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -20,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,6 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.maps.model.LatLng
+import dev.cloudants.iulat.lib.components.UploadVideoUI.UploadVideoUI
 import dev.cloudants.iulat.lib.components.button.CustomButton
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.uriToBase64
@@ -97,7 +106,9 @@ fun CreateReport(
     val state by viewModel.state.collectAsState()
     var textValue by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    var isSubmitting by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var videoUri by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current
     var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
     var showMapPicker by remember { mutableStateOf(false) }
@@ -129,150 +140,177 @@ fun CreateReport(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        Spacer(Modifier.weight(1f))
-
-        Text(
-            text = "Issue Details ($reportTitle)",
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+        LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            textAlign = TextAlign.Start,
-            color = Color.Black
-        )
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, Color.Gray, RoundedCornerShape(8.dp)),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(8.dp)
+                .weight(1f)
+                .padding(top = 50.dp, bottom = 50.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = textValue,
-                    onValueChange = { textValue = it },
-                    label = { Text("Type feedback here", color = Color(0xFF0049AD)) },
+
+            item {
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 200.dp, max = 200.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Create $reportTitle Report",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp,
+                        color = Color(0xFF1A1C1E),
+                        modifier = Modifier.padding(bottom = 8.dp),
                     )
-                )
+                }
+
             }
-        }
 
-        Spacer(Modifier.weight(1f))
-        val imagePicker = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent()
-        ) { uri: Uri? ->
-            imageUri = uri
-        }
-        Text(
-            text = "Upload a softcopy evidence",
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            textAlign = TextAlign.Start,
-            color = Color.Black
-        )
-        UploadImageUI(
-            title = "Tap to Upload Evidence",
-            existingBase64 = null,
-            onImageSelected = { uri -> imageUri = uri },
-            enabled = true
-        )
-        Text(
-            text = "Location of Incident",
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
-            color = Color.Black
-        )
-
-        CustomButton(
-            text = if (selectedLocation == null) "Pin Location on Map" else "Location Pinned ✓",
-            onClick = { showMapPicker = true }
-        )
-
-        Spacer(Modifier.weight(1f))
-
-        CustomButton(
-            text = "Submit",
-            onClick = {
-                if (selectedLocation == null) {
-                    Toast.makeText(context, "Please pin the location first!", Toast.LENGTH_SHORT).show()
-                    return@CustomButton
+            item {
+                EvidenceCard(title = "Issue Details") {
+                    OutlinedTextField(
+                        value = textValue,
+                        onValueChange = { textValue = it },
+                        placeholder = { Text("Describe the situation here...") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0049AD),
+                            unfocusedBorderColor = Color.LightGray
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
                 }
-                if (textValue.isBlank()) {
-                    Toast.makeText(context, "Please enter details.", Toast.LENGTH_SHORT).show()
-                    return@CustomButton
-                }
-                scope.launch {
-                    val base64Image = imageUri?.let { uriToBase64(context, it) }
-                    val userId = currentUser.id ?: return@launch
-                    val lat = selectedLocation?.latitude
-                    val lng = selectedLocation?.longitude
+            }
 
-                    when (reportTitle) {
-                        MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> {
-                            garbageDisposalViewModel.createGarbageReport(
-                                GarbageDisposalDto(userId = userId, email = currentUser.email, mobileNumber = currentUser.mobileNumber, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
-                            )
-                        }
-                        MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
-                            publicDisturbanceViewModel.createPublicDisturbanceReport(
-                                PublicDisturbanceDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, addressId = detectedAddress?.id, latitude = lat, longitude = lng)
-                            )
-                        }
-                        MODULE.ROBBERIES, "Robberies" -> {
-                            robberiesViewModel.createRobberiesReport(
-                                RobberiesDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
-                            )
-                        }
-                        MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> {
-                            brokenStreetLightViewModel.createBrokenLightReport(
-                                BrokenStreetlightsDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
-                            )
-                        }
-                        MODULE.VEHICLE_CRASH, "Vehicle Crashes" -> {
-                            vehicleCrashViewModel.createVehicleReport(
-                                VehicleCrashDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
-                            )
-                        }
-                        MODULE.ROAD_REPAIR, "Road Repair" -> {
-                            roadRepairViewModel.createRoadRepairReport(
-                                RoadRepairDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
-                            )
-                        }
-                        MODULE.NO_WATER_SUPPLY, "No Water Supply" -> {
-                            noWaterSupplyViewModel.createNoWaterSupplyReport(
-                                NoWaterSupplyDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
-                            )
-                        }
-                        MODULE.OTHERS, "Others" -> {
-                            othersViewModel.createOthersReport(
-                                OthersDto(userId = userId, reportDetails = textValue, reportImage = base64Image, createdById = userId, latitude = lat, longitude = lng)
+            item {
+                EvidenceCard(title = "Upload Image Evidence") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            UploadImageUI(
+                                title = "Photo",
+                                onImageSelected = { uri -> imageUri = uri }
                             )
                         }
                     }
-
-                    delay(3000)
-                    viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
                 }
             }
-        )
-        Spacer(Modifier.weight(1f))
+
+            item {
+                EvidenceCard(title = "Upload Video Evidence") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            UploadVideoUI(
+                                title = "Video",
+                                onVideoSelected = { uri -> videoUri = uri },
+                                selectedUri = videoUri
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = elevatedCardColors(containerColor = Color.White),
+                    elevation = elevatedCardElevation(2.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.LocationOn, null, tint = Color(0xFF2568EF), modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Location of Incident", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF2568EF))
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        CustomButton(
+                            text = if (selectedLocation == null) "Pin Location" else "Location Pinned ✓",
+                            backgroundColor = if (selectedLocation == null) Color(0xFF0049AD) else Color(0xFF4CAF50),
+                            onClick = { showMapPicker = true },
+                            height = 50f
+                        )
+                    }
+                }
+            }
+
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    CustomButton(
+                        text = if (isSubmitting) "Submitting..." else "Submit Report",
+                        onClick = {
+                            if (selectedLocation == null) {
+                                Toast.makeText(context, "Please pin the location first!", Toast.LENGTH_SHORT).show()
+                                return@CustomButton
+                            }
+                            if (textValue.isBlank()) {
+                                Toast.makeText(context, "Please enter details.", Toast.LENGTH_SHORT).show()
+                                return@CustomButton
+                            }
+                            scope.launch {
+                                val base64Image = imageUri?.let { uriToBase64(context, it) }
+                                val userId = currentUser.id ?: return@launch
+                                val lat = selectedLocation?.latitude
+                                val lng = selectedLocation?.longitude
+                                val base64Video = videoUri?.let { uriToBase64(context, it) }
+                                when (reportTitle) {
+                                    MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> {
+                                        garbageDisposalViewModel.createGarbageReport(
+                                            GarbageDisposalDto(userId = userId, email = currentUser.email, mobileNumber = currentUser.mobileNumber, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                        )
+                                    }
+                                    MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
+                                        publicDisturbanceViewModel.createPublicDisturbanceReport(
+                                            PublicDisturbanceDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, addressId = detectedAddress?.id, latitude = lat, longitude = lng)
+                                        )
+                                    }
+                                    MODULE.ROBBERIES, "Robberies" -> {
+                                        robberiesViewModel.createRobberiesReport(
+                                            RobberiesDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                        )
+                                    }
+                                    MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> {
+                                        brokenStreetLightViewModel.createBrokenLightReport(
+                                            BrokenStreetlightsDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                        )
+                                    }
+                                    MODULE.VEHICLE_CRASH, "Vehicle Crashes" -> {
+                                        vehicleCrashViewModel.createVehicleReport(
+                                            VehicleCrashDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                        )
+                                    }
+                                    MODULE.ROAD_REPAIR, "Road Repair" -> {
+                                        roadRepairViewModel.createRoadRepairReport(
+                                            RoadRepairDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                        )
+                                    }
+                                    MODULE.NO_WATER_SUPPLY, "No Water Supply" -> {
+                                        noWaterSupplyViewModel.createNoWaterSupplyReport(
+                                            NoWaterSupplyDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                        )
+                                    }
+                                    MODULE.OTHERS, "Others" -> {
+                                        othersViewModel.createOthersReport(
+                                            OthersDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                        )
+                                    }
+                                }
+
+                                delay(3000)
+                                viewModel.onIntent(ReportIntent.SubmitReport(reportContent = textValue))
+                            }
+                        }
+                    )
+                }
+            }
+        }
     }
     if (state.isDialogVisible) {
         LoginDialog(

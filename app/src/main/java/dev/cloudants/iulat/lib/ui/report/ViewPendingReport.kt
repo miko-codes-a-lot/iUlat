@@ -2,6 +2,7 @@ package dev.cloudants.iulat.lib.ui.report
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.components.VideoPlayerUI.VideoPlayerUI
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
 import dev.cloudants.iulat.lib.models.entities.UserDto
@@ -82,6 +84,17 @@ fun ViewRejReport(
         MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.reportImage
         MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.reportImage
         MODULE.OTHERS, "Others" -> othersState.selectedReport?.reportImage
+        else -> null
+    }
+    val selectedVideo = when (reportTitle) {
+        MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> garbageState.selectedReport?.reportVideo
+        MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> publicState.selectedReport?.reportVideo
+        MODULE.ROBBERIES, "Robberies" -> robberyState.selectedReport?.reportVideo
+        MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> brokenState.selectedReport?.reportVideo
+        MODULE.VEHICLE_CRASH, "Vehicle Crashes", "Vehicle Crash" -> crashState.selectedReport?.reportVideo
+        MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.reportVideo
+        MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.reportVideo
+        MODULE.OTHERS, "Others" -> othersState.selectedReport?.reportVideo
         else -> null
     }
     LaunchedEffect(reportId) {
@@ -174,41 +187,84 @@ fun ViewRejReport(
             state = listState
         ) {
             item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 20.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        UploadImageUI(
-                            title = "Evidence Image",
-                            existingBase64 = selectedReport,
-                            onImageSelected = { },
-                            enabled = false
-                        )
+                EvidenceCard(title = "Evidence Photo") {
+                    UploadImageUI(
+                        title = "",
+                        existingBase64 = selectedReport,
+                        onImageSelected = { },
+                        enabled = false
+                    )
+                }
 
-                        Text(
-                            text = "Report Details",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
-                            color = Color(0xFF007ACC)
-                        )
+                Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(
-                            text = textValue.ifBlank { "No additional details provided." },
-                            fontSize = 15.sp,
-                            color = Color.DarkGray,
-                            lineHeight = 20.sp
+                EvidenceCard(title = "Evidence Video") {
+                    if (!selectedVideo.isNullOrEmpty()) {
+                        VideoPlayerUI(
+                            videoUrl = selectedVideo,
+                            modifier = Modifier.padding(top = 8.dp)
                         )
+                    } else {
+                        EmptyMediaPlaceholder("No video evidence attached.")
                     }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                EvidenceCard(title = "Report Details") {
+                    Text(
+                        text = textValue.ifBlank { "No additional details provided." },
+                        fontSize = 15.sp,
+                        color = Color(0xFF42474E),
+                        lineHeight = 22.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
             }
 
             item { Spacer(modifier = Modifier.height(30.dp)) }
         }
+    }
+}
+
+@Composable
+fun EvidenceCard(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    androidx.compose.material3.ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
+        elevation = CardDefaults.elevatedCardElevation(2.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = Color(0xFF2568EF),
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            content()
+        }
+    }
+}
+
+@Composable
+fun EmptyMediaPlaceholder(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp)
+            .background(Color(0xFFF1F3F4), RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = message,
+            color = Color.Gray,
+            fontSize = 13.sp,
+            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+        )
     }
 }

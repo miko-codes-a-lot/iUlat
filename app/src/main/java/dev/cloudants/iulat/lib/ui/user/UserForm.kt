@@ -508,7 +508,9 @@ fun TextFieldContainer(
     ) {
         OutlinedTextField(
             value = textFieldValue,
-            onValueChange = onValueChange,
+            onValueChange = { value ->
+                onValueChange(value.trim())
+            },
             modifier = Modifier
                 .fillMaxWidth(),
             label = {

@@ -8,6 +8,7 @@ import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
 import dev.cloudants.iulat.lib.components.context.parseToSortableDate
+import dev.cloudants.iulat.lib.models.entities.GarbageDisposalDto
 import dev.cloudants.iulat.lib.models.entities.NotifyDto
 import dev.cloudants.iulat.lib.models.entities.VehicleCrashDto
 import dev.cloudants.iulat.lib.services.NotificationService
@@ -54,6 +55,7 @@ class VehicleCrashServicelmpl @Inject constructor(
                 setDouble("longitude", lng)
                 setString("reportDetails", vehicleToSave.reportDetails)
                 setString("reportImage", vehicleToSave.reportImage)
+                setString("reportVideo", vehicleToSave.reportVideo)
                 setString("status", vehicleToSave.status)
                 setString("createdAt", vehicleToSave.createdAt)
                 setString("lastUpdatedAt", vehicleToSave.lastUpdatedAt)
@@ -98,13 +100,15 @@ class VehicleCrashServicelmpl @Inject constructor(
             results.mapNotNull { result ->
                 val dict = result.getDictionary(collection.name)
                 dict?.let {
-                    try {
-                        val dto = Json { ignoreUnknownKeys = true }.decodeFromString<VehicleCrashDto>(it.toJSON())
-                        if (userId == null || dto.userId == userId) dto else null
-                    } catch (e: Exception) {
-                        Log.e("VehicleCrashServiceImpl", "Error decoding others: ${e.message}")
-                        null
-                    }
+                    VehicleCrashDto(
+                        id = it.getString("id"),
+                        userId = it.getString("userId") ?: "",
+                        status = it.getString("status") ?: "Pending",
+                        createdAt = it.getString("createdAt"),
+                        reportDetails = it.getString("reportDetails") ?: "",
+                        reportImage = null,
+                        reportVideo = null
+                    )
                 }
             }
             .sortedByDescending { dto -> parseToSortableDate(dto.createdAt) }

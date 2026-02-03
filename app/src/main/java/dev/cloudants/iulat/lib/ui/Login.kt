@@ -212,7 +212,10 @@ fun InputField(
 ) {
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { newValue ->
+            onValueChange(newValue.trim())
+        },
+
         label = {
             Text(text = label, fontFamily = FontFamily.SansSerif, color = Color(0xFF0049AD))
         },

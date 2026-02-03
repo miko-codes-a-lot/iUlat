@@ -100,7 +100,13 @@ fun LocationPickerModal(
                             onLocationSelected(cameraPositionState.position.target)
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !cameraPositionState.isMoving
+                        enabled = !cameraPositionState.isMoving,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF0049AD),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color.Gray,
+                            disabledContentColor = Color.DarkGray
+                        )
                     ) {
                         Text(if (cameraPositionState.isMoving) "Locating..." else "Confirm Incident Location")
                     }

@@ -43,9 +43,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardDefaults.elevatedCardColors
+import androidx.compose.material3.CardDefaults.elevatedCardElevation
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import dev.cloudants.iulat.lib.components.VideoPlayerUI.VideoPlayerUI
 import dev.cloudants.iulat.lib.components.button.CustomButton
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
@@ -105,6 +109,18 @@ fun ViewReport(
         MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.reportImage
         MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.reportImage
         MODULE.OTHERS, "Others" -> othersState.selectedReport?.reportImage
+        else -> null
+    }
+
+    val selectedVideo = when (reportTitle) {
+        MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> garbageState.selectedReport?.reportVideo
+        MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> publicState.selectedReport?.reportVideo
+        MODULE.ROBBERIES, "Robberies" -> robberyState.selectedReport?.reportVideo
+        MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> brokenState.selectedReport?.reportVideo
+        MODULE.VEHICLE_CRASH, "Vehicle Crashes", "Vehicle Crash" -> crashState.selectedReport?.reportVideo
+        MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.reportVideo
+        MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.reportVideo
+        MODULE.OTHERS, "Others" -> othersState.selectedReport?.reportVideo
         else -> null
     }
     LaunchedEffect(reportId) {
@@ -230,6 +246,42 @@ fun ViewReport(
                             color = Color.DarkGray,
                             lineHeight = 20.sp
                         )
+                    }
+                }
+            }
+
+            item {
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    colors = elevatedCardColors(containerColor = Color.White),
+                    elevation = elevatedCardElevation(2.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Evidence Video",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF2568EF),
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        if (!selectedVideo.isNullOrEmpty()) {
+                            VideoPlayerUI(videoUrl = selectedVideo)
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(150.dp)
+                                    .background(Color(0xFFF1F3F4), RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No video evidence attached.",
+                                    color = Color.Gray,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
                     }
                 }
             }
