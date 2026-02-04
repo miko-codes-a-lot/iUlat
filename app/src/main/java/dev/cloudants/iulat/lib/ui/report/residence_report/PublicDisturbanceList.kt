@@ -36,6 +36,7 @@ import dev.cloudants.iulat.R
 import android.os.Build
 import android.os.Environment
 import android.content.Intent
+import android.util.Log
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

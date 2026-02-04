@@ -4,7 +4,9 @@ import android.util.Log
 import com.couchbase.lite.Collection
 import com.couchbase.lite.DataSource
 import com.couchbase.lite.Database
+import com.couchbase.lite.Expression
 import com.couchbase.lite.MutableDocument
+import com.couchbase.lite.Query
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.SelectResult
 import dev.cloudants.iulat.lib.components.context.parseToSortableDate
@@ -92,10 +94,16 @@ class RoadRepairServicelmpl @Inject constructor(
 
     override suspend fun getAll(userId: String?): List<RoadRepairDto> {
         return try {
-            val query = QueryBuilder
-                .select(SelectResult.all())
-                .from(DataSource.collection(collection))
-
+            val query: Query = if (!userId.isNullOrEmpty()) {
+                QueryBuilder
+                    .select(SelectResult.all())
+                    .from(DataSource.collection(collection))
+                    .where(Expression.property("userId").equalTo(Expression.string(userId)))
+            } else {
+                QueryBuilder
+                    .select(SelectResult.all())
+                    .from(DataSource.collection(collection))
+            }
             val results = query.execute().allResults()
             results.mapNotNull { result ->
                 val dict = result.getDictionary(collection.name)

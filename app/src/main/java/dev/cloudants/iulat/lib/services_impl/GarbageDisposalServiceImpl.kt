@@ -86,10 +86,16 @@ class GarbageDisposalServiceImpl @Inject constructor(
 
     override suspend fun getAll(userId: String?): List<GarbageDisposalDto> {
         return try {
-            val query = QueryBuilder
-                .select(SelectResult.all())
-                .from(DataSource.collection(collection))
-
+            val query: Query = if (!userId.isNullOrEmpty()) {
+                QueryBuilder
+                    .select(SelectResult.all())
+                    .from(DataSource.collection(collection))
+                    .where(Expression.property("userId").equalTo(Expression.string(userId)))
+            } else {
+                QueryBuilder
+                    .select(SelectResult.all())
+                    .from(DataSource.collection(collection))
+            }
             val results = query.execute().allResults()
 
             results.mapNotNull { result ->
