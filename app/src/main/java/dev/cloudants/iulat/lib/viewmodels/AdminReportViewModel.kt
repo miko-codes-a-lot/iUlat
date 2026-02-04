@@ -96,7 +96,7 @@ class AdminReportViewModel @Inject constructor(
                     "Public Disturbance" -> "public_disturbance"
                     "Road Repair" -> "road_repair"
                     "Robberies" -> "robberies"
-                    "Vehicle Crash" -> "vehicle_crash"
+                    "Vehicle Crashes" -> "vehicle_crash"
                     else -> return@launch
                 }
                 reportService.updateReportStatus(report.docId, collectionName, newStatus)

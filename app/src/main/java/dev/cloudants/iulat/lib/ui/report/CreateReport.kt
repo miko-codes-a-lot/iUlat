@@ -2,19 +2,12 @@ package dev.cloudants.iulat.lib.ui.report
 
 import android.net.Uri
 import android.widget.Toast
-import dev.cloudants.iulat.R
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CardDefaults.elevatedCardColors
 import androidx.compose.material3.CardDefaults.elevatedCardElevation
 import androidx.compose.material3.ElevatedCard
@@ -27,9 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -255,6 +246,7 @@ fun CreateReport(
                                 return@CustomButton
                             }
                             scope.launch {
+                                isSubmitting = true
                                 val base64Image = imageUri?.let { uriToBase64(context, it) }
                                 val userId = currentUser.id ?: return@launch
                                 val lat = selectedLocation?.latitude
@@ -268,7 +260,7 @@ fun CreateReport(
                                     }
                                     MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
                                         publicDisturbanceViewModel.createPublicDisturbanceReport(
-                                            PublicDisturbanceDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, addressId = detectedAddress?.id, latitude = lat, longitude = lng)
+                                            PublicDisturbanceDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
                                         )
                                     }
                                     MODULE.ROBBERIES, "Robberies" -> {

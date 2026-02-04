@@ -287,7 +287,7 @@ fun ViewReport(
             }
 
             val shouldShowInput = !currentUser.isResidence &&
-                    timelineEventsMapped.size < 3 &&
+                    timelineEventsMapped.size < 4 &&
                     currentStatus != "Rejected"
 
             if (shouldShowInput) {

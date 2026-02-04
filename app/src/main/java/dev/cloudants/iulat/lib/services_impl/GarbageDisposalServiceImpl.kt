@@ -98,6 +98,9 @@ class GarbageDisposalServiceImpl @Inject constructor(
                     GarbageDisposalDto(
                         id = it.getString("id"),
                         userId = it.getString("userId") ?: "",
+                        addressId = it.getString("addressId"),
+                        latitude = it.getDouble("latitude"),
+                        longitude = it.getDouble("longitude"),
                         status = it.getString("status") ?: "Pending",
                         createdAt = it.getString("createdAt"),
                         reportDetails = it.getString("reportDetails") ?: "",

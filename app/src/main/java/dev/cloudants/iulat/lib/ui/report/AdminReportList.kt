@@ -140,28 +140,41 @@ fun AdminReportList(navController: NavController) {
                     userName = "from : " + reportItem.userName,
                     date = formatterDate(reportItem.reportDate),
                     onClick = {
-                         when(reportItem.status) {
-                             "Pending" -> {
-                                 navController.navigate(MainNav.ViewPendingReport(reportItem.reportType, reportItem.docId))
-                             }
-                             "Rejected" -> {
-                                 Log.e("STATSSS:: ", reportItem.status)
-                                 navController.navigate(MainNav.ViewPendingReport(reportItem.reportType, reportItem.docId))
-                             }
-                             "Approve" -> {
-                                 navController.navigate(MainNav.ViewReport(reportItem.reportType, reportItem.docId))
-                             }
-                             else -> navController.navigate(MainNav.Map(addressId = reportItem.docId, reportType = reportItem.reportType))
+                        val status = reportItem.status.trim()
+                        val type = reportItem.reportType.trim()
+                        val docId = reportItem.docId
+                        when (status) {
+                            "Pending", "Rejected" -> {
+                                navController.navigate(MainNav.ViewPendingReport(type, docId))
+                            }
+
+                            "Approve", "Approved" -> {
+                                navController.navigate(MainNav.ViewReport(type, docId))
+                            }
+
+                            "Resolved" -> {
+                                navController.navigate(MainNav.Map(addressId = docId, reportType = type))
+                            }
+
+                            else -> {
+                                Log.d("Navigation", "Unhandled status: $status. Defaulting to Map.")
+                                navController.navigate(MainNav.Map(addressId = docId, reportType = type))
+                            }
                         }
                     },
                     onDeleteClick = {
                         adminReportViewModel.updateReportStatus(reportItem, "Rejected")
+                        selectedStatus = "Rejected"
+                        adminReportViewModel.loadReportsByStatus("Rejected", debouncedQuery)
                     },
                     onCheckClick = {
-                        when(reportItem.status) {
-                            "Approve" -> adminReportViewModel.updateReportStatus(reportItem,"Resolved")
-                            else -> adminReportViewModel.updateReportStatus(reportItem, "Approve" )
+                        val nextStatus = when(reportItem.status) {
+                            "Approve" -> "Resolved"
+                            else -> "Approve"
                         }
+                        adminReportViewModel.updateReportStatus(reportItem, nextStatus)
+                        selectedStatus = nextStatus
+                        adminReportViewModel.loadReportsByStatus(nextStatus, debouncedQuery)
                     }
                 )
             }
