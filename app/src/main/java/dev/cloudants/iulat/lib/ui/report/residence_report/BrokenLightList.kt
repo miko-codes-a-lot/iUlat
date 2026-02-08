@@ -54,6 +54,7 @@ import android.widget.Toast
 import androidx.compose.ui.res.painterResource
 import dev.cloudants.iulat.R
 import android.os.Build
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -110,13 +111,16 @@ fun BrokenLightList(
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
         floatingActionButton = {
-            FloatingBrokenLightRecordIcon(
-                navController,
-                currentUser,
-                context,
-                items = filteredItems,
-                users = users
-            )
+            val canSeeButton = currentUser.isAdmin || (currentUser.isResidence && currentUser.isVerified)
+            if (canSeeButton) {
+                FloatingBrokenLightRecordIcon(
+                    navController,
+                    currentUser,
+                    context,
+                    items = filteredItems,
+                    users = users
+                )
+            }
         }
     ) { padding ->
         Column(

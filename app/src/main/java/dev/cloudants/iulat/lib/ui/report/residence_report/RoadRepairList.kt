@@ -98,13 +98,16 @@ fun RoadRepairList(
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
         floatingActionButton = {
-            FloatingRoadRepairRecordIcon(
-                navController,
-                currentUser,
-                context,
-                items = filteredItems,
-                users = users
-            )
+            val canSeeButton = currentUser.isAdmin || (currentUser.isResidence && currentUser.isVerified)
+            if (canSeeButton) {
+                FloatingRoadRepairRecordIcon(
+                    navController,
+                    currentUser,
+                    context,
+                    items = filteredItems,
+                    users = users
+                )
+            }
         }
     ) { padding ->
         Column(

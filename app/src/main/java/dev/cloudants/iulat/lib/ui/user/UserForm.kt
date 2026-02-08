@@ -76,7 +76,7 @@ fun UserForm(
     addressDto: AddressDto?,
     viewModel: UserViewModel = hiltViewModel(),
     addressViewModel: AddressViewModel = hiltViewModel(),
-    showUpload: Boolean = false
+    showUpload: Boolean = true
 ) {
     val state by viewModel.uiState.collectAsState()
     var isVerified by remember { mutableStateOf(targetUserDto?.isVerified ?: false) }
@@ -311,7 +311,7 @@ fun UserForm(
                 }
             }
         }
-        if (showUpload) {
+//        if (showUpload) {
             item {
                 UploadIdUI(
                     existingImageUrl = targetUserDto?.validId,
@@ -320,7 +320,7 @@ fun UserForm(
                     }
                 )
             }
-        }
+//        }
         item { Spacer(modifier = Modifier.height(50.dp)) }
         item {
                 Spacer(modifier = Modifier.height(24.dp))

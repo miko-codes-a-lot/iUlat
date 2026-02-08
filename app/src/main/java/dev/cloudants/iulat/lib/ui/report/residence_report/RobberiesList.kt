@@ -99,13 +99,16 @@ fun RobberiesList(
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
         floatingActionButton = {
-            FloatingRobberiesRecordIcon(
-                navController,
-                currentUser,
-                context,
-                items = filteredItems,
-                users = users
-            )
+            val canSeeButton = currentUser.isAdmin || (currentUser.isResidence && currentUser.isVerified)
+            if (canSeeButton) {
+                FloatingRobberiesRecordIcon(
+                    navController,
+                    currentUser,
+                    context,
+                    items = filteredItems,
+                    users = users
+                )
+            }
         }
     ) { padding ->
         Column(

@@ -102,13 +102,16 @@ fun GarbageDisposalList(
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
         floatingActionButton = {
-            FloatingGarbageDisposalRecordIcon(
-                navController,
-                currentUser,
-                context,
-                items = filteredItems,
-                users = users
-            )
+            val canSeeButton = currentUser.isAdmin || (currentUser.isResidence && currentUser.isVerified)
+            if (canSeeButton) {
+                FloatingGarbageDisposalRecordIcon(
+                    navController,
+                    currentUser,
+                    context,
+                    items = filteredItems,
+                    users = users
+                )
+            }
         }
     ) { padding ->
         Column(
