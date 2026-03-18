@@ -155,10 +155,9 @@ fun AdminDashboard(
                         shape = CircleShape
                     )
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
+                    Image(
+                        painter = painterResource(id = R.drawable.resident),
                         contentDescription = "Create Walk-In Report",
-                        tint = Color(0xFF0049AD),
                         modifier = Modifier.size(34.dp)
                     )
                 }
