@@ -38,11 +38,13 @@ class PublicDisturbanceServicelmpl @Inject constructor(
             val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = publicDisturbanceDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
+            val finalCreatedAt = if (!publicDisturbanceDto.createdAt.isNullOrBlank()) publicDisturbanceDto.createdAt else now
+
             val status = publicDisturbanceDto.status.takeIf { it.isNotBlank() } ?: "Pending"
 
             val publicToSave = publicDisturbanceDto.copy(
                 id = id,
-                createdAt = now,
+                createdAt = finalCreatedAt,
                 lastUpdatedAt = now,
                 status = status
             )

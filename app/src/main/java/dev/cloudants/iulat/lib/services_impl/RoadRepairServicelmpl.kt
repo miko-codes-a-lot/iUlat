@@ -38,11 +38,12 @@ class RoadRepairServicelmpl @Inject constructor(
             val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = roadRepairDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
+            val finalCreatedAt = if (!roadRepairDto.createdAt.isNullOrBlank()) roadRepairDto.createdAt else now
             val status = roadRepairDto.status.takeIf { it.isNotBlank() } ?: "Pending"
 
             val roadToSave = roadRepairDto.copy(
                 id = id,
-                createdAt = now,
+                createdAt = finalCreatedAt,
                 lastUpdatedAt = now,
                 status = status
             )

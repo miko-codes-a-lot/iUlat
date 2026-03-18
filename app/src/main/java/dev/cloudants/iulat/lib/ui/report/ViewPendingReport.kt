@@ -224,6 +224,17 @@ fun ViewRejReport(
             state = listState
         ) {
             item {
+                EvidenceCard(title = "Report Details") {
+                    Text(
+                        text = textValue.ifBlank { "No additional details provided." },
+                        fontSize = 15.sp,
+                        color = Color(0xFF42474E),
+                        lineHeight = 22.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
                 EvidenceCard(title = "Evidence Photo") {
                     UploadImageUI(
                         title = "",
@@ -244,18 +255,6 @@ fun ViewRejReport(
                     } else {
                         EmptyMediaPlaceholder("No video evidence attached.")
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                EvidenceCard(title = "Report Details") {
-                    Text(
-                        text = textValue.ifBlank { "No additional details provided." },
-                        fontSize = 15.sp,
-                        color = Color(0xFF42474E),
-                        lineHeight = 22.sp,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
                 }
 
             }

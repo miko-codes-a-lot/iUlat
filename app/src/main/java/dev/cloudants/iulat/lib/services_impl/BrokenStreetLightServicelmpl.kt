@@ -38,10 +38,11 @@ class BrokenStreetLightServicelmpl @Inject constructor(
             val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = brokenStreetlightsDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
+            val finalCreatedAt = if (!brokenStreetlightsDto.createdAt.isNullOrBlank()) brokenStreetlightsDto.createdAt else now
             val status = brokenStreetlightsDto.status.takeIf { it.isNotBlank() } ?: "Pending"
             val brokenStreetToSave = brokenStreetlightsDto.copy(
                 id = id,
-                createdAt = now,
+                createdAt = finalCreatedAt,
                 lastUpdatedAt = now,
                 status = status
             )

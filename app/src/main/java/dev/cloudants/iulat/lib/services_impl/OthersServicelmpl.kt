@@ -39,10 +39,11 @@ class OthersServicelmpl @Inject constructor(
             val id = othersDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
             val status = othersDto.status.takeIf { it.isNotBlank() } ?: "Pending"
+            val finalCreatedAt = if (!othersDto.createdAt.isNullOrBlank()) othersDto.createdAt else now
 
             val othersToSave = othersDto.copy(
                 id = id,
-                createdAt = now,
+                createdAt = finalCreatedAt,
                 lastUpdatedAt = now,
                 status = status
             )

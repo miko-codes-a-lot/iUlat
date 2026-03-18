@@ -38,11 +38,12 @@ class VehicleCrashServicelmpl @Inject constructor(
             val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = vehicleCrashDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
+            val finalCreatedAt = if (!vehicleCrashDto.createdAt.isNullOrBlank()) vehicleCrashDto.createdAt else now
             val status = vehicleCrashDto.status.takeIf { it.isNotBlank() } ?: "Pending"
 
             val vehicleToSave = vehicleCrashDto.copy(
                 id = id,
-                createdAt = now,
+                createdAt = finalCreatedAt,
                 lastUpdatedAt = now,
                 status = status
             )

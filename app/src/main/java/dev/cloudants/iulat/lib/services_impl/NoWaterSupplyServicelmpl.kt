@@ -39,10 +39,10 @@ class NoWaterSupplyServicelmpl @Inject constructor(
             val id = noWaterSupplyDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
             val status = noWaterSupplyDto.status.takeIf { it.isNotBlank() } ?: "Pending"
-
+            val finalCreatedAt = if (!noWaterSupplyDto.createdAt.isNullOrBlank()) noWaterSupplyDto.createdAt else now
             val noWaterToSave = noWaterSupplyDto.copy(
                 id = id,
-                createdAt = now,
+                createdAt = finalCreatedAt,
                 lastUpdatedAt = now,
                 status = status
             )

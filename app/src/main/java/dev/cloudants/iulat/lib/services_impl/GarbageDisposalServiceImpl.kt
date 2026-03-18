@@ -34,8 +34,9 @@ class GarbageDisposalServiceImpl @Inject constructor(
             val targetAdminId = sessionManager.adminIdFlow.firstOrNull() ?: ADMIN_ID
             val id = garbage.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
+            val finalCreatedAt = if (!garbage.createdAt.isNullOrBlank()) garbage.createdAt else now // new add
             val status = garbage.status?.takeIf { it.isNotBlank() } ?: "Pending"
-            val garbageToSave = garbage.copy(id = id, createdAt = now, lastUpdatedAt = now, status = status)
+            val garbageToSave = garbage.copy(id = id, createdAt = finalCreatedAt, lastUpdatedAt = now, status = status)
 
             val doc = MutableDocument(id).apply {
                 setString("id", garbageToSave.id)

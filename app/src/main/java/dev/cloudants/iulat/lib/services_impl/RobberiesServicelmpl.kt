@@ -40,10 +40,11 @@ class RobberiesServicelmpl @Inject constructor(
             val id = robberiesDto.id ?: UUID.randomUUID().toString()
             val now = Date().toString()
             val status = robberiesDto.status.takeIf { it.isNotBlank() } ?: "Pending"
+            val finalCreatedAt = if (!robberiesDto.createdAt.isNullOrBlank()) robberiesDto.createdAt else now
 
             val robberyToSave = robberiesDto.copy(
                 id = id,
-                createdAt = now,
+                createdAt = finalCreatedAt,
                 lastUpdatedAt = now,
                 status = status
             )
