@@ -17,6 +17,7 @@ data class UserDto(
     var userProfile: String? = null,
     val gender: String = "",
     var validId: String? = null,
+    var voterCertificate: String? = null,
     val address: AddressDto? = null,
     val type: String? = null,
     var isAdmin: Boolean = false,

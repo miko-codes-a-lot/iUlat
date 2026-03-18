@@ -31,6 +31,7 @@ import dev.cloudants.iulat.lib.ui.notification.NotificationList
 import dev.cloudants.iulat.lib.ui.report.CreateReport
 import dev.cloudants.iulat.lib.ui.report.EditReport
 import dev.cloudants.iulat.lib.ui.report.NotificationReportVIew
+import dev.cloudants.iulat.lib.ui.report.SelectReportCategory
 import dev.cloudants.iulat.lib.ui.report.ViewRejReport
 import dev.cloudants.iulat.lib.ui.report.ViewReport
 import dev.cloudants.iulat.lib.ui.report.residence_report.BrokenLightList
@@ -399,7 +400,7 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 }
             }
             Guard(navController = navController) {
-                MapUI(navController = navController, reportData = selectedReport)
+                MapUI(navController = navController, reportData = selectedReport, args.status)
             }
         }
 
@@ -558,6 +559,10 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                     adminViewModel = adminViewModel
                 )
             }
+        }
+
+        composable<MainNav.SelectReportCategory> {
+            SelectReportCategory(navController = navController)
         }
     }
 }

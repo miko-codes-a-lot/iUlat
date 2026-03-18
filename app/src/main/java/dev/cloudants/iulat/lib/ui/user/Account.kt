@@ -215,6 +215,21 @@ fun Account(navController: NavController, currentUser: UserDto) {
                         }
                     }
                 }
+            },
+            onVoterCertSelected = { uri ->
+                uri?.let {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        try {
+                            val inputStream = context.contentResolver.openInputStream(it)
+                            val bytes = inputStream?.readBytes()
+                            if (bytes != null && activeUser.id != null) {
+                                userViewModel.saveVoterCertificate(activeUser.id, bytes)
+                            }
+                        } catch (e: Exception) {
+                            Log.e("Account", "Error reading Voter Cert bytes: ${e.message}")
+                        }
+                    }
+                }
             }
         )
 
@@ -264,7 +279,8 @@ fun Profile(
 fun UserDetails(
     navController: NavController,
     activeUser: UserDto,
-    onIdSelected: (Uri?) -> Unit
+    onIdSelected: (Uri?) -> Unit,
+    onVoterCertSelected: (Uri?) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
     var isUploadVisible by remember { mutableStateOf(false) }
@@ -325,6 +341,24 @@ fun UserDetails(
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Update Voter Certificate",
+                        fontSize = 18.sp,
+                        color = Color(0xFF0049AD),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    UploadIdUI(
+                        label = "Tap to Upload Voter Certificate",
+                        existingImageUrl = activeUser.voterCertificate,
+                        onImageSelected = { uri ->
+                            onVoterCertSelected(uri)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     OutlinedButton(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { isUploadVisible = false }

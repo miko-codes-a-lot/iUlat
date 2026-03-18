@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -78,6 +79,7 @@ import dev.cloudants.iulat.lib.models.entities.DashboardReportItemDto
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
+import dev.cloudants.iulat.lib.viewmodels.UserViewModel
 import dev.cloudants.iulat.ui.theme.Purple700
 import dev.cloudants.iulat.ui.theme.PurpleGrey40
 
@@ -95,6 +97,8 @@ fun AdminDashboard(
 ) {
     val context = LocalContext.current
     val viewModel: AdminReportViewModel = hiltViewModel()
+    val userViewModel: UserViewModel = hiltViewModel()
+
     val percentages by viewModel.reportPercentages.collectAsState()
     val pieChartData by viewModel.pieChartData.collectAsState()
     val isDataEmpty = pieChartData.isEmpty() || pieChartData.values.sum() == 0
@@ -109,6 +113,9 @@ fun AdminDashboard(
     var announcementTitle by remember { mutableStateOf("") }
     var announcementMessage by remember { mutableStateOf("") }
 
+    var showWalkInDialog by remember { mutableStateOf(false) }
+    var residentEmail by remember { mutableStateOf("") }
+    var isVerifying by remember { mutableStateOf(false) }
     Scaffold(
         modifier = Modifier.background(Color.White),
         floatingActionButton = {
@@ -136,6 +143,25 @@ fun AdminDashboard(
 //                            modifier = Modifier.size(34.dp)
 //                    )
 //                }
+
+                FloatingActionButton(
+                    onClick = { showWalkInDialog = true },
+                    containerColor = Color.White,
+                    contentColor = Color.Gray,
+                    shape = CircleShape,
+                    modifier = Modifier.border(
+                        width = 1.dp,
+                        color = Color.LightGray,
+                        shape = CircleShape
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Create Walk-In Report",
+                        tint = Color(0xFF0049AD),
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
 
                 FloatingActionButton(
                     onClick = { showDialog = true },
@@ -172,6 +198,104 @@ fun AdminDashboard(
                     DashboardMenu(navController = navController, percentages = percentages)
                     }
             }
+        }
+
+        if (showWalkInDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showWalkInDialog = false
+                    residentEmail = ""
+                },
+                shape = RoundedCornerShape(28.dp),
+                containerColor = Color.White,
+                title = {
+                    Text(
+                        text = "Verify Resident",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0049AD),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                text = {
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        Text(
+                            text = "Enter the resident's registered email to proceed with creating a walk-in report.",
+                            fontSize = 14.sp,
+                            color = Color.DarkGray,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        OutlinedTextField(
+                            value = residentEmail,
+                            onValueChange = { residentEmail = it.trim() },
+                            label = { Text("Resident Email", color = Color(0xFF0049AD)) },
+                            placeholder = { Text("email@example.com") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF0049AD),
+                                unfocusedBorderColor = Color(0xFF0049AD),
+                                cursorColor = Color.Gray
+                            ),
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (residentEmail.isNotBlank()) {
+                                isVerifying = true
+                                userViewModel.verifyResidentEmail(residentEmail) { verifiedUser ->
+                                    isVerifying = false
+                                    if (verifiedUser != null) {
+                                        showWalkInDialog = false
+                                        residentEmail = ""
+                                        navController.navigate(MainNav.SelectReportCategory)
+                                        Toast.makeText(
+                                            context,
+                                            "Resident Verified!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Email not found or not a registered resident.",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                            } else {
+                                Toast.makeText(context, "Please enter an email", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                        },
+                        enabled = !isVerifying,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0049AD))
+                    ) {
+                        Text(
+                            if (isVerifying) "Verifying..." else "Verify & Continue",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showWalkInDialog = false
+                            residentEmail = ""
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Cancel", color = Color.Gray)
+                    }
+                }
+            )
         }
 
         if (showDialog) {

@@ -166,6 +166,54 @@ fun UserPreview(
             }
         }
 
+        user.voterCertificate?.let { voterCert ->
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Uploaded Voter Certificate:",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                fontFamily = FontFamily.SansSerif
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val voterCertBitmap = remember(voterCert) {
+                if (!voterCert.startsWith("http") && !voterCert.startsWith("content://")) {
+                    try {
+                        val bytes = Base64.decode(voterCert, Base64.DEFAULT)
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                    } catch (e: Exception) {
+                        Log.e("UserPreview", "Failed to decode Voter Cert Base64: ${e.message}")
+                        null
+                    }
+                } else null
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFEFEFEF)),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    voterCertBitmap != null -> Image(
+                        bitmap = voterCertBitmap,
+                        contentDescription = "User Voter Certificate",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    voterCert.startsWith("http") || voterCert.startsWith("content://") -> AsyncImage(
+                        model = voterCert,
+                        contentDescription = "User Voter Certificate",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    else -> Text("No valid image", color = Color.Gray)
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(

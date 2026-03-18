@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,8 +33,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import dev.cloudants.iulat.lib.components.VideoPlayerUI.VideoPlayerUI
 import dev.cloudants.iulat.lib.components.context.MODULE
+import dev.cloudants.iulat.lib.components.context.MapReportData
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
 import dev.cloudants.iulat.lib.models.entities.UserDto
+import dev.cloudants.iulat.lib.ui.map.MapUI
 import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
 import dev.cloudants.iulat.lib.viewmodels.BrokenStreetLightViewModel
 import dev.cloudants.iulat.lib.viewmodels.GarbageDisposalViewModel
@@ -155,6 +158,40 @@ fun ViewRejReport(
     }
     val currentStatus = timelineDto.lastOrNull()?.status ?: "Pending"
 
+    val lat = when (reportTitle) {
+        MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> garbageState.selectedReport?.latitude
+        MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> publicState.selectedReport?.latitude
+        MODULE.ROBBERIES, "Robberies" -> robberyState.selectedReport?.latitude
+        MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> brokenState.selectedReport?.latitude
+        MODULE.VEHICLE_CRASH, "Vehicle Crashes" -> crashState.selectedReport?.latitude
+        MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.latitude
+        MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.latitude
+        MODULE.OTHERS, "Others" -> othersState.selectedReport?.latitude
+        else -> null
+    }
+
+    val lng = when (reportTitle) {
+        MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> garbageState.selectedReport?.longitude
+        MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> publicState.selectedReport?.longitude
+        MODULE.ROBBERIES, "Robberies" -> robberyState.selectedReport?.longitude
+        MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> brokenState.selectedReport?.longitude
+        MODULE.VEHICLE_CRASH, "Vehicle Crashes" -> crashState.selectedReport?.longitude
+        MODULE.ROAD_REPAIR, "Road Repair" -> roadState.selectedReport?.longitude
+        MODULE.NO_WATER_SUPPLY, "No Water Supply" -> waterState.selectedReport?.longitude
+        MODULE.OTHERS, "Others" -> othersState.selectedReport?.longitude
+        else -> null
+    }
+
+    val mapReportData = if (lat != null && lng != null) {
+        MapReportData(
+            id = reportId,
+            latitude = lat,
+            longitude = lng,
+            reportDetails = textValue,
+            reportType = reportTitle
+        )
+    } else null
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -220,8 +257,39 @@ fun ViewRejReport(
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
+
             }
 
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Incident Location",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color(0xFF2568EF),
+                    modifier = Modifier.padding(start = 16.dp, bottom = 12.dp)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(600.dp)
+                        .padding(bottom = 16.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                ) {
+                    if (mapReportData != null) {
+                        MapUI(
+                            navController = navController,
+                            reportData = mapReportData,
+                            status = currentStatus
+                        )
+                    } else {
+                        EmptyMediaPlaceholder("Location data is currently unavailable.")
+                    }
+                }
+            }
             item { Spacer(modifier = Modifier.height(30.dp)) }
         }
     }

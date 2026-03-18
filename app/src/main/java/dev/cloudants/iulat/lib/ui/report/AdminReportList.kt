@@ -57,6 +57,8 @@ import kotlinx.coroutines.delay
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.context.formatterDate
 import dev.cloudants.iulat.lib.components.context.formatterToFilterMonth
+import dev.cloudants.iulat.lib.components.context.formatterToFilterWeek
+import dev.cloudants.iulat.lib.components.context.getCurrentWeekString
 import dev.cloudants.iulat.lib.models.entities.UserDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
 import dev.cloudants.iulat.lib.viewmodels.AdminReportViewModel
@@ -76,17 +78,24 @@ fun AdminReportList(navController: NavController) {
     var searchQuery by remember { mutableStateOf("") }
     var debouncedQuery by remember { mutableStateOf("") }
     var selectedMonth by remember { mutableStateOf<String?>(null) }
+    val currentWeekString = remember { getCurrentWeekString() }
+    val isWeeklyView = selectedStatus == "Rejected" || selectedStatus == "Resolved"
     LaunchedEffect(searchQuery) {
         delay(500L)
         debouncedQuery = searchQuery
     }
     LaunchedEffect(selectedStatus, debouncedQuery) {
         adminReportViewModel.loadReportsByStatus(selectedStatus, debouncedQuery)
+        selectedMonth = null
     }
 
-    val filteredReports by remember(reports, selectedMonth) {
+    val filteredReports by remember(reports, selectedMonth, isWeeklyView, currentWeekString) {
         derivedStateOf {
-            if (selectedMonth == null) {
+            if (isWeeklyView) {
+                reports.filter { reportItem ->
+                    formatterToFilterWeek(reportItem.reportDate) == currentWeekString
+                }
+            } else if (selectedMonth == null) {
                 reports
             } else {
                 reports.filter { reportItem ->
@@ -95,6 +104,7 @@ fun AdminReportList(navController: NavController) {
             }
         }
     }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -107,10 +117,12 @@ fun AdminReportList(navController: NavController) {
             searchQuery = searchQuery,
             onSearchQueryChanged = { searchQuery = it },
         )
-        MonthFilterCard(
-            selectedMonth = selectedMonth,
-            onMonthSelected = { selectedMonth = it }
-        )
+        if (!isWeeklyView) {
+            MonthFilterCard(
+                selectedMonth = selectedMonth,
+                onMonthSelected = { selectedMonth = it }
+            )
+        }
         ReportTableHeader(
             selectedStatus = selectedStatus,
             onStatusSelected = { selectedStatus = it }
@@ -153,12 +165,12 @@ fun AdminReportList(navController: NavController) {
                             }
 
                             "Resolved" -> {
-                                navController.navigate(MainNav.Map(addressId = docId, reportType = type))
+                                navController.navigate(MainNav.Map(addressId = docId, reportType = type, status = status))
                             }
 
                             else -> {
                                 Log.d("Navigation", "Unhandled status: $status. Defaulting to Map.")
-                                navController.navigate(MainNav.Map(addressId = docId, reportType = type))
+                                navController.navigate(MainNav.Map(addressId = docId, reportType = type, status = status))
                             }
                         }
                     },

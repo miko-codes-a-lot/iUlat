@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.mindrot.jbcrypt.BCrypt
 import javax.inject.Inject
 
@@ -210,6 +211,37 @@ class UserViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e("UserViewModel", "Error in saveValidId: ${e.message}")
+            }
+        }
+    }
+
+    fun saveVoterCertificate(userId: String, imageBytes: ByteArray) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val base64Image = android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT)
+                val currentUser = userService.findOne(userId)
+                val updatedUser = currentUser.copy(voterCertificate = base64Image)
+
+                userService.update(userId, updatedUser)
+                _currentUserState.value = updatedUser
+                Log.d("UserViewModel", "Voter Certificate updated successfully")
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Failed to update Voter Certificate: ${e.message}")
+            }
+        }
+    }
+
+    fun verifyResidentEmail(email: String, onResult: (UserDto?) -> Unit) {
+        viewModelScope.launch(Dispatchers.Main) {
+
+            val user = withContext(Dispatchers.IO) {
+                userService.findByEmail(email)
+            }
+
+            if (user != null && user.type == "user" && user.isVerified && user.isResidence) {
+                onResult(user)
+            } else {
+                onResult(null)
             }
         }
     }

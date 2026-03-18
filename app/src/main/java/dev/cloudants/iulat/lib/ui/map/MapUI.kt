@@ -48,7 +48,8 @@ import java.util.Locale
 @Composable
 fun MapUI(
     navController: NavController,
-    reportData: MapReportData?
+    reportData: MapReportData?,
+    status: String
 ) {
     val context = LocalContext.current
     var customIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
@@ -158,22 +159,24 @@ fun MapUI(
                     lineHeight = 22.sp
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                if (status != "Pending") {
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Button(
-                    onClick = {
-                        navController.navigate(
-                            MainNav.NotificationReportVIew(
-                                title = reportData.reportType ?: "Others",
-                                reportId = reportData.id ?: ""
+                    Button(
+                        onClick = {
+                            navController.navigate(
+                                MainNav.NotificationReportVIew(
+                                    title = reportData.reportType ?: "Others",
+                                    reportId = reportData.id ?: ""
+                                )
                             )
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0049AD)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("View Full Report Details")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0049AD)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("View Full Report Details")
+                    }
                 }
             }
         }

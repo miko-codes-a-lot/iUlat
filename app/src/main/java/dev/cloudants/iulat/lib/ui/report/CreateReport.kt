@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import java.util.TimeZone
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.CardDefaults.elevatedCardColors
 import androidx.compose.material3.CardDefaults.elevatedCardElevation
@@ -33,6 +35,7 @@ import dev.cloudants.iulat.lib.components.UploadVideoUI.UploadVideoUI
 import dev.cloudants.iulat.lib.components.button.CustomButton
 import dev.cloudants.iulat.lib.components.context.MODULE
 import dev.cloudants.iulat.lib.components.context.uriToBase64
+import dev.cloudants.iulat.lib.components.date.DatePickerDialogView
 import dev.cloudants.iulat.lib.components.dialog.LoginDialog
 import dev.cloudants.iulat.lib.components.upload_image.UploadImageUI
 import dev.cloudants.iulat.lib.models.entities.AddressDto
@@ -59,6 +62,9 @@ import dev.cloudants.iulat.lib.viewmodels.RobberiesViewModel
 import dev.cloudants.iulat.lib.viewmodels.VehicleCrashViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
@@ -104,9 +110,31 @@ fun CreateReport(
     var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
     var showMapPicker by remember { mutableStateOf(false) }
     val addressViewModel: AddressViewModel = hiltViewModel()
-    val detectedAddress by addressViewModel.selectedAddress
-
+    val calendar = Calendar.getInstance()
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    val displayFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+    var selectedDateString by remember { mutableStateOf(dateFormat.format(calendar.time)) }
+    var displayDate by remember { mutableStateOf(displayFormat.format(calendar.time)) }
     var userHomeAddress by remember { mutableStateOf<AddressDto?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    DatePickerDialogView(
+        showDialog = showDatePicker,
+        initialDateMillis = calendar.timeInMillis,
+        onDismiss = { showDatePicker = false },
+        onDateSelected = { utcMillis ->
+            val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+            utcCalendar.timeInMillis = utcMillis
+            val year = utcCalendar.get(Calendar.YEAR)
+            val month = utcCalendar.get(Calendar.MONTH)
+            val day = utcCalendar.get(Calendar.DAY_OF_MONTH)
+
+            val localCalendar = Calendar.getInstance()
+            localCalendar.set(year, month, day)
+            selectedDateString = dateFormat.format(localCalendar.time)
+            displayDate = displayFormat.format(localCalendar.time)
+        }
+    )
 
     LaunchedEffect(currentUser.id) {
         val addressId = currentUser.address?.id ?: ""
@@ -214,6 +242,40 @@ fun CreateReport(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = null,
+                                tint = Color(0xFF2568EF),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Date of Incident",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color(0xFF2568EF)
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        CustomButton(
+                            text = displayDate,
+                            backgroundColor = Color(0xFF0049AD),
+                            onClick = { showDatePicker = true },
+                            height = 50f
+                        )
+                    }
+                }
+            }
+
+            item {
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = elevatedCardColors(containerColor = Color.White),
+                    elevation = elevatedCardElevation(2.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.LocationOn, null, tint = Color(0xFF2568EF), modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Location of Incident", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF2568EF))
@@ -232,6 +294,7 @@ fun CreateReport(
             item {
                 Box(
                     modifier = Modifier
+                        .padding(top = 20.dp, bottom = 20.dp)
                         .fillMaxWidth()
                 ) {
                     CustomButton(
@@ -255,42 +318,42 @@ fun CreateReport(
                                 when (reportTitle) {
                                     MODULE.GARBAGE_DISPOSAL, "Garbage Disposal" -> {
                                         garbageDisposalViewModel.createGarbageReport(
-                                            GarbageDisposalDto(userId = userId, email = currentUser.email, mobileNumber = currentUser.mobileNumber, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                            GarbageDisposalDto(userId = userId, email = currentUser.email, mobileNumber = currentUser.mobileNumber, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng, createdAt = selectedDateString)
                                         )
                                     }
                                     MODULE.PUBLIC_DISTURBANCE, "Public Disturbance" -> {
                                         publicDisturbanceViewModel.createPublicDisturbanceReport(
-                                            PublicDisturbanceDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                            PublicDisturbanceDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng, createdAt = selectedDateString)
                                         )
                                     }
                                     MODULE.ROBBERIES, "Robberies" -> {
                                         robberiesViewModel.createRobberiesReport(
-                                            RobberiesDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                            RobberiesDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng, createdAt = selectedDateString)
                                         )
                                     }
                                     MODULE.BROKEN_STREETLIGHTS, "Broken Streetlights" -> {
                                         brokenStreetLightViewModel.createBrokenLightReport(
-                                            BrokenStreetlightsDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                            BrokenStreetlightsDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng, createdAt = selectedDateString)
                                         )
                                     }
                                     MODULE.VEHICLE_CRASH, "Vehicle Crashes" -> {
                                         vehicleCrashViewModel.createVehicleReport(
-                                            VehicleCrashDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                            VehicleCrashDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng, createdAt = selectedDateString)
                                         )
                                     }
                                     MODULE.ROAD_REPAIR, "Road Repair" -> {
                                         roadRepairViewModel.createRoadRepairReport(
-                                            RoadRepairDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                            RoadRepairDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng, createdAt = selectedDateString)
                                         )
                                     }
                                     MODULE.NO_WATER_SUPPLY, "No Water Supply" -> {
                                         noWaterSupplyViewModel.createNoWaterSupplyReport(
-                                            NoWaterSupplyDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                            NoWaterSupplyDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng, createdAt = selectedDateString)
                                         )
                                     }
                                     MODULE.OTHERS, "Others" -> {
                                         othersViewModel.createOthersReport(
-                                            OthersDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng)
+                                            OthersDto(userId = userId, reportDetails = textValue, reportImage = base64Image, reportVideo = base64Video, createdById = userId, latitude = lat, longitude = lng, createdAt = selectedDateString)
                                         )
                                     }
                                 }

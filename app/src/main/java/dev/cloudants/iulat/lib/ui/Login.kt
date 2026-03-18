@@ -25,7 +25,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -46,6 +49,7 @@ import kotlinx.coroutines.launch
 import dev.cloudants.iulat.R
 import dev.cloudants.iulat.lib.components.button.CustomButton
 import dev.cloudants.iulat.lib.components.dialog.LoginDialog
+import dev.cloudants.iulat.lib.components.terms_and_condition.DataAndPrivacyDialog
 import dev.cloudants.iulat.lib.intent.LoginIntent
 import dev.cloudants.iulat.lib.models.entities.AddressDto
 import dev.cloudants.iulat.lib.utils.main.MainNav
@@ -56,6 +60,7 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
     val state by loginViewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val userViewModel: UserViewModel = hiltViewModel()
+    var showPrivacyDialog by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .background(color = Color.White)
@@ -94,8 +99,11 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
             CustomButton(
                 text = "Login",
                 onClick = {
-                    Log.d("Password ", "Stored password: ${state.password}")
-                    loginViewModel.login(state.email, state.password)
+                    if (state.email.isNotBlank() && state.password.isNotBlank()) {
+                        showPrivacyDialog = true
+                    }
+//                    Log.d("Password ", "Stored password: ${state.password}")
+//                    loginViewModel.login(state.email, state.password)
                 }
             )
         } else {
@@ -195,6 +203,19 @@ fun Login(navController: NavController, loginViewModel: LoginViewModel) {
                 }
             },
             isLoginSuccessful = state.isLoginSuccessful
+        )
+    }
+
+    if (showPrivacyDialog) {
+        DataAndPrivacyDialog(
+            onDismiss = {
+                showPrivacyDialog = false
+            },
+            onAgree = {
+                showPrivacyDialog = false
+                Log.d("Password ", "Stored password: ${state.password}")
+                loginViewModel.login(state.email, state.password)
+            }
         )
     }
 }

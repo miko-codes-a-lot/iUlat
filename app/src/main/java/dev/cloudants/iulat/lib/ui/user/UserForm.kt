@@ -91,6 +91,7 @@ fun UserForm(
     }
     val context = LocalContext.current
     var selectedIdUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedVoterCertUri by remember { mutableStateOf<Uri?>(null) }
     var selectedGender by remember { mutableStateOf(targetUserDto?.gender ?: "Unspecified") }
 
     val listOfLabel = mutableListOf(
@@ -311,16 +312,39 @@ fun UserForm(
                 }
             }
         }
-//        if (showUpload) {
-            item {
-                UploadIdUI(
-                    existingImageUrl = targetUserDto?.validId,
-                    onImageSelected = { uri ->
-                        selectedIdUri = uri
-                    }
-                )
-            }
-//        }
+
+        item {
+            Text(
+                text = "Upload Valid ID:",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+            )
+            UploadIdUI(
+                label = "Tap to Upload Valid ID",
+                existingImageUrl = targetUserDto?.validId,
+                onImageSelected = { uri ->
+                    selectedIdUri = uri
+                }
+            )
+        }
+
+        item {
+            Text(
+                text = "Upload Voter Certificate:",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 24.dp, bottom = 4.dp)
+            )
+            UploadIdUI(
+                label = "Tap to Upload Voter Certificate",
+                existingImageUrl = targetUserDto?.voterCertificate,
+                onImageSelected = { uri ->
+                    selectedVoterCertUri = uri
+                }
+            )
+        }
+
         item { Spacer(modifier = Modifier.height(50.dp)) }
         item {
                 Spacer(modifier = Modifier.height(24.dp))
@@ -345,6 +369,19 @@ fun UserForm(
                                 Log.e("UserForm", "Failed to encode image to Base64: ${e.message}")
                             }
                         }
+                        var voterCertBase64: String? = null
+                        selectedVoterCertUri?.let { uri ->
+                            try {
+                                val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+                                val byteArrayOutputStream = ByteArrayOutputStream()
+                                inputStream?.copyTo(byteArrayOutputStream)
+                                val byteArray = byteArrayOutputStream.toByteArray()
+                                voterCertBase64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
+                            } catch (e: Exception) {
+                                Log.e("UserForm", "Failed to encode Voter Cert to Base64: ${e.message}")
+                            }
+                        }
+
                         val user = UserDto(
                             id =  targetUserDto?.id,
                             username = statesValue["Email"]?.value ?: "",
@@ -368,7 +405,8 @@ fun UserForm(
                             type = "user",
                             isAdmin = chosenRole == "Admin",
                             isResidence = chosenRole == "Residence",
-                            validId = validId ?: targetUserDto?.validId
+                            validId = validId ?: targetUserDto?.validId,
+                            voterCertificate = voterCertBase64 ?: targetUserDto?.voterCertificate
                         )
 
                         onSubmit(user)
@@ -403,6 +441,7 @@ fun UserForm(
 
 @Composable
 fun UploadIdUI(
+    label: String = "Tap to Upload Image",
     existingImageUrl: String? = null,
     onImageSelected: (Uri?) -> Unit
 ) {
@@ -482,7 +521,7 @@ fun UploadIdUI(
                 }
                 else -> {
                     Text(
-                        "Tap to Upload ID",
+                        text = label,
                         color = Color.White,
                         fontSize = 16.sp
                     )

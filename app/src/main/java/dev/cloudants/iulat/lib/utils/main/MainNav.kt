@@ -88,7 +88,7 @@ object MainNav {
     data class EditUser(val userId: String, val source: String? = null)
 
     @Serializable
-    data class Map(val addressId: String, val reportType: String)
+    data class Map(val addressId: String, val reportType: String, val status: String)
 
     @Serializable
     data class ViewReport (var title: String = "", var reportId: String)
@@ -101,4 +101,7 @@ object MainNav {
 
     @Serializable
     object MapReports
+
+    @Serializable
+    object SelectReportCategory
 }
